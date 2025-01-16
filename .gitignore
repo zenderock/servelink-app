@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.flaskenv
+.env
+*.env
+
+# Flask cache and logs
+instance/
+*.log
+
+# Virtual environments
+venv/
+.venv/
+env/
+.venv/
+
+# Pytest cache
+.pytest_cache/
+
+# IDE settings (e.g., VSCode, PyCharm)
+.vscode/
+.idea/
+
+# Flask specific files
+*.sqlite3
+*.db
+
+# Node
+node_modules/
+package-lock.json
+
+# Package files
+*.egg-info/
+dist/
+build/
+
+# Temporary files
+*.bak
+*.swp
+
+# Jupyter Notebook checkpoints (if using Jupyter for development/testing)
+.ipynb_checkpoints/
+
+# Static assets and uploads
+static/uploads/
