@@ -4,7 +4,6 @@
 !.dockerignore
 !.flaskenv
 !.env.example
-!.DS_Store
 
 # Python
 __pycache__/
