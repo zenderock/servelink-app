@@ -85,7 +85,7 @@
           <td>sarah.chen@example.com</td>
           <td>Admin</td>
           <td>
-            <a href="#" class="text-primary hover:underline ">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
         <tr>
@@ -93,7 +93,7 @@
           <td>m.rodriguez@example.com</td>
           <td>Member</td>
           <td>
-            <a href="#" class="text-primary hover:underline">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
         <tr>
@@ -101,7 +101,7 @@
           <td>emma.t@example.com</td>
           <td>Member</td>
           <td>
-            <a href="#" class="text-primary hover:underline">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
         <tr>
@@ -109,7 +109,7 @@
           <td>a.patel@example.com</td>
           <td>Admin</td>
           <td>
-            <a href="#" class="text-primary hover:underline">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
         <tr>
@@ -117,7 +117,7 @@
           <td>l.kim@example.com</td>
           <td>Guest</td>
           <td>
-            <a href="#" class="text-primary hover:underline">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
         <tr>
@@ -125,7 +125,7 @@
           <td>jwilson@example.com</td>
           <td>Member</td>
           <td>
-            <a href="#" class="text-primary hover:underline">Edit</a>
+            <a href="#" class="text-accent font-medium hover:underline ">Edit</a>
           </td>
         </tr>
       </tbody>
@@ -134,29 +134,19 @@
 
   <h2>Buttons</h2>
 
-  <div class="grid grid-cols-4 gap-4 text-center">
-    <div><button class="btn-xs-primary">Primary</button></div>
-    <div><button class="btn-xs-secondary">Secondary</button></div>
-    <div><button class="btn-xs-accent">Accent</button></div>
-    <div><button class="btn-xs-danger">Danger</button></div>
-    <div><button class="btn-sm-primary">Primary</button></div>
-    <div><button class="btn-sm-secondary">Secondary</button></div>
-    <div><button class="btn-sm-accent">Accent</button></div>
-    <div><button class="btn-sm-danger">Danger</button></div>
+  <div class="grid grid-cols-3 gap-4 text-center">
     <div><button class="btn-primary">Primary</button></div>
     <div><button class="btn-secondary">Secondary</button></div>
+    <div><button class="btn-outline">Outline</button></div>
+    <div><button class="btn-ghost">Ghost</button></div>
     <div><button class="btn-accent">Accent</button></div>
     <div><button class="btn-danger">Danger</button></div>
-    <div><button class="btn-lg-primary">Primary</button></div>
-    <div><button class="btn-lg-secondary">Secondary</button></div>
-    <div><button class="btn-lg-accent">Accent</button></div>
-    <div><button class="btn-lg-danger">Danger</button></div>
   </div>
 
   <h2>Dialog</h2>
 
   {% from "components/dialog.html" import dialog %}
-  {% call dialog(trigger="Open dialog", id="dialog-example", title="Settings", trigger_class="btn-primary") %}
+  {% call dialog(trigger="Open dialog", id="dialog-example", title="Settings", trigger_class="btn-outline") %}
     <main class="prose"p>
       <p>We're excited to have you join us for our
       upcoming event. Please arrive at the museum 
@@ -167,15 +157,15 @@
       </ul>
     </main>
     <footer>
-      <button class="btn-sm-secondary" @click="active = false">Cancel</button>
-      <button class="btn-sm-primary">Save</button>
+      <button class="btn-ghost" @click="active = false">Cancel</button>
+      <button class="btn-primary">Save</button>
     </footer>
   {% endcall %}
 
   <h2>Dropbown</h2>
 
   {% from "components/dropdown.html" import dropdown %}
-  {% call dropdown(trigger="Open dropdown", id="dropdown-example", trigger_class="btn-primary", menu_class="min-w-36") %}
+  {% call dropdown(trigger="Open dropdown", id="dropdown-example", trigger_class="btn-outline", menu_class="min-w-36") %}
     <a href="#" role="menuitem">Profile</a>
     <a href="#" role="menuitem">Settings</a>
     <hr role="separator"/>
@@ -192,20 +182,25 @@
     <fieldset class="fieldset">
       <legend>Inputs</legend>
       <div class="space-y-4">
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 gap-4">
           <div class="field">
             <label>Field (default)</label>
-            <input type="text">
+            <input type="text" class="w-full">
+            <p class="font-medium text-sm">This is a description</p>
+          </div>
+          <div class="field">
+            <label>Field (disabled)</label>
+            <input type="text" class="w-full" disabled>
             <p class="font-medium text-sm">This is a description</p>
           </div>
           <div class="field">
             <label>Field (error)</label>
-            <input type="text" aria-invalid="true">
+            <input type="text" aria-invalid="true" class="w-full">
             <p class="font-medium text-sm text-danger">This is an error message</p>
           </div>
           <div class="field">
             <label>Field (success)</label>
-            <input type="text" aria-invalid="false">
+            <input type="text" aria-invalid="false" class="w-full">
             <p class="font-medium text-sm text-success">This is a success message</p>
           </div>
         </div>
@@ -226,7 +221,7 @@
         </div>
         <div class="field">
           <label>Textarea</label>
-          <textarea rows="6" placeholder="Placeholder text"></textarea>
+          <textarea rows="6" placeholder="Placeholder text" class="w-full"></textarea>
         </div>
         <div class="field">
           <label>Range</label>

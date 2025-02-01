@@ -1,0 +1,75 @@
+services:
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.app
+    restart: always
+    depends_on:
+      - redis
+      - docker-proxy
+    networks:
+      - default
+      - internal
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
+      - "traefik.http.services.app.loadbalancer.server.port=5000"
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    restart: always
+    networks:
+      - internal
+
+  docker-proxy:
+    container_name: docker-proxy
+    image: tecnativa/docker-socket-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      EXEC: 1
+      NETWORKS: 1
+    networks:
+      - internal
+
+  traefik:
+    image: traefik:v3.3.2
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=tcp://docker-proxy:2375"
+      - "--providers.docker.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - default
+      - internal
+
+  runner:
+    image: runner
+    build:
+      context: ./Docker
+      dockerfile: Dockerfile.runner
+
+volumes:
+  app-runtime:
+
+networks:
+  default:
+    name: app_default
+  internal:
+    name: app_internal
+    internal: true

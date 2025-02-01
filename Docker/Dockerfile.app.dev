@@ -1,0 +1,17 @@
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        sqlite3 \
+        supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+EXPOSE 5000
+
+# Copy dev Supervisor configuration
+COPY Docker/supervisord.app.dev.conf /etc/supervisord.conf
+
+# This runs on EVERY container start
+ENTRYPOINT ["sh", "-c", "pip install -r requirements.txt && supervisord -c /etc/supervisord.conf"]

@@ -1,4 +1,4 @@
-<header class="flex items-center justify-between gap-x-4 p-4 sticky top-0 bg-background">
+<header class="flex items-center justify-between gap-x-4 px-4 h-12 sticky top-0 bg-background border-b border-border z-10">
 	<nav class="flex items-center gap-x-8 font-medium">
 		<a
 			href="{{ url_for('main.index') }}"
@@ -14,19 +14,7 @@
 		<a
 			href="{{ url_for('main.index') }}"
 			class="hover:text-inherit transition-colors {% if request.path == url_for('main.index') %}text-primary{% else %}text-muted-foreground{% endif %}"
-		>{{ _('About') }}</a>
-		<a
-			href="{{ url_for('main.kitchen_sink') }}"
-			class="hover:text-inherit transition-colors {% if request.path == url_for('main.kitchen_sink') %}text-primary{% else %}text-muted-foreground{% endif %}"
-		>{{ _('Kitchen sink') }}</a>
-		<a
-			href="https://github.com/hunvreus/flask-basics"
-			target="_blank"
-			class="hover:text-inherit transition-colors text-muted-foreground flex gap-x-1 items-center"
-		>
-			{{ _('GitHub') }}
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
-		</a>
+		>{{ _('Projects') }}</a>
 	</nav>
 	<div class="flex items-center gap-x-2">
 		<button 
@@ -35,21 +23,32 @@
 			data-tooltip="Toggle theme"
 			data-tooltip-position="bottom"
 			type="button" 
-			class="btn-secondary h-[34px] w-[34px] p-0"
+			class="btn-ghost h-8 w-8 p-0 rounded-full"
 			aria-label="Toggle theme"
 		>
-			<svg x-show="$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-			<svg x-cloak x-show="!$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+			<svg x-show="$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+			<svg x-cloak x-show="!$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
 		</button>
 		{% if current_user.is_authenticated %}
-			<span>
-				<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="w-8 h-8 rounded-full"/>
-				{{ current_user.email }}
-			</span>
-			<a
-				href="{{ url_for('auth.logout') }}"
-				class="btn-sm-secondary"
-			>{{ _('Sign out') }}</a>
+			{% from "components/dropdown.html" import dropdown %}
+			{% set trigger %}
+				<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
+			{% endset %}
+			{% call dropdown(trigger=trigger, trigger_class="block", menu_class="min-w-36") %}
+				<header class="px-2.5 py-1.5">
+					<span class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</span>
+					<span class="text-muted-foreground">{{ current_user.email }}</span>
+				</header>
+				<hr role="separator"/>
+				<a href="#" role="menuitem">Profile</a>
+				<a href="#" role="menuitem">Settings</a>
+				<hr role="separator"/>
+				<a href="{{ url_for('auth.logout') }}" role="menuitem">
+					{{ _('Sign out') }}
+				</a>
+			{% endcall %}
+			
+			
 		{% else %}
 			<a
 				href="{{ url_for('auth.login') }}"

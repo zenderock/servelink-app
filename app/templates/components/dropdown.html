@@ -1,4 +1,4 @@
-{% macro dropdown(id=None, trigger=None, trigger_class=None, menu_class=None) %}
+{% macro dropdown(id=None, trigger=None, trigger_class=None, menu_class=None, menu_position=None) %}
 <span
   x-data="{ active: false }"
   @click.away="active = false"
@@ -13,6 +13,7 @@
     aria-haspopup="menu"
     aria-pressed="false"
     :aria-pressed="active"
+    type="button"
     {% if id %}
     id="{{ id }}-trigger"
     aria-controls="{{ id }}-menu"
@@ -32,6 +33,8 @@
     aria-orientation="vertical"
     aria-hidden="true"
     :aria-hidden="!active"
+    {% if menu_position %}data-menu-position="{{ menu_position }}"{% endif %}
+    @click="$event.target.closest('[role=menuitem]')?.blur(); active = false"
   >
     {{ caller() }}
   </nav>

@@ -1,0 +1,31 @@
+FROM python:3.13-slim
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --group appuser
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        netcat-openbsd \
+        procps \
+        net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Set correct permissions
+RUN chown -R appuser:appgroup /app && \
+    mkdir -p /home/appuser/.local && \
+    chown -R appuser:appgroup /home/appuser
+
+# Switch to non-root user
+USER appuser
+
+# Set pip to install packages in user's home
+ENV PIP_USER=1
+ENV PATH=/home/appuser/.local/bin:$PATH
+ENV HOME=/home/appuser
+
+# Ensure the container doesn't exit immediately
+CMD ["tail", "-f", "/dev/null"]

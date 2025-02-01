@@ -1,3 +1,7 @@
+asyncio
+coolname
+cryptography
+docker
 email-validator
 flask
 flask-babel
@@ -6,6 +10,10 @@ flask-migrate
 flask-sqlalchemy
 flask-wtf
 gunicorn
+humanize
 pyjwt
 python-dotenv
+redis
+requests
 resend
+rq

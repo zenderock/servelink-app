@@ -40,6 +40,7 @@ This is a simple and opiniated boilerplate for Flask apps (mostly ripped off fro
     ```
     flask run
     ```
+7. Need Redis (what port?) and have it running +` rq worker deployments`
 
 # Environment variables
 
@@ -52,7 +53,7 @@ Variable | Default | Description
 `MAIL_SENDER_EMAIL` | `'noreply@example.com'` | The email used when sending emails.
 `MAIL_LOGO` | `'/assets/logo/logo-72x72.png'` | Logo used in the HTML email template (see `app/templates/email/login.html`).
 `MAIL_FOOTER` | `None` | A text to be included in the footer of your emails (e.g. your business address).
-`SECRET_KEY` | `'random-unique-secret-key'` | [Secret key used for signing session cookies](https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY).
+`SECRET_KEY` | `'random-unique-secret-key'` | [Secret key used for signing session cookies](https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY). On MacOS/Linux, you can generate it with `openssl rand -base64 32`.
 `SQLALCHEMY_DATABASE_URI` | `None` | [A valid database connection URI](https://flask-sqlalchemy.readthedocs.io/en/stable/config/#flask_sqlalchemy.config.SQLALCHEMY_DATABASE_URI). If undefined, the app will use an SQLite database saved at `app.db`.
 `RESEND_API_KEY` | `None` | The [Resend](https://resend.com) API key. If no key is provided (e.g. when developing on local), the content of the emails sent will be displayed in your terminal.
 `TEMPLATES_AUTO_RELOAD` | `False` | [Hot reload templates](https://flask.palletsprojects.com/en/stable/config/#TEMPLATES_AUTO_RELOAD) when they change (for development).
@@ -107,3 +108,29 @@ pybabel update -i messages.pot -d app/translations
 - **Email template**: The login email templates (HTML and text) are saved in `app/templates/email/`. The HTML version can be generated from the [MJML](https://mjml.io/) template defined at `src/login.mjml` by running the `npm run email` command.
 
 You can generate all assets at once by running the `npm run build` command.
+
+
+ENCRYPTION_KEY python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+
+colima start
+
+docker build -t app-deploy -f docker/Dockerfile.deploy .
+
+APP_ENV=dev docker-compose up --build
+
+docker-compose up --build
+
+
+NUKE 
+
+# Stop all containers (running or stopped)
+docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) -f
+
+# Remove all containers
+
+
+# Now you can remove images
+
+
+docker ps --filter "label=app.deployment_id=Qo0IS_JJgaHRI3q7xirdgA"

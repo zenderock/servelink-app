@@ -1,10 +1,11 @@
-# Ignore all dot files except a few
+# Ignore all dot files
 .*
-!.gitignore
-!.dockerignore
-!.flaskenv
-!.env.example
-!.DS_Store
+
+# Docker
+docker-compose*.yml
+Docker/
+!Docker/supervisord.app.conf
+!Docker/supervisord.app.dev.conf
 
 # Python
 __pycache__/
@@ -14,17 +15,20 @@ __pycache__/
 # Virtual environments
 venv/
 
-# Docker
-docker-compose.override.yml
-
 # SQLite
 *.sqlite3
 *.sqlite
 *.db
 
+# Build
+src/
+scripts/
+
 # Node
 node_modules/
 package-lock.json
+package.json
+tailwind.config.js
 
 # Static assets and uploads
 static/uploads/
