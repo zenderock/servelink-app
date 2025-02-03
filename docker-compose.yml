@@ -63,9 +63,12 @@ services:
     build:
       context: ./Docker
       dockerfile: Dockerfile.runner
+    profiles: ["build-only"]
 
 volumes:
   app-runtime:
+  loki-data:
+    name: app_loki_data
 
 networks:
   default:

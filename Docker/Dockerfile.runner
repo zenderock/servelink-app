@@ -26,6 +26,3 @@ USER appuser
 ENV PIP_USER=1
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV HOME=/home/appuser
-
-# Ensure the container doesn't exit immediately
-CMD ["tail", "-f", "/dev/null"]

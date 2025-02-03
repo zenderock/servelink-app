@@ -124,3 +124,111 @@
 2025-02-01 12:36:31,985 INFO spawned: 'rq_worker' with pid 15
 2025-02-01 12:36:33,297 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
 2025-02-01 12:36:33,297 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:07:56,260 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 02:07:56,263 INFO supervisord started with pid 10
+2025-02-02 02:07:57,274 INFO spawned: 'flask' with pid 11
+2025-02-02 02:07:57,279 INFO spawned: 'rq_worker' with pid 12
+2025-02-02 02:07:58,271 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:07:59,279 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:08:35,665 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 02:08:35,668 INFO supervisord started with pid 14
+2025-02-02 02:08:36,676 INFO spawned: 'flask' with pid 15
+2025-02-02 02:08:36,681 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 02:08:37,764 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:08:37,765 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:37:19,882 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 02:37:19,885 INFO supervisord started with pid 13
+2025-02-02 02:37:20,892 INFO spawned: 'flask' with pid 14
+2025-02-02 02:37:20,897 INFO spawned: 'rq_worker' with pid 15
+2025-02-02 02:37:22,702 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 02:37:22,703 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 04:24:02,110 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 04:24:02,112 INFO supervisord started with pid 14
+2025-02-02 04:24:03,124 INFO spawned: 'flask' with pid 15
+2025-02-02 04:24:03,137 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 04:24:04,224 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 04:24:04,224 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 04:31:11,524 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 04:31:11,528 INFO supervisord started with pid 14
+2025-02-02 04:31:12,538 INFO spawned: 'flask' with pid 15
+2025-02-02 04:31:12,554 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 04:31:14,486 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 04:31:14,487 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 09:09:20,114 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 09:09:20,117 INFO supervisord started with pid 14
+2025-02-02 09:09:21,124 INFO spawned: 'flask' with pid 15
+2025-02-02 09:09:21,135 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 09:09:22,316 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 09:09:22,316 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 09:59:43,609 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 09:59:43,612 INFO supervisord started with pid 14
+2025-02-02 09:59:44,620 INFO spawned: 'flask' with pid 15
+2025-02-02 09:59:44,624 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 09:59:45,785 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 09:59:45,785 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 10:07:57,843 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 10:07:57,846 INFO supervisord started with pid 14
+2025-02-02 10:07:58,859 INFO spawned: 'flask' with pid 15
+2025-02-02 10:07:58,867 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 10:07:59,908 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 10:07:59,908 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 10:11:50,105 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 10:11:50,108 INFO supervisord started with pid 14
+2025-02-02 10:11:51,120 INFO spawned: 'flask' with pid 15
+2025-02-02 10:11:51,127 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 10:11:52,128 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 10:11:52,129 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 11:27:15,387 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 11:27:15,394 INFO supervisord started with pid 13
+2025-02-02 11:27:16,400 INFO spawned: 'flask' with pid 14
+2025-02-02 11:27:16,405 INFO spawned: 'rq_worker' with pid 15
+2025-02-02 11:27:17,738 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 11:27:17,738 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:02:06,931 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 12:02:06,934 INFO supervisord started with pid 14
+2025-02-02 12:02:07,947 INFO spawned: 'flask' with pid 15
+2025-02-02 12:02:07,952 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 12:02:09,792 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:02:09,793 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:46:27,065 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 12:46:27,068 INFO supervisord started with pid 14
+2025-02-02 12:46:28,079 INFO spawned: 'flask' with pid 15
+2025-02-02 12:46:28,083 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 12:46:29,133 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:46:29,133 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:54:42,850 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 12:54:42,853 INFO supervisord started with pid 13
+2025-02-02 12:54:43,863 INFO spawned: 'flask' with pid 14
+2025-02-02 12:54:43,871 INFO spawned: 'rq_worker' with pid 15
+2025-02-02 12:54:45,762 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:54:45,766 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:57:35,863 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 12:57:35,866 INFO supervisord started with pid 14
+2025-02-02 12:57:36,878 INFO spawned: 'flask' with pid 15
+2025-02-02 12:57:36,884 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 12:57:38,780 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 12:57:38,782 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 13:30:00,742 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 13:30:00,746 INFO supervisord started with pid 14
+2025-02-02 13:30:01,755 INFO spawned: 'flask' with pid 15
+2025-02-02 13:30:01,760 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 13:30:02,908 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 13:30:02,909 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 23:53:03,074 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 23:53:03,084 INFO supervisord started with pid 14
+2025-02-02 23:53:04,099 INFO spawned: 'flask' with pid 15
+2025-02-02 23:53:04,104 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 23:53:05,602 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 23:53:05,602 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 23:55:08,459 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-02 23:55:08,462 INFO supervisord started with pid 14
+2025-02-02 23:55:09,473 INFO spawned: 'flask' with pid 15
+2025-02-02 23:55:09,481 INFO spawned: 'rq_worker' with pid 16
+2025-02-02 23:55:10,894 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-02 23:55:10,895 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-03 01:14:14,577 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-02-03 01:14:14,580 INFO supervisord started with pid 14
+2025-02-03 01:14:15,584 INFO spawned: 'flask' with pid 15
+2025-02-03 01:14:15,588 INFO spawned: 'rq_worker' with pid 16
+2025-02-03 01:14:16,648 INFO success: flask entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-02-03 01:14:16,651 INFO success: rq_worker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
