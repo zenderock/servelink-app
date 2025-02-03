@@ -16,6 +16,10 @@ venv/
 # Docker
 docker-compose.override.yml
 
+# Supervisor
+supervisord.log
+supervisord.pid
+
 # SQLite
 *.sqlite3
 *.sqlite
