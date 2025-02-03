@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import socket
 from contextlib import closing
 import time
+from datetime import datetime, timezone
+
 
 
 def check_port(host, port):
@@ -67,6 +69,10 @@ def deploy(deployment_id: str):
                 }
             )
             docker_client.networks.get("app_default").connect(container.id)
+
+            # We save the container ID in the deployment
+            deployment.container_id = container.id
+            db.session.commit()
             
             # Wait for either container exit or port availability (up to 30 seconds)
             max_retries = 30
@@ -91,12 +97,14 @@ def deploy(deployment_id: str):
             # Mark deployment as completed
             deployment.status = 'completed'
             deployment.conclusion = 'succeeded'
+            deployment.concluded_at = datetime.now(timezone.utc)
             db.session.commit()
 
         except Exception as e:
             # Mark deployment as failed
             deployment.status = 'completed'
             deployment.conclusion = 'failed'
+            deployment.concluded_at = datetime.now(timezone.utc)
             db.session.commit()
             print(f"Deployment {deployment_id} failed: {e}")
 

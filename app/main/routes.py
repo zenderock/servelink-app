@@ -124,7 +124,13 @@ def deployment(name, deployment_id):
     if deployment is None:
         flash(_('Deployment not found.'), 'error')
         return redirect(url_for('main.project', name=deployment.project.name))
+    # if deployment.conclusion != 'succeeded':
+    #     flash(_('Deployment failed, canceled or skipped.'), 'error')
+    #     return redirect(url_for('main.project', name=deployment.project.name))
     # We retrieve the logs from the deployment 
+    logs = current_app.docker_client.containers.get(deployment.container_id).logs()
+    print(logs)
+    
     return render_template('deployment/index.html', deployment=deployment)
 
 

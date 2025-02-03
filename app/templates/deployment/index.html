@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container max-w-screen-lg mx-auto px-4 py-16 prose">
+    <h1 class="h2">{{ project.name }} > {{ deployment.id }}</h1>
+    <ul>
+        {% for log in logs %}
+            <li>{{ log }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

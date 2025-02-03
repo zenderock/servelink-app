@@ -5,10 +5,8 @@ from app import db, login
 from sqlalchemy import BigInteger, JSON, String, Text, ForeignKey, func, Enum as SQLAEnum
 from sqlalchemy.orm import Mapped, mapped_column, WriteOnlyMapped, relationship
 from datetime import datetime
-from uuid import uuid4
 import json
 from secrets import token_urlsafe
-from enum import Enum
 
 
 class User(UserMixin, db.Model):
@@ -154,6 +152,7 @@ class Deployment(db.Model):
     repo: Mapped[dict] = mapped_column(JSON, nullable=False)
     config_id: Mapped[int] = mapped_column(ForeignKey(Configuration.id), nullable=False)
     env_vars_id: Mapped[int] = mapped_column(ForeignKey(EnvironmentVariables.id), nullable=False)
+    container_id: Mapped[str] = mapped_column(String(64), nullable=True)
     config: Mapped[Configuration] = relationship()
     env_vars: Mapped[EnvironmentVariables] = relationship()
     commit_sha: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
