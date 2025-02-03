@@ -81,6 +81,7 @@ def add_project():
     return render_template('project/new/details.html', repo=repo,  form=form)
 
 
+# TODO: add decorator for project ownership
 @bp.route('/projects/<string:name>', methods=['GET', 'POST'])
 @login_required
 def project(name):
@@ -111,6 +112,20 @@ def project(name):
     ).all()
 
     return render_template('project/index.html', project=project, deployments=deployments, form=form)
+
+
+# TODO: add decorator for project ownership
+@bp.route('/project/<string:name>/deployments/<string:deployment_id>')
+@login_required
+def deployment(name, deployment_id):
+    deployment = db.session.scalar(
+        select(Deployment).where(Deployment.id == deployment_id)
+    )
+    if deployment is None:
+        flash(_('Deployment not found.'), 'error')
+        return redirect(url_for('main.project', name=deployment.project.name))
+    # We retrieve the logs from the deployment 
+    return render_template('deployment/index.html', deployment=deployment)
 
 
 @bp.route('/kitchen-sink')

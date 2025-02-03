@@ -2,8 +2,15 @@ import docker
 from app.models import Deployment
 from app import create_app, db
 from dotenv import load_dotenv
-from docker.types import LogConfig
+import socket
+from contextlib import closing
+import time
 
+
+def check_port(host, port):
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        return sock.connect_ex((host, port)) == 0
+    
 
 def deploy(deployment_id: str):
     """Run the deployment using Docker"""
@@ -25,15 +32,6 @@ def deploy(deployment_id: str):
                 var['key']: var['value'] 
                 for var in (deployment.env_vars.value or [])
             }
-
-            # Log to Fluent Bit
-            log_config = LogConfig(
-                type='fluentd',
-                config={
-                    'fluentd-address': 'fluent-bit:24224',
-                    'tag': 'runner'
-                }
-            )
 
             # Prepare commands
             commands = [ "echo 'Starting deployment...'" ]
@@ -66,12 +64,29 @@ def deploy(deployment_id: str):
                     f"traefik.http.services.{deployment.id}.loadbalancer.server.port": "8000",
                     "app.deployment_id": deployment.id,
                     "app.project_id": deployment.project_id
-                },
-                log_config=log_config
+                }
             )
             docker_client.networks.get("app_default").connect(container.id)
             
-            
+            # Wait for either container exit or port availability (up to 30 seconds)
+            max_retries = 30
+            for i in range(max_retries):
+                container.reload()  # Refresh container state
+                
+                if container.status == 'exited':
+                    # Container failed to start
+                    logs = container.logs().decode('utf-8')
+                    raise Exception(f"Container failed to start:\n{logs}")
+                
+                # Check if port 8000 is responding
+                if check_port(container.attrs['NetworkSettings']['Networks']['app_internal']['IPAddress'], 8000):
+                    print("Application is up and running")
+                    break
+                    
+                if i < max_retries - 1:
+                    time.sleep(1)
+            else:
+                raise Exception("Timeout waiting for application to start")
 
             # Mark deployment as completed
             deployment.status = 'completed'

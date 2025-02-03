@@ -22,17 +22,4 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${BASE_DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
-
-  loki:
-    command:
-      - "-config.file=/etc/loki/config.yml"
-      - "-auth.enabled=false"
-    networks:
-      - default
-      - internal
-    ports:
-      - "3100:3100"
-
-  fluent-bit:
-    volumes:
-      - ./Docker/fluent-bit.dev.conf:/fluent-bit/etc/fluent-bit.conf
+      
