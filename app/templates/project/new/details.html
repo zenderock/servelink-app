@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-sm mx-auto px-4 py-16 space-y-8">
-  <h1 class="h1">Add a project</h1> 
-  <ol class="flex items-center justify-between gap-x-2">
+<div class="container max-w-screen-sm mx-auto px-4 py-16">
+  <h1 class="h1 mb-8">Add a project</h1> 
+  <ol class="flex items-center justify-between gap-x-2 mb-8">
     <li class="flex items-center gap-x-2 opacity-50">
       <div class="shrink-0 rounded-full h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
       <h2 class="font-semibold">{{ _('Select repository') }}</h2>
@@ -25,7 +25,7 @@
   </ol>
   <form action="" method="post" class="form">
     {{ form.hidden_tag() }}
-    {{ form.repo_id(value=repo.id, class_="hidden") }}
+    {{ form.repo_id(class_="hidden") }}
     <div class="space-y-6">
       <div class="field" x-data="{ branch: '{{ repo.default_branch }}' }">
         <label>
@@ -42,7 +42,14 @@
         </label>
         <div class="flex gap-x-2">
           <div class="relative flex-1">
-            <input class="w-full !pl-9" type="text" name="repo_full_name" value="{{ repo.full_name }}" disabled>
+            <input class="w-full !px-9" type="text" name="repo_full_name" value="{{ repo.full_name }}" disabled>
+            <a
+              href="{{ url_for('main.select_repo') }}"
+              class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 shrink-0 opacity-50 hover:opacity-100 transition-opacity z-10"
+              data-tooltip="Change repository"
+            >
+              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+            </a>
             <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
           </div>
           <div class="relative w-1/3">
@@ -57,13 +64,11 @@
       </div>
 
       <div class="field">
-        <!-- <label for="name">{{ _('Project name') }}</label> -->
         {{ form.name.label() }}
         {{ form.name(
             size=100,
             class="w-full",
             required=True,
-            pattern="^[A-Za-z0-9][A-Za-z0-9._\-]*[A-Za-z0-9]$",
             placeholder="e.g. my-project",
             **({'aria-invalid': 'true'} if form.name.errors else {})
         ) }}
@@ -72,20 +77,70 @@
         {% endfor %}
       </div>
 
+      <div class="field">
+        {{ form.root_directory.label() }}
+        {{ form.root_directory(
+            class="w-full",
+            pattern="^\.?\/?([\w-]+\/?)*$",
+            placeholder="./",
+            disabled=True,
+            **({'aria-invalid': 'true'} if form.root_directory.errors else {})
+        ) }}
+        {% for error in form.root_directory.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        {% endfor %}
+      </div>
+
       <details open>
         <summary >{{ _('Commands') }}</summary>
         <div class="space-y-6">
-          <div class="field flex-size-1/2">
+          <div class="field">
+            <label for="build_command">{{ _('Framework') }}</label>
+            <select>
+              <option value="flask">Flask</option>
+              <option value="django">Django</option>
+              <option value="fastapi">FastAPI</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
             <label for="build_command">{{ _('Build command') }}</label>
-            <input type="text" class="w-full font-mono" value="pip install -r requirements.txt"/>
+            <div class="flex gap-x-2" x-data="{ locked: true, command: 'pip install -r requirements.txt' }">
+              <input
+                type="text"
+                class="w-full font-mono"
+                value="pip install -r requirements.txt"
+                :disabled="locked"
+              />
+              <button
+                class="btn-ghost w-10"
+                type="button"
+                @click="locked = !locked"
+                :data-tooltip="locked ? 'Edit command' : 'Reset command'"
+              >
+                <svg x-show="locked" class="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+                <svg x-show="!locked" x-cloak class="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 10-6.157 6.162a2 2 0 0 0-.5.833l-1.322 4.36a.5.5 0 0 0 .622.624l4.358-1.323a2 2 0 0 0 .83-.5L14 13.982"/><path d="m12.829 7.172 4.359-4.346a1 1 0 1 1 3.986 3.986l-4.353 4.353"/><path d="m15 5 4 4"/><path d="m2 2 20 20"/></svg>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label for="pre_deploy_command">{{ _('Pre-deploy command') }}</label>
-            <input type="text" class="w-full font-mono" value="python manage.py migrate"/>
+            <div class="flex gap-x-2" x-data="{ locked: true, command: 'pip install -r requirements.txt' }">
+              <input type="text" class="w-full font-mono" value="python manage.py migrate" :disabled="locked"/>
+              <button
+                class="btn-ghost w-10"
+                type="button"
+                @click="locked = !locked"
+                :data-tooltip="locked ? 'Edit command' : 'Reset command'"
+              >
+                <svg x-show="locked" class="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+                <svg x-show="!locked" class="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 10-6.157 6.162a2 2 0 0 0-.5.833l-1.322 4.36a.5.5 0 0 0 .622.624l4.358-1.323a2 2 0 0 0 .83-.5L14 13.982"/><path d="m12.829 7.172 4.359-4.346a1 1 0 1 1 3.986 3.986l-4.353 4.353"/><path d="m15 5 4 4"/><path d="m2 2 20 20"/></svg>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label for="build_command">{{ _('Start command') }}</label>
-            <input type="text" class="w-full font-mono" value="gunicorn -w 3 main:app"/>
+            <input type="text" class="w-full font-mono" value="gunicorn -w 3 main:app" disabled/>
           </div>
         </div>
       </details>
@@ -188,11 +243,11 @@
     href="{{ url_for('main.select_repo') }}"
     hx-boost="true"
     hx-indicator="find .htmx-indicator"
-    class="btn-ghost w-full flex items-center gap-x-2"
+    class="btn-ghost w-full flex items-center gap-x-2 mt-6"
   >
     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
     {{ _('Back to select repository') }}
-    <svg class="h-4 w-4 animate-spin htmx-indicator text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+    <svg class="h-4 w-4 animate-spin htmx-indicator" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
   </a>
 </div>
 {% endblock %}

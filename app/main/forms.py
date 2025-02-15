@@ -24,11 +24,12 @@ class ProjectForm(FlaskForm):
         Length(min=1, max=100),
         Regexp(
             r'^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$',
-            message=_('Project names can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot or hyphen.')
+            message=_('Project names can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen.')
         )
     ])
     repo_id = IntegerField(_l('Repo ID'), validators=[DataRequired()])
     repo_branch = SelectField(_l('Branch'), choices=[], validators=[DataRequired(), Length(min=1, max=255)])
+    root_directory = StringField(_l('Root directory'))
     env_vars = FieldList(FormField(EnvVarForm))
     submit = SubmitField(_l('Save'))
 
@@ -38,6 +39,12 @@ class ProjectForm(FlaskForm):
         )
         if project is not None:
             raise ValidationError(_('A project with this name already exists.'))
+
+    def validate_root_directory(self, field):
+        if field.data:
+            path = field.data.strip()
+            if path.startswith('/') or '..' in path:
+                raise ValidationError(_l('Invalid path: must be relative to repository root'))
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
         super().process(formdata, obj, data, **kwargs)

@@ -119,47 +119,53 @@
   .btn-ghost,
   .btn-accent,
   .btn-danger {
-    @apply rounded-lg font-medium cursor-pointer transition-all inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary px-4 py-2 h-10;
+    @apply rounded-lg font-medium cursor-pointer transition-all inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary px-4 py-2 h-10 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn,
   .btn-primary {
     @apply bg-primary text-primary-foreground;
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-primary/90;
     }
   }
   .btn-secondary {
     @apply bg-secondary text-secondary-foreground;
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-secondary/90;
     }
   }
   .btn-outline {
     @apply border border-border bg-background text-foreground;
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-muted;
     }
   }
   .btn-ghost {
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-muted;
     }
   }
   .btn-accent {
     @apply bg-accent text-accent-foreground;
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-accent/90;
     }
   }
   .btn-danger {
     @apply bg-danger text-danger-foreground;
     &:hover,
-    &[aria-expanded="true"] {
+    &[aria-expanded="true"],
+    &[aria-pressed="true"] {
       @apply bg-danger/90;
     }
   }
@@ -554,6 +560,12 @@
   [data-tooltip][data-tooltip-position="top"] {
     @apply before:bottom-full before:left-1/2 before:-translate-x-1/2 before:translate-y-1 before:mb-1 hover:before:translate-y-0;
   }
+  [data-tooltip][data-tooltip-position="top-left"] {
+    @apply before:bottom-full before:left-0 before:translate-y-1 before:mb-1 hover:before:translate-y-0;
+  }
+  [data-tooltip][data-tooltip-position="top-right"] {
+    @apply before:bottom-full before:right-0 before:translate-y-1 before:mb-1 hover:before:translate-y-0;
+  }
   [data-tooltip][data-tooltip-position="bottom"] {
     @apply before:mt-1 before:top-full before:left-1/2 before:-translate-x-1/2 before:-translate-y-1 hover:before:translate-y-0;
   }
@@ -595,5 +607,21 @@
   }
   details > div {
     @apply border-x border-b border-border rounded-b-lg p-3;
+  }
+}
+
+/* Tabs */
+@layer components {
+  ul[role="tablist"] {
+    @apply flex items-center gap-x-2 border-b border-border;
+  }
+  ul[role="tablist"] li {
+    @apply flex items-center gap-x-2 -mb-[1px];
+  }
+  ul[role="tablist"] li [role="tab"] {
+    @apply flex items-center gap-x-2 font-medium text-muted-foreground px-4 py-2 hover:text-foreground transition-colors;
+  }
+  ul[role="tablist"] li [role="tab"][aria-selected="true"] {
+    @apply text-foreground border-b-2 border-b-primary;
   }
 }

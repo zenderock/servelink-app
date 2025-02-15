@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<form action="" method="post" class="form">
+  {{ form.hidden_tag() }}
+  <div class="space-y-6">
+    <div class="field">
+      {{ form.name.label() }}
+      {{ form.name(
+          size=100,
+          class="w-full",
+          required=True,
+          pattern="^[A-Za-z0-9][A-Za-z0-9._\-]*[A-Za-z0-9]$",
+          placeholder="e.g. my-project",
+          **({'aria-invalid': 'true'} if form.name.errors else {})
+      ) }}
+      {% for error in form.name.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
+    </div>
+  </div>
+</form>
+{% endblock %}

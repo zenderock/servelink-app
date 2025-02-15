@@ -38,13 +38,13 @@ def create_app(config_class=Config):
     deployment_queue = Queue('deployments', connection=redis_conn)
     app.deployment_queue = deployment_queue
 
-    def naturaltime(value):
+    def timeago(value):
         """Convert a datetime or ISO string to a human readable time ago."""
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace('Z', '+00:00'))
         return humanize.naturaltime(value)
     
-    app.jinja_env.filters['naturaltime'] = naturaltime
+    app.jinja_env.filters['timeago'] = timeago
 
     db.init_app(app)
     migrate.init_app(app, db)

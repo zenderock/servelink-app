@@ -72,7 +72,7 @@ def github_callback():
         
         if setup_action in ['install', 'update']:  # Both handled the same
             try:
-                data = current_app.github.get_installation(installation_id)
+                # data = current_app.github.get_installation(installation_id)
                 token_data = current_app.github.get_installation_access_token(installation_id)
                 
                 installation = GithubInstallation(
@@ -156,7 +156,7 @@ def github_callback():
 
 
 def create_user(github_id: str, base_username: str, token: str | None, name: str | None, email: str | None) -> User:
-    """Create a user with a valid (unqiue) username."""
+    """Create a user with a valid (unique) username."""
     attempt = 0
     while True:
         username = generate_slug(2) if attempt > 0 else base_username

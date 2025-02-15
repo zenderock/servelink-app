@@ -1,12 +1,139 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-lg mx-auto px-4 py-16 prose">
-    <h1 class="h2">{{ project.name }} > {{ deployment.id }}</h1>
-    <ul>
-        {% for log in logs %}
-            <li>{{ log }}</li>
-        {% endfor %}
-    </ul>
+{% from "/components/dropdown.html" import dropdown %}
+{% set trigger %}
+  <svg class="w-4 h-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+{% endset %}
+<div class="container max-w-screen-lg mx-auto px-4 py-16 space-y-6">
+  <header class="flex items-center gap-x-4 justify-between">
+    <h1 class="flex items-center gap-x-2">
+      <span class="flex items-center gap-x-1">
+        <a
+          href="{{ url_for('main.project', name=project.name) }}"
+          class="font-semibold text-xl"
+        >
+          {{ project.name }}
+        </a>
+        {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-9 px-0", menu_class="min-w-36", menu_position="left" ) %}
+          <a href="#" role="menuitem">flask-basics</a>
+          <a href="#" role="menuitem">pages-cms</a>
+          <hr role="separator"/>
+          <a href="{{ url_for('auth.logout') }}" role="menuitem">
+            {{ _('Add a project') }}
+          </a>
+        {% endcall %}
+      </span>
+      <span class="flex items-center gap-x-2">
+        <span class="text-xl">main</span>
+        {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-9 px-0", menu_class="min-w-36", menu_position="left" ) %}
+          <a href="#" role="menuitem">flask-basics</a>
+          <a href="#" role="menuitem">pages-cms</a>
+          <hr role="separator"/>
+          <a href="{{ url_for('auth.logout') }}" role="menuitem">
+            {{ _('Add a project') }}
+          </a>
+        {% endcall %}
+      </span>
+      <span class="flex items-center gap-x-2">
+        <span class="text-xl font-mono">{{ deployment.id[:7] }}</span>
+        {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-9 px-0", menu_class="min-w-36", menu_position="left" ) %}
+          <a href="#" role="menuitem">flask-basics</a>
+          <a href="#" role="menuitem">pages-cms</a>
+          <hr role="separator"/>
+          <a href="{{ url_for('auth.logout') }}" role="menuitem">
+            {{ _('Add a project') }}
+          </a>
+        {% endcall %}
+      </span>
+    </h1>
+
+    {% set trigger %}
+    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    {% endset %}
+    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-9 h-9 px-0", menu_class="min-w-36" ) %}
+      <a href="#" role="menuitem">flask-basics</a>
+      <a href="#" role="menuitem">pages-cms</a>
+      <hr role="separator"/>
+      <a href="{{ url_for('auth.logout') }}" role="menuitem">
+        {{ _('Add a project') }}
+      </a>
+    {% endcall %}
+  </header>
+
+  <ul class="flex gap-x-6 items-start text-muted-foreground">
+    <li>
+      <a
+        class="flex items-center gap-x-1 hover:underline"
+        href="https://github.com/{{ deployment.repo.full_name }}"
+        target="_blank"
+        data-tooltip="{{ _('Repository') }}"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+        {{ deployment.repo.full_name }}
+      </a>
+    </li>
+    <li>
+      <a
+        class="flex items-center gap-x-1 hover:underline"
+        href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.repo.branch }}"
+        target="_blank"
+        data-tooltip="{{ _('Branch') }}"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        {{ deployment.repo.branch }}
+      </a>
+    </li>
+    <li>
+      <a
+        class="flex items-center gap-x-1 hover:underline"
+        href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"
+        target="_blank"
+        data-tooltip="{{ _('Commit') }}"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></svg>
+        {{ deployment.commit.message }} &#8226; {{ deployment.commit.sha[:7] }}
+      </a>
+    </li>
+  </ul>
+  
+  {% include 'deployment/components/_details.html' %}
+
+  <details open>
+    <summary>{{ _('Build logs') }}</summary>
+    <div
+      class="overflow-y-auto h-[500px] relative"
+      x-init="$el.scrollTop = $el.scrollHeight"
+      {% if not deployment.conclusion %}
+        x-data="{ isEmpty: true }"
+        hx-ext="sse"
+        sse-connect="{{ url_for(
+          'main.deployment_logs_stream',
+          project_name=project.name,
+          deployment_id=deployment.id,
+          since=latest_timestamp
+        ) }}"
+        sse-close="close"
+        sse-swap="message"
+        hx-swap="beforeend"
+        hx-on::before-swap="this._x_dataStack[0].isEmpty = false"
+        hx-on::after-swap="this.scrollTop = this.scrollHeight"
+      {% endif%}
+      id="logs"
+    >
+      {% if not deployment.conclusion %}
+        <div class="absolute inset-0 flex items-center justify-center text-muted-foreground" x-show="isEmpty">
+          <div class="flex items-center gap-x-2">
+            <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+            {{ _('Waiting for logs...') }}
+          </div>
+        </div>
+      {% endif %}
+      {% for log in logs %}
+        {% include 'deployment/components/_log.html' %}
+      {% endfor %}
+    </div>
+  </details>
 </div>
+
 {% endblock %}

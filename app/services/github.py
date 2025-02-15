@@ -1,7 +1,7 @@
 import requests
 import jwt
 import time
-from datetime import datetime, timedelta
+
 
 class GitHub:
     def __init__(self, client_id: str, client_secret: str, app_id: str, private_key: str):
@@ -110,10 +110,27 @@ class GitHub:
         return response.json()
     
     def get_repository_branches(self, user_access_token: str, repo_id: int) -> list:
-        """Get branches for a repository using its ID."""
+        """Get branches for a repository."""
         response = requests.get(
             f'https://api.github.com/repositories/{repo_id}/branches',
             headers={'Authorization': f'Bearer {user_access_token}'}
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def get_repository_commits(self, user_access_token: str,repo_id: int, branch: str | None = None, per_page: int = 30, page: int = 1) -> list:
+        """Get commits for a repository."""
+        params = {
+            'page': page,
+            'per_page': per_page
+        }
+        if branch:
+            params['sha'] = branch
+        
+        response = requests.get(
+            f'https://api.github.com/repositories/{repo_id}/commits',
+            headers={'Authorization': f'Bearer {user_access_token}'},
+            params=params
         )
         response.raise_for_status()
         return response.json()
@@ -144,3 +161,12 @@ class GitHub:
         )
         response.raise_for_status()
         return response.json()['repositories']  # Note: returns paginated response
+
+    def get_repo_installation(self, repo_full_name: str) -> dict:
+        """Retrieve the GitHub App installation details for a given repository."""
+        response = requests.get(
+            f'https://api.github.com/repos/{repo_full_name}/installation',
+            headers={ 'Authorization': f'Bearer {self.jwt_token}' }
+        )
+        response.raise_for_status()
+        return response.json()

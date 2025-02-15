@@ -134,3 +134,14 @@ docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(d
 
 
 docker ps --filter "label=app.deployment_id=Qo0IS_JJgaHRI3q7xirdgA"
+
+
+
+
+
+Check logs from loki: 
+
+colima start --feature docker --log-driver loki --log-opt loki-url=http://host.docker.internal:3100/loki/api/v1/push
+
+`docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) -f`
+`docker-compose build runner && docker-compose down -v && docker-compose up --build --force-recreate`

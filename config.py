@@ -31,3 +31,4 @@ class Config(object):
         raise ValueError("ENCRYPTION_KEY must be set")
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
     BASE_DOMAIN = os.environ.get('BASE_DOMAIN', 'localhost')
+    URL_SCHEME = os.environ.get('URL_SCHEME', 'http')

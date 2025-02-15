@@ -2,11 +2,12 @@ from flask import current_app
 from cryptography.fernet import Fernet
 from flask_login import UserMixin
 from app import db, login
-from sqlalchemy import BigInteger, JSON, String, Text, ForeignKey, func, Enum as SQLAEnum
+from sqlalchemy import BigInteger, JSON, String, Text, ForeignKey, Enum as SQLAEnum, event, select, update
 from sqlalchemy.orm import Mapped, mapped_column, WriteOnlyMapped, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import json
-from secrets import token_urlsafe
+from secrets import token_hex
+import re
 
 
 class User(UserMixin, db.Model):
@@ -51,65 +52,74 @@ class GithubInstallation(db.Model):
     installation_id: Mapped[int] = mapped_column(primary_key=True)
     _token: Mapped[str] = mapped_column('token', String(2048), nullable=True)
     token_expires_at: Mapped[datetime] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(
+        SQLAEnum(
+            'active',
+            'deleted',    # Installation was deleted
+            'suspended',  # Installation was suspended
+            name='github_installation_status'
+        ),
+        nullable=False,
+        default='active'
+    )
+    projects: WriteOnlyMapped['Project'] = relationship(
+        back_populates='github_installation',
+        foreign_keys='Project.github_installation_id'
+    )
+
+    # TODO: cache Fernet in Flask app context?
 
     @property
     def token(self) -> str:
+        if self._token is None:
+           return None
         f = Fernet(current_app.config['ENCRYPTION_KEY'])
         return f.decrypt(self._token.encode()).decode()
     
     @token.setter
     def token(self, value: str):
-        f = Fernet(current_app.config['ENCRYPTION_KEY'])
-        self._token = f.encrypt(value.encode()).decode()
+        if not value:
+            self._token = None
+        else:
+            f = Fernet(current_app.config['ENCRYPTION_KEY'])
+            self._token = f.encrypt(value.encode()).decode()
 
     def __repr__(self):
         return f'<GithubInstallationToken {self.installation_id}>'
-    
-
-# TODO: consider adding version and schema validation
-class Configuration(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    value: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=func.now())
-
-
-# TODO: consider adding format validation
-class EnvironmentVariables(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    _value: Mapped[str] = mapped_column('value', Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=func.now())
-
-    @property
-    def value(self) -> dict:
-        if self._value:
-            f = Fernet(current_app.config['ENCRYPTION_KEY'])
-            decrypted = f.decrypt(self._value.encode()).decode()
-            return json.loads(decrypted)
-        return {}
-    
-    @value.setter
-    def value(self, value: dict):
-        json_str = json.dumps(value or {})
-        f = Fernet(current_app.config['ENCRYPTION_KEY'])
-        self._value = f.encrypt(json_str.encode()).decode()
 
 
 # TODO: add checks constraints for status
 class Project(db.Model):
-    id: Mapped[str] = mapped_column(String(22), primary_key=True, default=lambda: token_urlsafe(16))
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
     name: Mapped[str] = mapped_column(String(100), index=True)
     repo_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     repo_full_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     repo_branch: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    config_id: Mapped[str] = mapped_column(ForeignKey(Configuration.id), nullable=True)
-    env_vars_id: Mapped[str] = mapped_column(ForeignKey(EnvironmentVariables.id), nullable=True)
-    _config: Mapped[Configuration] = relationship()
-    _env_vars: Mapped[EnvironmentVariables] = relationship()
-    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=func.now(), onupdate=func.now())
+    repo_status: Mapped[str] = mapped_column(
+        SQLAEnum(
+            'active',
+            'deleted',
+            'removed',
+            'transferred',
+            name='project_github_status'
+        ),
+        nullable=False,
+        default='active'
+    )
+    github_installation_id: Mapped[int] = mapped_column(ForeignKey(GithubInstallation.installation_id), nullable=False, index=True)
+    github_installation: Mapped[GithubInstallation] = relationship(back_populates='projects')
+    config: Mapped[dict] = mapped_column(JSON, nullable=False)
+    _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
+    slug: Mapped[str] = mapped_column(String(40), nullable=True, unique=True)
+    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id), index=True)
     user: Mapped[User] = relationship(back_populates='projects')
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default='active')
+    status: Mapped[str] = mapped_column(
+        SQLAEnum('active', 'paused', 'deleted', name='project_status'),
+        nullable=False,
+        default='active'
+    )
     active_deployment_id: Mapped[str] = mapped_column(
         ForeignKey('deployment.id', use_alter=True, name='fk_project_active_deployment'),
         nullable=True
@@ -121,41 +131,56 @@ class Project(db.Model):
     )
 
     @property
-    def config(self) -> dict:
-        return self._config.value if self._config else {}
-    
-    @config.setter
-    def config(self, value: dict):
-        current = self.config
-        if json.dumps(value, sort_keys=True) != json.dumps(current, sort_keys=True):
-            self._config = Configuration(value=value)
-
-    @property
     def env_vars(self) -> list[dict[str, str]]:
-        return self._env_vars.value if self._env_vars else []
+        if self._env_vars:
+            f = Fernet(current_app.config['ENCRYPTION_KEY'])
+            decrypted = f.decrypt(self._env_vars.encode()).decode()
+            return json.loads(decrypted)
+        return []
     
     @env_vars.setter
-    def env_vars(self, value: list[dict[str, str]]):
-        current = self.env_vars
-        if current != value:  # Simple list comparison preserves order
-            self._env_vars = EnvironmentVariables(value=value)
+    def env_vars(self, value: list[dict[str, str]] | None):
+        json_str = json.dumps(value or [])
+        f = Fernet(current_app.config['ENCRYPTION_KEY'])
+        self._env_vars = f.encrypt(json_str.encode()).decode()
 
     def __repr__(self):
         return f'<Project {self.name}>'
-    
 
-# TODO: add checks constraints for status and conclusion
+
+@event.listens_for(Project, 'after_insert')
+def set_project_slug(mapper, connection, project):
+    """Generate and set slug after project is inserted (and has an ID)."""
+    if not project.slug:
+        # Convert to lowercase and replace dots/underscores with hyphens
+        base_slug = f"{project.name}-{project.user.username}".lower().replace('.', '-').replace('_', '-')
+        base_slug = re.sub(r'-+', '-', base_slug)
+        base_slug = base_slug[:40]
+        base_slug = base_slug.strip('-')
+        
+        # Try base slug first, if exists use ID version
+        new_slug = base_slug if not connection.scalar(
+            select(Project.slug).where(Project.slug == base_slug)
+        ) else f"{base_slug[:32]}-{str(project.id)[:7]}"
+        
+        # Update both database and instance
+        connection.execute(
+            update(Project)
+            .where(Project.id == project.id)
+            .values(slug=new_slug)
+        )
+        project.slug = new_slug
+
+
 class Deployment(db.Model):
-    id: Mapped[str] = mapped_column(String(22), primary_key=True, default=lambda: token_urlsafe(16))
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
     project_id: Mapped[str] = mapped_column(ForeignKey(Project.id), index=True)
     project: Mapped[Project] = relationship(back_populates='deployments', foreign_keys=[project_id])
     repo: Mapped[dict] = mapped_column(JSON, nullable=False)
-    config_id: Mapped[int] = mapped_column(ForeignKey(Configuration.id), nullable=False)
-    env_vars_id: Mapped[int] = mapped_column(ForeignKey(EnvironmentVariables.id), nullable=False)
     container_id: Mapped[str] = mapped_column(String(64), nullable=True)
-    config: Mapped[Configuration] = relationship()
-    env_vars: Mapped[EnvironmentVariables] = relationship()
-    commit_sha: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    config: Mapped[dict] = mapped_column(JSON, nullable=False)
+    _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
+    commit: Mapped[dict] = mapped_column(JSON, nullable=False)
     status: Mapped[str] = mapped_column(
         SQLAEnum('queued', 'in_progress', 'completed', name='deployment_status'),
         nullable=False,
@@ -170,8 +195,27 @@ class Deployment(db.Model):
         nullable=False,
         default='user'
     )
-    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=func.now())
-    concluded_at: Mapped[datetime] = mapped_column(index=True, nullable=True) 
+    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc))
+    concluded_at: Mapped[datetime] = mapped_column(index=True, nullable=True)
+    build_logs: Mapped[str] = mapped_column(Text, nullable=True)
+
+    @property
+    def env_vars(self) -> list[dict[str, str]]:
+        if self._env_vars:
+            f = Fernet(current_app.config['ENCRYPTION_KEY'])
+            decrypted = f.decrypt(self._env_vars.encode()).decode()
+            return json.loads(decrypted)
+        return []
+    
+    def url(self, scheme: bool = True) -> str:
+        relative_url = f"{self.project.user.username}-{self.project.name}-{self.id[:7]}.{current_app.config['BASE_DOMAIN']}"
+        return f"{current_app.config['URL_SCHEME']}://{relative_url}" if scheme else relative_url
+    
+    @env_vars.setter
+    def env_vars(self, value: list[dict[str, str]] | None):
+        json_str = json.dumps(value or [])
+        f = Fernet(current_app.config['ENCRYPTION_KEY'])
+        self._env_vars = f.encrypt(json_str.encode()).decode()
 
     def __init__(self, project: Project, **kwargs):
         with db.session.no_autoflush:
@@ -183,8 +227,19 @@ class Deployment(db.Model):
                 'full_name': project.repo_full_name,
                 'branch': project.repo_branch
             }
-            self.config_id = project._config.id if project._config else None
-            self.env_vars_id = project._env_vars.id if project._env_vars else None
+            self.config = project.config
+            self.env_vars = project.env_vars
 
     def __repr__(self):
         return f'<Deployment {self.id}>'
+
+
+# class Subdomain(db.Model):
+#     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
+#     slug: Mapped[str] = mapped_column(String(255), nullable=False)
+#     deployment_id: Mapped[str] = mapped_column(ForeignKey(Deployment.id), index=True)
+#     deployment: Mapped[Deployment] = relationship(back_populates='urls', foreign_keys=[deployment_id])
+
+#     def __repr__(self):
+#         return f'<Url {self.url}>'
+    
