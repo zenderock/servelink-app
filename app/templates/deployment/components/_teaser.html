@@ -25,6 +25,11 @@
   >
     <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
   </a>
+
+  <div class="flex items-center gap-x-2 text-muted-foreground">
+    {{ deployment.created_at | timeago }}
+  </div>
+
   <a
     class="flex items-center gap-x-1 hover:underline text-muted-foreground mr-auto"
     href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"

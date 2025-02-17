@@ -61,7 +61,7 @@
     {% endcall %}
   </header>
 
-  <ul class="flex gap-x-6 items-start text-muted-foreground">
+  <ul class="flex gap-x-6 items-start text-muted-foreground" id="deployment-details">
     <li>
       <a
         class="flex items-center gap-x-1 hover:underline"
@@ -97,7 +97,7 @@
     </li>
   </ul>
   
-  {% include 'deployment/components/_details.html' %}
+  {% include 'deployment/partials/status.html' %}
 
   <details open>
     <summary>{{ _('Build logs') }}</summary>
@@ -105,33 +105,22 @@
       class="overflow-y-auto h-[500px] relative"
       x-init="$el.scrollTop = $el.scrollHeight"
       {% if not deployment.conclusion %}
-        x-data="{ isEmpty: true }"
-        hx-ext="sse"
-        sse-connect="{{ url_for(
-          'main.deployment_logs_stream',
-          project_name=project.name,
-          deployment_id=deployment.id,
-          since=latest_timestamp
-        ) }}"
-        sse-close="close"
-        sse-swap="message"
-        hx-swap="beforeend"
-        hx-on::before-swap="this._x_dataStack[0].isEmpty = false"
+        hx-get=""
+        hx-trigger="every 1s"
+        hx-swap="innerHTML"
         hx-on::after-swap="this.scrollTop = this.scrollHeight"
       {% endif%}
       id="logs"
     >
       {% if not deployment.conclusion %}
-        <div class="absolute inset-0 flex items-center justify-center text-muted-foreground" x-show="isEmpty">
+        <div class="absolute inset-0 flex items-center justify-center text-muted-foreground">
           <div class="flex items-center gap-x-2">
             <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
             {{ _('Waiting for logs...') }}
           </div>
         </div>
       {% endif %}
-      {% for log in logs %}
-        {% include 'deployment/components/_log.html' %}
-      {% endfor %}
+      {% include 'deployment/partials/logs.html' %}
     </div>
   </details>
 </div>

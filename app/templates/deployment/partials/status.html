@@ -1,9 +1,7 @@
 <ul
   class="flex gap-x-6 items-start text-muted-foreground"
-  {% if not deployment.conclusion %}
-    hx-get=""
-    hx-trigger="htmx:sseClose from:#logs"
-  {% endif %}
+  {% if oob %}hx-swap-oob="true"{% endif %}
+  id="deployment-status"
 >
   <li class="flex items-center gap-x-1" data-tooltip="{{ _('Status') }}">
     {% from "deployment/components/status.html" import status %}

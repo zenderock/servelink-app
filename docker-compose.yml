@@ -49,14 +49,24 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=tcp://docker-proxy:2375"
       - "--providers.docker.watch=true"
+      - "--providers.rest=true"
+      - "--providers.rest.insecure=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--api=true"
+      - "--api.dashboard=false"
+      - "--api.insecure=false"
     ports:
       - "80:80"
       - "443:443"
     networks:
       - default
       - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-api.rule=Host(`api.traefik.internal`)"
+      - "traefik.http.routers.traefik-api.service=api@internal"
+      - "traefik.http.routers.traefik-api.entrypoints=web"
 
   runner:
     image: runner

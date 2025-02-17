@@ -129,6 +129,7 @@ def project(name):
             project=project,
             trigger='user',
             commit={
+                'branch': commit['branch'],
                 'sha': commit['sha'],
                 'author': commit['author']['login'],
                 'message': commit['commit']['message'],
@@ -205,134 +206,28 @@ def deployment(project_name, deployment_id):
         select(Deployment).where(Deployment.id == deployment_id)
     )
 
+    if request.headers.get('HX-Request'):
+        if not deployment:
+            return _('Deployment not found.'), 404
+        
+        content = render_template('deployment/partials/logs.html', logs=deployment.parsed_logs)
+        code = 200
+
+        if deployment.conclusion:
+            code = 286
+            content += render_template('deployment/partials/status.html', deployment=deployment, oob=True)
+
+        return content, code
+
     if not deployment:
         flash(_('Deployment not found.'), 'error')
         return redirect(url_for('main.project', name=deployment.project.name))
-    
-    # If it's an HTMX request, we just return the details
-    if request.headers.get('HX-Request'):
-        return render_template('deployment/components/_details.html', deployment=deployment)
-    
-    # Get historical logs
-    raw_logs = []
-    logs = []
-    latest_timestamp = None
 
-    if deployment.build_logs:
-        raw_logs = deployment.build_logs.splitlines()
-    elif (deployment.container_id):
-        raw_logs = current_app.docker_client.containers.get(deployment.container_id).logs(
-            stream=False,
-            timestamps=True
-        ).decode('utf-8').splitlines()
-
-    for line in raw_logs:
-        timestamp, message = line.split(' ', 1)
-        try:
-            latest_timestamp = datetime.fromisoformat(timestamp.rstrip('Z')).timestamp()
-        except ValueError:
-            latest_timestamp = None
-        logs.append({
-            'timestamp': latest_timestamp,
-            'message': message
-        })
-    
     return render_template(
         'deployment/index.html', 
         project=deployment.project, 
-        deployment=deployment, 
-        logs=logs,
-        latest_timestamp=latest_timestamp
-    )
-
-
-@bp.route('/project/<string:project_name>/deployments/<string:deployment_id>/logs/stream')
-@login_required
-def deployment_logs_stream(project_name, deployment_id):
-    deployment = db.session.scalar(
-        select(Deployment).where(Deployment.id == deployment_id)
-    )
-    if deployment is None:
-        return Response(
-            'event: warning\ndata: Deployment not found\n\n',
-            mimetype='text/event-stream'
-        )
-
-    if not deployment.container_id:
-        return Response(
-            'event: warning\ndata: No container ID found for deployment\n\n',
-            mimetype='text/event-stream'
-        )
-
-    try:
-        since = float(request.args.get('since', None))
-    except (TypeError, ValueError):
-        since = None
-
-    app = current_app._get_current_object()
-    container = None
-    log_stream = None
-
-    def stream_logs():
-        nonlocal container, log_stream, deployment
-
-        def format_log_message(line: bytes) -> str:
-            # Decode and split the log line into a timestamp and a message.
-            timestamp, message = line.decode('utf-8').split(' ', 1)
-            formatted_log = render_template(
-                'deployment/components/_log.html',
-                log={
-                    'timestamp': datetime.fromisoformat(timestamp.rstrip('Z')).timestamp(),
-                    'message': message,
-                }
-            ).replace('\n', ' ').strip()
-            return f"data: {formatted_log}\n\n"
-        
-        with app.app_context():
-            deployment = db.session.scalar(
-                select(Deployment).where(Deployment.id == deployment_id)
-            )
-            try:
-                container = app.docker_client.containers.get(deployment.container_id)
-                log_stream = container.logs(
-                    stream=True,
-                    follow=True,
-                    stdout=True,
-                    stderr=True,
-                    timestamps=True,
-                    since=since
-                )
-                
-                for line in log_stream:
-                    yield format_log_message(line)
-                    db.session.refresh(deployment)
-                    if deployment.conclusion:
-                        yield f"event: close\ndata: Deployment {deployment.conclusion}\n\n"
-                        break
-                
-                # If the log stream gets interrupted (e.g. the container was stopped because of a deployment error), we close it
-                app.logger.error('Deployment interrupted')
-                db.session.refresh(deployment)
-                yield f"event: close\ndata: Deployment {deployment.conclusion}\n\n"
-                return
-            
-            except Exception as e:
-                app.logger.info('Stream failure')
-                db.session.refresh(deployment)
-                yield f"event: close\ndata: Deployment {deployment.conclusion}\n\n"
-                return
-            
-            finally:
-                app.logger.error('Cleanup')
-                # We clean everything up
-                if log_stream:
-                    log_stream.close()
-                if container:
-                    container.client.close()
-
-    return Response(
-        stream_logs(),
-        mimetype='text/event-stream'
+        deployment=deployment,
+        logs=deployment.parsed_logs
     )
 
 

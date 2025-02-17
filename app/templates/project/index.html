@@ -52,8 +52,7 @@
 
   <section
     class="space-y-2"
-    hx-get="{{ url_for('main.project', name=project.name) }}"
-    hx-trigger="every 1s"
+    
   >
     {% include "/project/components/_deployment_list.html" %}
   </section>

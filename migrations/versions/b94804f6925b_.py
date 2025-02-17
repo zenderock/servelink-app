@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 06abd5d1b7de
+Revision ID: b94804f6925b
 Revises: 
-Create Date: 2025-02-14 16:01:44.369372
+Create Date: 2025-02-16 14:46:00.083979
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '06abd5d1b7de'
+revision = 'b94804f6925b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -46,7 +46,7 @@ def upgrade():
     sa.Column('repo_id', sa.BigInteger(), nullable=False),
     sa.Column('repo_full_name', sa.String(length=255), nullable=False),
     sa.Column('repo_branch', sa.String(length=255), nullable=False),
-    sa.Column('repo_status', sa.Enum('active', 'deleted', 'transferred', name='project_github_status'), nullable=False),
+    sa.Column('repo_status', sa.Enum('active', 'deleted', 'removed', 'transferred', name='project_github_status'), nullable=False),
     sa.Column('github_installation_id', sa.Integer(), nullable=False),
     sa.Column('config', sa.JSON(), nullable=False),
     sa.Column('env_vars', sa.Text(), nullable=False),
@@ -55,8 +55,7 @@ def upgrade():
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('status', sa.Enum('active', 'paused', 'deleted', name='project_status'), nullable=False),
-    sa.Column('active_deployment_id', sa.String(length=32), nullable=True),
-    sa.ForeignKeyConstraint(['active_deployment_id'], ['deployment.id'], name='fk_project_active_deployment', use_alter=True),
+    sa.Column('mapping', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['github_installation_id'], ['github_installation.installation_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -80,6 +79,7 @@ def upgrade():
     sa.Column('config', sa.JSON(), nullable=False),
     sa.Column('env_vars', sa.Text(), nullable=False),
     sa.Column('commit', sa.JSON(), nullable=False),
+    sa.Column('slug', sa.String(length=63), nullable=True),
     sa.Column('status', sa.Enum('queued', 'in_progress', 'completed', name='deployment_status'), nullable=False),
     sa.Column('conclusion', sa.Enum('succeeded', 'failed', 'canceled', 'skipped', name='deployment_conclusion'), nullable=True),
     sa.Column('trigger', sa.Enum('webhook', 'user', 'api', name='deployment_trigger'), nullable=False),
@@ -87,7 +87,8 @@ def upgrade():
     sa.Column('concluded_at', sa.DateTime(), nullable=True),
     sa.Column('build_logs', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('slug')
     )
     with op.batch_alter_table('deployment', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_deployment_concluded_at'), ['concluded_at'], unique=False)

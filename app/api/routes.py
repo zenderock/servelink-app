@@ -146,7 +146,8 @@ def github_webhook():
                             'sha': data['after'],
                             'author': data['pusher']['name'],
                             'message': data['head_commit']['message'],
-                            'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat()
+                            'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat(),
+                            'branch': data['ref'].replace('refs/heads/', '')  # Convert refs/heads/main to main
                         },
                     )
                     db.session.add(deployment)

@@ -1,3 +1,4 @@
+{% for log in logs %}
 <div class="flex gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono text-xs {{ bg_class }}">
   <div
     class="text-muted-foreground whitespace-nowrap"
@@ -8,3 +9,4 @@
   >{{ log.timestamp }}</div>
   <div>{{ log.message }}</div>
 </div>
+{% endfor %}

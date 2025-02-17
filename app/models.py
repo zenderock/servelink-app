@@ -120,11 +120,7 @@ class Project(db.Model):
         nullable=False,
         default='active'
     )
-    active_deployment_id: Mapped[str] = mapped_column(
-        ForeignKey('deployment.id', use_alter=True, name='fk_project_active_deployment'),
-        nullable=True
-    )
-    active_deployment: Mapped['Deployment'] = relationship(foreign_keys=[active_deployment_id])
+    mapping: Mapped[list[str]] = mapped_column(JSON, nullable=True, default={"environments": {}, "branches": {}})
     deployments: WriteOnlyMapped['Deployment'] = relationship(
         back_populates='project',
         foreign_keys='Deployment.project_id'
@@ -181,6 +177,7 @@ class Deployment(db.Model):
     config: Mapped[dict] = mapped_column(JSON, nullable=False)
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
     commit: Mapped[dict] = mapped_column(JSON, nullable=False)
+    slug: Mapped[str] = mapped_column(String(63), nullable=True, unique=True)
     status: Mapped[str] = mapped_column(
         SQLAEnum('queued', 'in_progress', 'completed', name='deployment_status'),
         nullable=False,
@@ -208,7 +205,7 @@ class Deployment(db.Model):
         return []
     
     def url(self, scheme: bool = True) -> str:
-        relative_url = f"{self.project.user.username}-{self.project.name}-{self.id[:7]}.{current_app.config['BASE_DOMAIN']}"
+        relative_url = f"{self.project.name}-{self.project.user.username}-{self.id[:7]}.{current_app.config['BASE_DOMAIN']}"
         return f"{current_app.config['URL_SCHEME']}://{relative_url}" if scheme else relative_url
     
     @env_vars.setter
@@ -233,7 +230,38 @@ class Deployment(db.Model):
     def __repr__(self):
         return f'<Deployment {self.id}>'
 
+    def parse_logs(self):
+        """Parse raw build logs into structured format."""
+        if not self.build_logs:
+            return []
+        
+        logs = []
+        for line in self.build_logs.splitlines():
+            try:
+                timestamp, message = line.split(' ', 1)
+                timestamp = datetime.fromisoformat(timestamp.rstrip('Z')).timestamp()
+            except (ValueError, IndexError):
+                timestamp = None
+                message = line
+            
+            logs.append({
+                'timestamp': timestamp,
+                'message': message
+            })
+        return logs
 
+    @property
+    def parsed_logs(self):
+        return self.parse_logs()
+    
+    @property
+    def environment(self) -> str:
+        # TODO: add support for multiple environments
+        # TODO: account for changes in production branch + redeploy/rollback
+        if self.commit.get('branch') == self.project.repo_branch:
+            return 'production'
+        return 'preview'
+    
 # class Subdomain(db.Model):
 #     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
 #     slug: Mapped[str] = mapped_column(String(255), nullable=False)
