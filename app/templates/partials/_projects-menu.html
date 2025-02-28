@@ -1,0 +1,16 @@
+{% from "projects/components/thumbnail.html" import thumbnail %}
+<span role="menuitem" class="flex items-center gap-x-1">
+  {{ thumbnail(project, size='sm') }}
+  {{ project.name }}
+  <svg class="ml-auto w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+</span>
+{% for other_project in get_latest_projects(project) %}
+  <a href="{{ url_for('main.project', project_name=other_project.name) }}" role="menuitem" class="!pr-9">
+    {{ thumbnail(other_project, size="sm") }}
+    {{ other_project.name }}
+  </a>
+{% endfor %}
+<hr role="separator"/>
+<button type="button" @click="$dialog('add-project-dialog')" role="menuitem">
+  {{ _('Add new project') }}
+</button>

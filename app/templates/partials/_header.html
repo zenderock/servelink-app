@@ -1,0 +1,147 @@
+{% from "components/dialog.html" import dialog %}
+{% call dialog(id="add-project-dialog", title="Add new project") %}
+  <main class="prose">
+    <p>We're excited to have you join us for our
+    upcoming event. Please arrive at the museum 
+    on time to check in and get started.</p>
+    <ul>
+      <li>Date: Saturday, April 15</li>
+      <li>Time: 10:00am - 12:00pm</li>
+    </ul>
+  </main>
+  <footer>
+    <button class="btn-ghost" @click="active = false">Cancel</button>
+    <button class="btn-primary">Save</button>
+  </footer>
+{% endcall %}
+
+<header class="sticky top-0 bg-background z-10 border-b">
+	<div class="flex items-center justify-between gap-x-4 px-8 py-4">
+		<nav class="flex items-center gap-x-2.5">
+			<a
+				href="{{ url_for('main.index') }}"
+				class="w-6 h-8 shrink-0 flex items-center justify-center"
+				aria-label="{{ config.APP_NAME }}"
+			>
+				<svg class="aspect-square w-full" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M170 230L170 86C170 66.1177 186.118 50 206 50L224 50C243.882 50 260 66.1177 260 86L260 104C260 123.882 243.882 140 224 140L56 140C36.1178 140 20 156.118 20 176L20 194C20 213.882 36.1178 230 56 230L74 230C93.8823 230 110 213.882 110 194L110 50" stroke="currentColor" stroke-width="24" stroke-linejoin="round"/></svg>
+			</a>
+
+			{% if current_user.is_authenticated %}
+				<div class="text-muted-foreground/25 text-xl">/</div>
+				
+				<div class="flex items-center">
+					<a href="{{ url_for('main.index') }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+						<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
+						{{ current_user.username }}
+					</a>
+					{% from "components/dropdown.html" import dropdown %}
+					{% set trigger %}
+						<svg class="w-4 h-4 text-muted-foreground opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+					{% endset %}
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+						{% include "partials/_accounts-menu.html" %}
+					{% endcall %}
+				</div>
+			{% endif %}
+
+			{% if project %}
+				<div class="text-muted-foreground/25 text-xl">/</div>
+
+				<div class="flex items-center">
+					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+						{% from "projects/components/thumbnail.html" import thumbnail %}
+						{{ thumbnail(project, size="sm") }}
+						{{ project.name }}
+					</a>
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+						{% include "partials/_projects-menu.html" %}
+					{% endcall %}
+				</div>
+			{% endif %}
+
+			{% if deployment %}
+				<div class="text-muted-foreground/25 text-xl">/</div>
+				
+				<div class="flex items-center">
+					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+						{% from "deployments/components/status.html" import status %}
+						{{ status(status=deployment.status, conclusion=deployment.conclusion, compact=True) }}
+						<span class="font-mono">{{ deployment.id[:7] }}</span>
+					</a>
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+						{% include "partials/_deployments-menu.html" %}
+					{% endcall %}
+				</div>
+			{% endif %}
+		</nav>
+
+		<nav class="flex items-center gap-x-2" aria-label="User menu">
+			<button 
+				x-data
+				@click="$store.theme.toggle()" 
+				aria-label="Toggle theme"
+				data-tooltip="Toggle theme"
+				data-tooltip-position="bottom"
+				type="button" 
+				class="btn-ghost h-8 w-8 p-0 rounded-full"
+				aria-label="Toggle theme"
+			>
+				<svg x-show="$store.theme.isDark" :aria-hidden="!$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+				<svg x-cloak x-show="!$store.theme.isDark" :aria-hidden="$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+			</button>
+
+			{% if current_user.is_authenticated %}
+				{% from "components/dropdown.html" import dropdown %}
+				{% set trigger %}
+					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
+				{% endset %}
+				{% call dropdown(trigger=trigger, trigger_class="block", menu_class="min-w-36") %}
+					<header class="px-2.5 py-1.5">
+						<span class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</span>
+						<span class="text-muted-foreground">{{ current_user.email }}</span>
+					</header>
+					<hr role="separator"/>
+					<a href="#" role="menuitem">{{ _('Account') }}</a>
+					<hr role="separator"/>
+					<a href="{{ url_for('auth.logout') }}" role="menuitem">
+						{{ _('Sign out') }}
+					</a>
+				{% endcall %}
+			{% else %}
+				<a
+					href="{{ url_for('auth.login') }}"
+					class="btn-sm-accent"
+				>{{ _('Sign in') }}</a>
+			{% endif %}
+		</nav>
+	</div>
+
+	{% if project %}
+	<nav aria-label="Secondary navigation">
+		<ul role="tablist" class="px-8 !border-b-0 -mt-2">
+			<li role="presentation">
+				<a
+					href="{{ url_for('main.project', project_name=project.name) }}"
+					role="tab"
+					aria-selected="{{ 'true' if request.path == url_for('main.project', project_name=project.name) else 'false' }}"	
+				>{{ _('Overview') }}</a>
+			</li>
+			<li role="presentation">
+				<a
+					href="{{ url_for('main.deployments', project_name=project.name) }}"
+					role="tab"
+					aria-selected="{{ 'true' if request.path.startswith(url_for('main.deployments', project_name=project.name)) else 'false' }}"
+				>{{ _('Deployments') }}</a>
+			</li>
+			<li role="presentation">
+					<a
+						href="{{ url_for('main.project_settings', project_name=project.name) }}"
+						role="tab"
+						aria-selected="{{ 'true' if request.path.startswith(url_for('main.project_settings', project_name=project.name)) else 'false' }}"
+					>Settings</a>
+				</li>
+			</ul>
+		</nav>
+	{% endif %}
+</header>
+

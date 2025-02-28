@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-EXPOSE 5000
+EXPOSE 8000
 
 # Copy dev Supervisor configuration
 COPY Docker/supervisord.app.dev.conf /etc/supervisord.conf

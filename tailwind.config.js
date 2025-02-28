@@ -53,6 +53,19 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    ...['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 
+       'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 
+       'fuchsia', 'pink', 'rose'].flatMap(color => [
+      `from-${color}-100`,
+      `to-${color}-100/50`,
+      `border-${color}-200`,
+      `dark:from-${color}-950/50`,
+      `dark:to-${color}-950`,
+      `dark:border-${color}-900`,
+      `text-${color}-500`
+    ])
+  ],
   plugins: [
     require('@tailwindcss/forms'),
   ],

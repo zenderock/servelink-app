@@ -145,3 +145,7 @@ colima start --feature docker --log-driver loki --log-opt loki-url=http://host.d
 
 `docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) -f`
 `docker-compose build runner && docker-compose down -v && docker-compose up --build --force-recreate`
+
+
+
+{ width: 1200, height: 630, name: 'social-card.png' }

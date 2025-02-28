@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container max-w-screen-lg mx-auto p-8 space-y-6">
+  <header class="flex justify-between items-center">
+    <h1 class="h1 flex items-center gap-x-2.5">
+      <a href="{{ url_for('main.project', project_name=project.name) }}">
+        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {{ thumbnail(project) }}
+      </a>
+      <span class="text-muted-foreground/25 font-normal">/</span>
+      {{ _('Settings') }}
+    </h1>
+  </header>
+
+  <div class="flex flex-row-reverse gap-x-6">
+    <nav class="sticky top-12">
+      <ul class="space-y-2">
+        <li><a href="#general" class="block truncate rounded-lg font-medium px-4 py-2 hover:bg-muted w-full">{{ _('General') }}</a></li>
+        <li><a href="#environment-variables" class="block truncate rounded-lg font-medium px-4 py-2 hover:bg-muted w-full">{{ _('Environment variables') }}</a></li>
+        <li><a href="#git" class="block truncate rounded-lg font-medium px-4 py-2 hover:bg-muted w-full">{{ _('Git') }}</a></li>
+        <li><a href="#environments" class="block truncate rounded-lg font-medium px-4 py-2 hover:bg-muted w-full">{{ _('Environments') }}</a></li>
+        <li><a href="#commands" class="block truncate rounded-lg font-medium px-4 py-2 hover:bg-muted w-full">{{ _('Commands') }}</a></li>
+      </ul>
+    </nav>
+    
+    <div class="space-y-6 w-full">
+      <section class="border rounded-xl w-full">
+        <header class="space-y-1 px-4 py-3 bg-muted/25 border-b rounded-t-xl">
+          <h2 id="general" class="font-medium">{{ _('General') }}</h2>
+          <p class="text-muted-foreground">{{ _('General settings related to this project.') }}</p>
+        </header>
+        <div class="p-4 space-y-4 form">
+          <div class="field">
+            <label for="name">{{ _('Name') }}</label>
+            <input type="text" id="name" class="input w-full" value="{{ project.name }}">
+          </div>
+          <footer class="flex justify-end">
+            <button class="btn" disabled>{{ _('Save') }}</button>
+          </footer>
+        </div>
+      </section>
+
+      <section class="border rounded-xl w-full">
+        <header class="space-y-1 px-4 py-3 bg-muted/25 border-b rounded-t-xl">
+          <h2 id="build-and-runtime" class="font-medium">{{ _('Build & Runtime') }}</h2>
+          <p class="text-muted-foreground">{{ _('Settings related to the build and runtime of the project.') }}</p>
+        </header>
+        <div class="p-4 space-y-4 form">
+          <div class="field">
+            <label for="name">{{ _('Name') }}</label>
+            <input type="text" id="name" class="input w-full" value="{{ project.name }}">
+          </div>
+          <footer class="flex justify-end">
+            <button class="btn" disabled>{{ _('Save') }}</button>
+          </footer>
+        </div>
+      </section>
+
+      <section class="border rounded-xl w-full">
+        <header class="space-y-1 px-4 py-3">
+          <h2 id="environment-variables" class="h2">{{ _('Environment variables') }}</h2>
+          <p class="text-muted-foreground">{{ _('Environment variables available at build and run time. Changes take effect only after the nextdeployment.') }}</p>
+        </header>
+        <div class="p-4 space-y-4 form">
+          <div class="field">
+            <label for="name">{{ _('Name') }}</label>
+            <input type="text" id="name" class="input w-full" value="{{ project.name }}">
+          </div>
+          <footer class="flex justify-end">
+            <button class="btn" disabled>{{ _('Save') }}</button>
+          </footer>
+        </div>
+      </section>
+
+      <section class="border rounded-xl w-full">
+        <header class="space-y-1 px-4 py-3">
+          <h2 id="git" class="h2">{{ _('Git') }}</h2>
+          <p class="text-muted-foreground">{{ _('Settings related to the connected Git repository the project is deployed from.') }}</p>
+        </header>
+        <div class="p-4 space-y-4 form">
+          <div class="field">
+            <label for="name">{{ _('Name') }}</label>
+            <input type="text" id="name" class="input w-full" value="{{ project.name }}">
+          </div>
+          <footer class="flex justify-end">
+            <button class="btn" disabled>{{ _('Save') }}</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

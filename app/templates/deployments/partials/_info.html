@@ -1,0 +1,49 @@
+<ul
+  class="flex gap-x-6 items-start text-muted-foreground"
+  {% if oob %}hx-swap-oob="true"{% endif %}
+  id="deployment-status"
+>
+  <li class="flex items-center gap-x-1" data-tooltip="{{ _('Status') }}">
+    {% from "deployments/components/status.html" import status %}
+    {{ status(status=deployment.status, conclusion=deployment.conclusion) }}
+  </li>
+  <li class="flex items-center gap-x-1" data-tooltip="{{ _('Trigger') }}">
+    <svg class="w-4 h-4 opacity-60 dark:opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+    Commit by <a href="https://github.com/{{ deployment.commit.author }}" class="hover:text-foreground transition-colors" target="_blank">@{{ deployment.commit.author }}</a>
+  </li>
+  <li class="flex items-center gap-x-1" data-tooltip="{{ _('Duration') }}">
+    <svg class="w-4 h-4 opacity-60 dark:opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+    {% from "deployments/components/duration.html" import duration %}
+    {{ duration(started_at=deployment.created_at, concluded_at=deployment.concluded_at) }}
+  </li>
+  {% if deployment.conclusion == 'succeeded' %}
+    <li class="flex items-center gap-x-1">
+      <a
+        href="{{ deployment.url }}"
+        class="flex items-center gap-x-1 text-muted-foreground hover:text-foreground transition-colors"
+        data-tooltip="{{ _('Link') }}"
+        target="_blank"
+      >
+        <svg class="w-4 h-4 opacity-60 dark:opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+        {{ deployment.hostname }}
+      </a>
+      {% if deployment.aliases %}
+        {% from "components/dropdown.html" import dropdown %}
+        {% set trigger %}+{{ deployment.aliases|length }}{% endset %}
+        {% call dropdown(trigger=trigger, trigger_class="btn-outline text-muted-foreground text-xs h-6 pl-1.5 pr-2 ml-1 rounded-full", menu_class="max-w-96") %}
+          {% for alias in deployment.aliases %}
+            <a
+              role="menuitem"
+              href="{{ alias.url }}"
+              class="hover:text-foreground transition-colors flex items-center gap-x-1 justify-end"
+              target="_blank"
+            >
+              {{ alias.hostname }}
+              <svg class="w-3 h-3 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            </a>
+          {% endfor %}
+        {% endcall %}
+      {% endif %}
+    </li>
+  {% endif %}
+</ul>

@@ -22,7 +22,7 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose Flask port
-EXPOSE 5000
+EXPOSE 8000
 
 # Copy Supervisor configuration
 COPY Docker/supervisord.app.conf /etc/supervisord.conf

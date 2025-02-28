@@ -135,7 +135,7 @@
     &:hover,
     &[aria-expanded="true"],
     &[aria-pressed="true"] {
-      @apply bg-secondary/90;
+      @apply bg-secondary/80;
     }
   }
   .btn-outline {
@@ -206,7 +206,7 @@
   .form select,
   textarea.input,
   .form textarea {
-    @apply min-h-10 text-sm bg-background border-0 px-3 py-2 outline outline-1 -outline-offset-1 outline-border rounded-lg focus:outline-2 focus:-outline-offset-2 focus:outline-primary ring-0 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed truncate;
+    @apply min-h-10 text-sm bg-background border-0 px-3 py-2 outline outline-1 -outline-offset-1 outline-border rounded-lg focus:outline-2 focus:-outline-offset-2 focus:outline-primary ring-0 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed truncate focus:border-ring ;
   }
   .input[contenteditable] {
     @apply flex items-center;
@@ -322,16 +322,16 @@
   .h4,
   .h5,
   .h6 {
-    @apply font-semibold leading-tight tracking-tight;
+    @apply font-medium leading-tight;
   }
   .h1 {
-    @apply text-3xl;
-  }
-  .h2 {
     @apply text-2xl;
   }
-  .h3 {
+  .h2 {
     @apply text-xl;
+  }
+  .h3 {
+    @apply text-lg;
   }
   .h4,
   .h5,
@@ -508,7 +508,7 @@
     @apply left-0;
   }
   .dropdown [role="menuitem"] {
-    @apply flex justify-start gap-x-2 text-foreground px-2.5 py-1.5 hover:bg-muted rounded-lg hover:no-underline transition-colors focus:bg-white/10 focus:outline-none whitespace-nowrap w-full font-medium;
+    @apply flex justify-start gap-x-2 px-2.5 py-1.5 hover:bg-muted rounded-lg hover:no-underline transition-colors focus:bg-white/10 focus:outline-none whitespace-nowrap w-full;
   }
   .dropdown [role="separator"] {
     @apply border-border -mx-1 my-1;
@@ -590,13 +590,12 @@
     @apply opacity-100;
   }
   details > summary {
-    @apply border border-border bg-background text-foreground rounded-lg font-medium cursor-pointer transition-all inline-flex items-center justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary px-4 py-2 h-10 w-full gap-x-2;
+    @apply border border-border bg-background text-foreground rounded-lg font-medium cursor-pointer transition-all inline-flex items-center justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary px-4 py-3 w-full gap-x-2;
   }
   details[open] > summary {
     @apply rounded-b-none;
   }
-  details > summary:hover,
-  details[open] > summary {
+  details > summary:hover {
     @apply bg-muted;
   }
   details > summary:before {
@@ -613,15 +612,15 @@
 /* Tabs */
 @layer components {
   ul[role="tablist"] {
-    @apply flex items-center gap-x-2 border-b border-border;
+    @apply flex items-center border-b border-border;
   }
   ul[role="tablist"] li {
     @apply flex items-center gap-x-2 -mb-[1px];
   }
   ul[role="tablist"] li [role="tab"] {
-    @apply flex items-center gap-x-2 font-medium text-muted-foreground px-4 py-2 hover:text-foreground transition-colors;
+    @apply flex items-center gap-x-2 font-medium text-muted-foreground px-3 py-2.5 hover:text-foreground transition-colors border-b-2 border-transparent;
   }
   ul[role="tablist"] li [role="tab"][aria-selected="true"] {
-    @apply text-foreground border-b-2 border-b-primary;
+    @apply text-foreground border-b-primary;
   }
 }

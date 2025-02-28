@@ -8,6 +8,7 @@ services:
     depends_on:
       - redis
       - docker-proxy
+      - openresty
     networks:
       - default
       - internal
@@ -16,10 +17,6 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DOCKER_HOST=tcp://docker-proxy:2375
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
-      - "traefik.http.services.app.loadbalancer.server.port=5000"
 
   redis:
     container_name: redis
@@ -41,32 +38,20 @@ services:
     networks:
       - internal
 
-  traefik:
-    image: traefik:v3.3.2
-    restart: always
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.endpoint=tcp://docker-proxy:2375"
-      - "--providers.docker.watch=true"
-      - "--providers.rest=true"
-      - "--providers.rest.insecure=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--api=true"
-      - "--api.dashboard=false"
-      - "--api.insecure=false"
+  openresty:
+    image: openresty/openresty:alpine
+    container_name: openresty
+    env_file:
+      - .env
+    volumes:
+      - ./Docker/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./Docker/ssl:/usr/local/openresty/nginx/conf/ssl:ro
     ports:
       - "80:80"
       - "443:443"
     networks:
       - default
       - internal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik-api.rule=Host(`api.traefik.internal`)"
-      - "traefik.http.routers.traefik-api.service=api@internal"
-      - "traefik.http.routers.traefik-api.entrypoints=web"
 
   runner:
     image: runner
@@ -74,11 +59,12 @@ services:
       context: ./Docker
       dockerfile: Dockerfile.runner
     profiles: ["build-only"]
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
 volumes:
   app-runtime:
-  loki-data:
-    name: app_loki_data
 
 networks:
   default:

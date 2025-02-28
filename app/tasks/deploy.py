@@ -1,6 +1,5 @@
-from flask import Flask
 import docker
-from app.models import Deployment
+from app.models import Deployment, Alias
 from app import create_app, db
 import socket
 from contextlib import closing
@@ -15,28 +14,6 @@ def check_port(host, port):
     """Check if a port is open on a host"""
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         return sock.connect_ex((host, port)) == 0
-    
-
-def setup_domain(deployment_id: str, subdomain: str, base_domain: str, service_name: str, priority: int = 50):
-    """
-    Setup a domain in Traefik for a deployment
-    Returns the Traefik API response
-    Raises an exception if the request fails
-    """
-    router_config = {
-        "entryPoints": ["web", "websecure"],
-        "rule": f"Host(`{subdomain}.{base_domain}`)",
-        "service": service_name,
-        "priority": priority
-    }
-    
-    response = requests.put(
-        f"http://traefik:8080/api/providers/rest/routers/{subdomain}",
-        json=router_config,
-        timeout=2
-    )
-    response.raise_for_status()
-    return response.json()
 
 
 def deploy(deployment_id: str):
@@ -53,7 +30,6 @@ def deploy(deployment_id: str):
         try:
             # Mark deployment as in-progress
             deployment.status = 'in_progress'
-            deployment.slug = f"{project.slug}-{deployment.id[:7]}.{base_domain}"
             db.session.commit()
 
             # Transform list of env var objects into dict
@@ -94,7 +70,7 @@ def deploy(deployment_id: str):
 
             # Run the container
             # TODO: Add cache for pip
-            container_name = f"runner-{deployment.id}"
+            container_name = f"runner-{deployment.id[:7]}"
             container = docker_client.containers.run(
                 name=container_name,
                 image="runner",
@@ -104,11 +80,6 @@ def deploy(deployment_id: str):
                 detach=True,
                 network="app_default",
                 labels={
-                    # "traefik.enable": "true",
-                    # f"traefik.http.routers.{deployment.id}.rule": (
-                    #     f"Host(`{deployment.slug}`)"
-                    # ),
-                    # f"traefik.http.services.{deployment.id}.loadbalancer.server.port": "8000",
                     "app.deployment_id": deployment.id,
                     "app.project_id": project.id
                 }
@@ -117,49 +88,6 @@ def deploy(deployment_id: str):
 
             # Save the container ID
             deployment.container_id = container.id
-            db.session.commit()
-
-            # Register the service in Traefik
-            service_name = f"service-{deployment.id}"
-            service_config = {
-                "loadBalancer": {
-                    "servers": [{"url": f"http://{container_name}:8000"}]
-                }
-            }
-            service_response = requests.put(
-                f"http://traefik:8080/api/providers/rest/configuration/http/services/{service_name}",
-                json=service_config,
-                timeout=2
-            )
-            service_response.raise_for_status()
-
-            # Setup branch domain
-            branch = deployment.commit['branch']
-            sanitized_branch = re.sub(r'[^a-zA-Z0-9-]', '-', branch) # Won't prevent collisions, but good enough
-            branch_subdomain = f"{project.slug}-branch-{sanitized_branch}"
-            
-            try:
-                setup_domain(deployment.id, branch_subdomain, base_domain, service_name, priority=50)
-                project.mapping["branches"][branch] = deployment.id
-            except Exception as e:
-                app.logger.error(f"Failed to setup branch domain {branch_subdomain}: {e}")
-            
-            # Setup environment domain
-            if deployment.environment == 'production':
-                env_subdomain = project.slug
-                try:
-                    setup_domain(deployment.id, env_subdomain, base_domain, service_name, priority=100)
-                    project.mapping["environments"]["production"] = deployment.id
-                except Exception as e:
-                    app.logger.error(f"Failed to setup production domain {env_subdomain}: {e}")
-            elif deployment.environment not in ['preview', None]:
-                env_subdomain = f"{project.slug}-env-{deployment.environment}"
-                try:
-                    setup_domain(deployment.id, env_subdomain, base_domain, service_name, priority=75)
-                    project.mapping["environments"][deployment.environment] = deployment.id
-                except Exception as e:
-                    app.logger.error(f"Failed to setup environment domain {env_subdomain}: {e}")
-            
             db.session.commit()
 
             # Save the build logs as we go until the deployment concludes
@@ -187,6 +115,68 @@ def deploy(deployment_id: str):
                 time.sleep(0.5)
             else:
                 raise Exception("Timeout waiting for application to start")
+
+            # Setup branch domain
+            branch = deployment.commit['branch']
+            sanitized_branch = re.sub(r'[^a-zA-Z0-9-]', '-', branch) # Won't prevent collisions, but good enough
+            branch_subdomain = f"{project.slug}-branch-{sanitized_branch}"
+            branch_hostname = f"{branch_subdomain}.{base_domain}"
+
+            try:
+                response = requests.post(
+                    'http://openresty/set-alias',
+                    json={ branch_hostname: container_name },
+                    timeout=2
+                )
+                response.raise_for_status()
+                Alias.update_or_create(
+                    subdomain=branch_subdomain,
+                    deployment_id=deployment.id,
+                    type='branch',
+                    value=branch
+                )
+            except Exception as e:
+                app.logger.error(f"Failed to setup branch alias {branch_hostname}: {e}")
+
+            # Setup environment domain
+            if deployment.environment == 'production':
+                env_subdomain = project.slug
+                env_hostname = f"{env_subdomain}.{base_domain}"
+                try:
+                    response = requests.post(
+                        'http://openresty/set-alias',
+                        json={ env_hostname: container_name },
+                        timeout=2
+                    )
+                    response.raise_for_status()
+                    Alias.update_or_create(
+                        subdomain=env_subdomain,
+                        deployment_id=deployment.id,
+                        type='environment',
+                        value=deployment.environment
+                    )
+                except Exception as e:
+                    app.logger.error(f"Failed to setup production domain {env_hostname}: {e}")
+            elif deployment.environment not in ['preview', None]:
+                env_subdomain = f"{project.slug}-env-{deployment.environment}"
+                env_hostname = f"{env_subdomain}.{base_domain}"
+                try:
+                    response = requests.post(
+                        'http://openresty/set-alias',
+                        json={ env_hostname: container_name },
+                        timeout=2
+                    )
+                    response.raise_for_status()
+                    Alias.update_or_create(
+                        subdomain=env_subdomain,
+                        deployment_id=deployment.id,
+                        type='environment',
+                        value=deployment.environment
+                    )
+                except Exception as e:
+                    app.logger.error(f"Failed to setup environment domain {env_hostname}: {e}")
+            
+            db.session.commit()
             
         except Exception as e:
             deployment.conclusion = 'failed'
@@ -195,7 +185,7 @@ def deploy(deployment_id: str):
         finally:
             # If the deployment succeeded, log a final message
             if deployment.conclusion == 'succeeded':
-                container.exec_run(f"sh -c \"echo 'Deployment succeeded. Visit {deployment.url()}' >> /proc/1/fd/1\"")
+                container.exec_run(f"sh -c \"echo 'Deployment succeeded. Visit {deployment.url}' >> /proc/1/fd/1\"")
 
             # Update the deployment in the DB
             deployment.status = 'completed'

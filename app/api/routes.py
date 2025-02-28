@@ -8,7 +8,7 @@ from sqlalchemy import update, select
 from app.models import GithubInstallation, Project, Deployment
 from datetime import datetime
 from secrets import token_urlsafe
-from app.tasks.deploy import deploy
+from app.tasks import deploy
 
 
 @bp.route('/github/repos', methods=['GET'])
@@ -21,7 +21,7 @@ def github_repos():
         account,
         query
     )
-    return render_template('project/components/repo/_list.html', repos=repos)
+    return render_template('projects/partials/_repos.html', repos=repos)
 
 
 @bp.route('/github/install')

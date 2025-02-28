@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container max-w-screen-lg mx-auto p-8 space-y-6">
+  <header class="flex justify-between items-center">
+    <h1 class="h1 flex items-center gap-x-2.5">
+      {% from "projects/components/thumbnail.html" import thumbnail %}
+      {{ thumbnail(project) }}
+      {{ project.name }}
+    </h1>
+    <!-- <form action="" method="post">
+      {{ form.hidden_tag() }}
+      {{ form.submit(class="btn h-9 px-3") }}
+    </form> -->
+
+    <div class="flex items-center gap-x-2 ml-auto">
+      {% if project.promoted_deployment %}
+        <a
+          href="{{ project.url }}"
+          class="btn-ghost h-9 px-3 gap-x-2"
+          target="_blank"
+        >
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+          {{ _('Visit') }}
+        </a>
+      {% endif %}
+    </div>
+  </header>
+
+  <section class="space-y-2">
+    {% if project.promoted_deployment %}
+      <h2 class="h4 mb-4">{{ _('Latest promoted deployment') }}</h2>
+      {% from "deployments/components/teaser.html" import teaser %}
+      {{ teaser(project.promoted_deployment) }}
+    {% endif %}
+    <h2 class="h4 font-medium mb-4">{{ _('Latest deployments') }}</h2>
+    {% from "deployments/components/list.html" import list %}
+    {{ list(deployments=deployments) }}
+  </section>
+</div>
+{% endblock %}

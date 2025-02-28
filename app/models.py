@@ -1,3 +1,4 @@
+from __future__ import annotations
 from flask import current_app
 from cryptography.fernet import Fernet
 from flask_login import UserMixin
@@ -8,6 +9,7 @@ from datetime import datetime, timezone
 import json
 from secrets import token_hex
 import re
+from app.helpers.colors import get_project_color
 
 
 class User(UserMixin, db.Model):
@@ -53,12 +55,7 @@ class GithubInstallation(db.Model):
     _token: Mapped[str] = mapped_column('token', String(2048), nullable=True)
     token_expires_at: Mapped[datetime] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(
-        SQLAEnum(
-            'active',
-            'deleted',    # Installation was deleted
-            'suspended',  # Installation was suspended
-            name='github_installation_status'
-        ),
+        SQLAEnum('active', 'deleted', 'suspended', name='github_installation_status'),
         nullable=False,
         default='active'
     )
@@ -134,6 +131,40 @@ class Project(db.Model):
             return json.loads(decrypted)
         return []
     
+    @property
+    def hostname(self) -> str:
+        return f"{self.slug}.{current_app.config['BASE_DOMAIN']}"
+    
+    @property
+    def url(self) -> str:
+        return f"{current_app.config['URL_SCHEME']}://{self.hostname}"
+    
+    @property
+    def aliases(self) -> list[str]:
+        if self.promoted_deployment:
+            return [self.promoted_deployment.aliases]
+        return []
+    
+    @property
+    def promoted_deployment(self) -> Deployment | None:
+        # TODO: add a flag for promoted deployment (rollback)
+        deployment = db.session.scalar(
+            select(Deployment)
+            .where(
+                Deployment.project_id == self.id,
+                Deployment.conclusion == 'succeeded',
+                # Deployment.environment == 'production'
+            )
+            .order_by(Deployment.created_at.desc())
+            .limit(1)
+        )
+        print(deployment.id)
+        return deployment
+
+    @property
+    def color(self) -> str:
+        return get_project_color(self.id)
+    
     @env_vars.setter
     def env_vars(self, value: list[dict[str, str]] | None):
         json_str = json.dumps(value or [])
@@ -177,7 +208,6 @@ class Deployment(db.Model):
     config: Mapped[dict] = mapped_column(JSON, nullable=False)
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
     commit: Mapped[dict] = mapped_column(JSON, nullable=False)
-    slug: Mapped[str] = mapped_column(String(63), nullable=True, unique=True)
     status: Mapped[str] = mapped_column(
         SQLAEnum('queued', 'in_progress', 'completed', name='deployment_status'),
         nullable=False,
@@ -195,6 +225,10 @@ class Deployment(db.Model):
     created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc))
     concluded_at: Mapped[datetime] = mapped_column(index=True, nullable=True)
     build_logs: Mapped[str] = mapped_column(Text, nullable=True)
+    aliases: Mapped[list['Alias']] = relationship(
+        back_populates='deployment',
+        foreign_keys='Alias.deployment_id'
+    )
 
     @property
     def env_vars(self) -> list[dict[str, str]]:
@@ -204,9 +238,43 @@ class Deployment(db.Model):
             return json.loads(decrypted)
         return []
     
-    def url(self, scheme: bool = True) -> str:
-        relative_url = f"{self.project.name}-{self.project.user.username}-{self.id[:7]}.{current_app.config['BASE_DOMAIN']}"
-        return f"{current_app.config['URL_SCHEME']}://{relative_url}" if scheme else relative_url
+    @property
+    def slug(self) -> str:
+        return f"{self.project.slug}-id-{self.id[:7]}"
+    
+    @property
+    def hostname(self) -> str:
+        return f"{self.slug}.{current_app.config['BASE_DOMAIN']}"
+    
+    @property
+    def url(self) -> str:
+        return f"{current_app.config['URL_SCHEME']}://{self.hostname}"
+    
+    @property
+    def featured_slug(self) -> str | None:
+        if not self.conclusion:
+            return None
+        # First try to find an environment alias
+        env_alias = next(filter(lambda a: a.type == 'environment', self.aliases), None)
+        if env_alias:
+            return env_alias.subdomain
+        # Then try to find a branch alias
+        branch_alias = next(filter(lambda a: a.type == 'branch', self.aliases), None)
+        if branch_alias:
+            return branch_alias.subdomain
+        return self.slug
+        
+    @property
+    def featured_hostname(self) -> str | None:
+        if not self.conclusion:
+            return None
+        return f"{self.featured_slug}.{current_app.config['BASE_DOMAIN']}"
+    
+    @property
+    def featured_url(self) -> str | None:
+        if not self.conclusion:
+            return None
+        return f"{current_app.config['URL_SCHEME']}://{self.featured_hostname}"
     
     @env_vars.setter
     def env_vars(self, value: list[dict[str, str]] | None):
@@ -259,15 +327,43 @@ class Deployment(db.Model):
         # TODO: add support for multiple environments
         # TODO: account for changes in production branch + redeploy/rollback
         if self.commit.get('branch') == self.project.repo_branch:
+            current_app.logger.info(f"Deployment {self.id} is on production branch")
             return 'production'
+        current_app.logger.info(f"Deployment {self.id} is on preview branch")
         return 'preview'
-    
-# class Subdomain(db.Model):
-#     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
-#     slug: Mapped[str] = mapped_column(String(255), nullable=False)
-#     deployment_id: Mapped[str] = mapped_column(ForeignKey(Deployment.id), index=True)
-#     deployment: Mapped[Deployment] = relationship(back_populates='urls', foreign_keys=[deployment_id])
 
-#     def __repr__(self):
-#         return f'<Url {self.url}>'
+
+class Alias(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subdomain: Mapped[str] = mapped_column(String(63), nullable=False, unique=True)
+    deployment_id: Mapped[str] = mapped_column(ForeignKey(Deployment.id), index=True)
+    deployment: Mapped[Deployment] = relationship(back_populates='aliases', foreign_keys=[deployment_id])
+    type: Mapped[str] = mapped_column(
+        SQLAEnum('branch', 'environment', name='alias_type'),
+        nullable=True
+    )
+    value: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    @property
+    def hostname(self) -> str:
+        return f"{self.subdomain}.{current_app.config['BASE_DOMAIN']}"
     
+    @property
+    def url(self) -> str:
+        return f"{current_app.config['URL_SCHEME']}://{self.hostname}"
+    
+    @classmethod
+    def update_or_create(cls, subdomain: str, deployment_id: str, type: str, value: str = None):
+        alias = cls.query.filter_by(subdomain=subdomain).first()
+        if alias:
+            alias.deployment_id = deployment_id
+            alias.value = value
+        else:
+            alias = cls(
+                subdomain=subdomain,
+                deployment_id=deployment_id,
+                type=type,
+                value=value,
+            )
+            db.session.add(alias)
+        return alias

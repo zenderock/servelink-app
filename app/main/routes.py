@@ -1,23 +1,33 @@
-from flask import render_template, redirect, url_for, flash, current_app, request, Response
+from flask import render_template, redirect, url_for, flash, current_app, request
 from flask_babel import _
 from flask_login import login_required, current_user
 from app import db
 from app.main import bp
-from app.models import Project, Deployment, GithubInstallation
+from app.models import Project, Deployment
 from sqlalchemy import select
 from app.main.forms import ProjectForm, DeploymentForm
-from app.tasks.deploy import deploy
-from datetime import datetime
+from app.tasks import deploy
 from app.helpers.github import get_installation_instance
+from app.main.decorators import load_project, load_deployment
 
 
 @bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
     projects = db.session.scalars(
-        select(Project).where(Project.user_id == current_user.id)
+        select(Project)
+        .where(Project.user_id == current_user.id)
+        .order_by(Project.updated_at.desc())
     ).all()
-    return render_template('index.html', projects=projects)
+    
+    deployments = db.session.scalars(
+        select(Deployment)
+        .join(Project)
+        .where(Project.user_id == current_user.id)
+        .order_by(Deployment.created_at.desc())
+    ).all()
+    
+    return render_template('index.html', projects=projects, deployments=deployments)
 
 
 @bp.route('/select-repo')
@@ -36,7 +46,7 @@ def select_repo():
     )
 
     return render_template(
-        'project/new/repo.html',
+        'projects/create-repo.html',
         accounts=accounts,
         selected_account=selected_account,
         repos=repos,
@@ -94,20 +104,13 @@ def add_project():
         flash(_('Project added.'))
         return redirect(url_for('main.index'))
 
-    return render_template('project/new/details.html', repo=repo,  form=form)
+    return render_template('projects/create-details.html', repo=repo,  form=form)
 
 
-# TODO: add decorator for project ownership
-@bp.route('/projects/<string:name>', methods=['GET', 'POST'])
+@bp.route('/projects/<string:project_name>', methods=['GET', 'POST'])
 @login_required
-def project(name):
-    project = db.session.scalar(
-        select(Project).where(Project.name == name).limit(1)
-    )
-    if project is None:
-        flash(_('Project not found.'), 'error')
-        return redirect(url_for('main.index'))
-    
+@load_project
+def project(project):
     form = DeploymentForm()
     if form.validate_on_submit():
         # We retrieve the latest commit from the repo
@@ -120,7 +123,7 @@ def project(name):
         # Error our if no commit (at least one)
         if len(commits) == 0:
             flash(_('No commits found for branch {project.repo_branch}.'), 'error')
-            return redirect(url_for('main.project', name=project.name))
+            return redirect(url_for('main.project', project_name=project.name))
         
         commit = commits[0]
 
@@ -155,7 +158,7 @@ def project(name):
     deployments = pagination.items
 
     return render_template(
-        'project/index.html',
+        'projects/index.html',
         project=project,
         deployments=deployments,
         pagination=pagination,
@@ -163,16 +166,10 @@ def project(name):
     )
 
 
-@bp.route('/project/<string:name>/settings')
+@bp.route('/projects/<string:project_name>/settings')
 @login_required
-def project_settings(name):
-    # project = db.session.scalar(
-    #     select(Project).where(Project.name == name)
-    # )
-    # if not project:
-    #     flash(_('Project not found.'), 'error')
-    #     return redirect(url_for('main.project', name=name))
-    
+@load_project
+def project_settings(project):
     form = ProjectForm()
     # if form.validate_on_submit():
     #     project.name = form.name.data
@@ -180,57 +177,116 @@ def project_settings(name):
     #     project.env_vars = form.env_vars.data
     #     db.session.commit()
     #     flash(_('Project updated.'))
-    #     return redirect(url_for('main.project', name=name))
+    #     return redirect(url_for('main.project', project_name=name))
     
-    return render_template('project/settings.html', project=project, form=form)
+    return render_template('projects/settings.html', project=project, form=form)
 
-
-@bp.route('/project/<string:project_name>/deployments/<string:deployment_id>/teaser')
+@bp.route('/projects/<string:project_name>/deployments')
 @login_required
-def deployment_teaser(project_name, deployment_id):
-    deployment = db.session.scalar(
-        select(Deployment).where(Deployment.id == deployment_id)
-    )
-    
-    if not deployment:
-        return _('Deployment not found.'), 404
-
-    return render_template('deployment/components/_teaser.html', deployment=deployment, project=deployment.project)
-
-
-# TODO: add decorator for project ownership
-@bp.route('/project/<string:project_name>/deployments/<string:deployment_id>')
-@login_required
-def deployment(project_name, deployment_id):
-    deployment = db.session.scalar(
-        select(Deployment).where(Deployment.id == deployment_id)
-    )
-
-    if request.headers.get('HX-Request'):
-        if not deployment:
-            return _('Deployment not found.'), 404
+@load_project
+def deployments(project):
+    form = DeploymentForm()
+    if form.validate_on_submit():
+        # We retrieve the latest commit from the repo
+        commits = current_app.github.get_repository_commits(
+            current_user.github_token,
+            project.repo_id,
+            project.repo_branch,
+            1
+        )
+        # Error our if no commit (at least one)
+        if len(commits) == 0:
+            flash(_('No commits found for branch {project.repo_branch}.'), 'error')
+            return redirect(url_for('main.project', project_name=project.name))
         
-        content = render_template('deployment/partials/logs.html', logs=deployment.parsed_logs)
+        commit = commits[0]
+
+        # We create a new deployment and associate it with the project
+        deployment = Deployment(
+            project=project,
+            trigger='user',
+            commit={
+                'branch': commit['branch'],
+                'sha': commit['sha'],
+                'author': commit['author']['login'],
+                'message': commit['commit']['message'],
+                'date': commit['commit']['author']['date']
+            },
+        )
+        db.session.add(deployment)
+        db.session.commit()
+        
+        current_app.deployment_queue.enqueue(deploy, deployment.id)
+
+        return redirect(url_for('main.deployment', project_name=project.name, deployment_id=deployment.id))
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    pagination = db.paginate(
+        project.deployments.select().order_by(Deployment.created_at.desc()),
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    deployments = pagination.items
+
+    return render_template(
+        'projects/deployments.html',
+        project=project,
+        deployments=deployments,
+        pagination=pagination,
+        form=form
+    )
+
+@bp.route('/projects/<string:project_name>/deployments/<string:deployment_id>/teaser')
+@login_required
+@load_project
+@load_deployment
+def deployment_teaser(project, deployment):
+    return render_template('deployments/partials/_teaser.html', deployment=deployment, project=deployment.project)
+
+
+@bp.route('/projects/<string:project_name>/deployments/<string:deployment_id>')
+@login_required
+@load_project
+@load_deployment
+def deployment(project, deployment):
+    if request.headers.get('HX-Request'):
+        content = render_template('deployments/partials/_logs.html', logs=deployment.parsed_logs)
         code = 200
 
         if deployment.conclusion:
             code = 286
-            content += render_template('deployment/partials/status.html', deployment=deployment, oob=True)
+            content += render_template('deployments/partials/_info.html', deployment=deployment, oob=True)
 
         return content, code
 
-    if not deployment:
-        flash(_('Deployment not found.'), 'error')
-        return redirect(url_for('main.project', name=deployment.project.name))
-
     return render_template(
-        'deployment/index.html', 
+        'deployments/index.html', 
         project=deployment.project, 
         deployment=deployment,
         logs=deployment.parsed_logs
     )
 
 
-@bp.route('/kitchen-sink')
-def kitchen_sink():
-    return render_template('kitchen-sink.html')
+@bp.app_context_processor
+def inject_latest_projects():
+    def get_latest_projects(current_project=None):
+        query = Project.query
+        if current_project:
+            query = query.filter(Project.id != current_project.id)
+        return query.order_by(Project.updated_at.desc()).limit(5).all()
+
+    return dict(get_latest_projects=get_latest_projects)
+
+
+@bp.app_context_processor
+def inject_latest_deployments():
+    def get_latest_deployments(current_deployment=None):
+        query = Deployment.query
+        if current_deployment:
+            query = query.filter(Deployment.id != current_deployment.id)
+        return query.order_by(Deployment.created_at.desc()).limit(5).all()
+
+    return dict(get_latest_deployments=get_latest_deployments)
