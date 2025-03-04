@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layouts/base.html" %}
 
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
@@ -9,7 +9,7 @@
         {{ thumbnail(project) }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
-      <a href="{{ url_for('main.deployments', project_name=project.name) }}">
+      <a href="{{ url_for('main.project_deployments', project_name=project.name) }}">
         {{ _('Deployments') }}
       </a>
     </h1>
@@ -38,11 +38,6 @@
   </header>
 
   <section class="space-y-2">
-    {% if project.promoted_deployment %}
-      <h2 class="h4 mb-4">{{ _('Latest promoted deployment') }}</h2>
-      {% set deployment = project.promoted_deployment %}
-      {% include "projects/partials/_teaser.html" %}
-    {% endif %}
     <header class="flex justify-between items-center">
       <input class="input" type="text" placeholder="Search deployments">
       <select class="input">
@@ -51,6 +46,7 @@
         <option value="failed">{{ _('Failed') }}</option>
       </select>
     </header>
+
     {% from "deployments/components/list.html" import list %}
     {{ list(deployments=deployments, pagination=pagination) }}
   </section>

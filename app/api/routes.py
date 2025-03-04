@@ -21,7 +21,7 @@ def github_repos():
         account,
         query
     )
-    return render_template('projects/partials/_repos.html', repos=repos)
+    return render_template('projects/partials/_search_repos.html', repos=repos)
 
 
 @bp.route('/github/install')

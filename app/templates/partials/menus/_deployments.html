@@ -11,6 +11,6 @@
   </a>
 {% endfor %}
 <hr role="separator"/>
-<a href="{{ url_for('main.index') }}" role="menuitem">
-  {{ _('Add new project') }}
+<a href="{{ url_for('main.project_deployments', project_name=deployment.project.name) }}" role="menuitem">
+  {{ _('All deployments') }}
 </a>

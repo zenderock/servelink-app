@@ -1,20 +1,3 @@
-{% from "components/dialog.html" import dialog %}
-{% call dialog(id="add-project-dialog", title="Add new project") %}
-  <main class="prose">
-    <p>We're excited to have you join us for our
-    upcoming event. Please arrive at the museum 
-    on time to check in and get started.</p>
-    <ul>
-      <li>Date: Saturday, April 15</li>
-      <li>Time: 10:00am - 12:00pm</li>
-    </ul>
-  </main>
-  <footer>
-    <button class="btn-ghost" @click="active = false">Cancel</button>
-    <button class="btn-primary">Save</button>
-  </footer>
-{% endcall %}
-
 <header class="sticky top-0 bg-background z-10 border-b">
 	<div class="flex items-center justify-between gap-x-4 px-8 py-4">
 		<nav class="flex items-center gap-x-2.5">
@@ -39,7 +22,7 @@
 						<svg class="w-4 h-4 text-muted-foreground opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
 					{% endset %}
 					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
-						{% include "partials/_accounts-menu.html" %}
+						{% include "partials/menus/_accounts.html" %}
 					{% endcall %}
 				</div>
 			{% endif %}
@@ -54,7 +37,7 @@
 						{{ project.name }}
 					</a>
 					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
-						{% include "partials/_projects-menu.html" %}
+						{% include "partials/menus/_projects.html" %}
 					{% endcall %}
 				</div>
 			{% endif %}
@@ -69,7 +52,7 @@
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
 					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
-						{% include "partials/_deployments-menu.html" %}
+						{% include "partials/menus/_deployments.html" %}
 					{% endcall %}
 				</div>
 			{% endif %}
@@ -116,32 +99,7 @@
 		</nav>
 	</div>
 
-	{% if project %}
-	<nav aria-label="Secondary navigation">
-		<ul role="tablist" class="px-8 !border-b-0 -mt-2">
-			<li role="presentation">
-				<a
-					href="{{ url_for('main.project', project_name=project.name) }}"
-					role="tab"
-					aria-selected="{{ 'true' if request.path == url_for('main.project', project_name=project.name) else 'false' }}"	
-				>{{ _('Overview') }}</a>
-			</li>
-			<li role="presentation">
-				<a
-					href="{{ url_for('main.deployments', project_name=project.name) }}"
-					role="tab"
-					aria-selected="{{ 'true' if request.path.startswith(url_for('main.deployments', project_name=project.name)) else 'false' }}"
-				>{{ _('Deployments') }}</a>
-			</li>
-			<li role="presentation">
-					<a
-						href="{{ url_for('main.project_settings', project_name=project.name) }}"
-						role="tab"
-						aria-selected="{{ 'true' if request.path.startswith(url_for('main.project_settings', project_name=project.name)) else 'false' }}"
-					>Settings</a>
-				</li>
-			</ul>
-		</nav>
+	{% if secondary_nav_template %}
+		{% include secondary_nav_template %}
 	{% endif %}
 </header>
-

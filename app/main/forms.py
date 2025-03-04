@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SubmitField, FieldList, FormField, Form
+from wtforms import StringField, IntegerField, SelectField, SubmitField, FieldList, FormField, Form, BooleanField
 from wtforms.validators import ValidationError, DataRequired, Length, Regexp
 from sqlalchemy import select
 from flask_babel import _, lazy_gettext as _l
@@ -29,7 +29,20 @@ class ProjectForm(FlaskForm):
     ])
     repo_id = IntegerField(_l('Repo ID'), validators=[DataRequired()])
     repo_branch = SelectField(_l('Branch'), choices=[], validators=[DataRequired(), Length(min=1, max=255)])
-    root_directory = StringField(_l('Root directory'))
+    framework = SelectField(_l('Framework presets'), choices=[('flask', 'Flask'), ('django', 'Django'), ('fastapi', 'FastAPI'), ('python', 'Python')], validators=[DataRequired(), Length(min=1, max=255)])
+    root_directory = StringField(_l('Root directory'), validators=[
+        Length(max=255, message=_('Root directory cannot exceed 255 characters')),
+        Regexp(
+            r'^[a-zA-Z0-9_\-./]*$',
+            message=_('Root directory can only contain letters, numbers, dots, hyphens, underscores, and forward slashes')
+        )
+    ])
+    use_custom_build_command = BooleanField(_l('Custom build command'), default=False)
+    use_custom_pre_deploy_command = BooleanField(_l('Custom pre-deploy command'), default=False)
+    use_custom_start_command = BooleanField(_l('Custom start command'), default=False)
+    build_command = StringField(_l('Build command'))
+    pre_deploy_command = StringField(_l('Pre-deploy command'))
+    start_command = StringField(_l('Start command'))
     env_vars = FieldList(FormField(EnvVarForm))
     submit = SubmitField(_l('Save'))
 
@@ -42,9 +55,17 @@ class ProjectForm(FlaskForm):
 
     def validate_root_directory(self, field):
         if field.data:
-            path = field.data.strip()
-            if path.startswith('/') or '..' in path:
-                raise ValidationError(_l('Invalid path: must be relative to repository root'))
+            # Normalize the path
+            path = field.data.strip().strip('/')
+
+            if '..' in path or '/./' in path or '/../' in path:
+                raise ValidationError(_('Invalid path: must be a valid subdirectory relative to repository root'))
+            
+            if '//' in path:
+                raise ValidationError(_('Invalid path: cannot contain consecutive slashes'))
+            
+            # Store the normalized path
+            field.data = path
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
         super().process(formdata, obj, data, **kwargs)
@@ -55,6 +76,14 @@ class ProjectForm(FlaskForm):
                 entry for entry in self.env_vars.entries
                 if entry.data.get('key', '').strip() or entry.data.get('value', '').strip()
             ]
+            
+            # Set command fields to None if custom command is not enabled
+            if not self.use_custom_build_command.data:
+                self.build_command.data = None
+            if not self.use_custom_pre_deploy_command.data:
+                self.pre_deploy_command.data = None
+            if not self.use_custom_start_command.data:
+                self.start_command.data = None
 
 class DeploymentForm(FlaskForm):
     submit = SubmitField(_l('Deploy'))

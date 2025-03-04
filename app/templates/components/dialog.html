@@ -1,11 +1,34 @@
 {% macro dialog(id=None, trigger=None, title=None, trigger_class=None, modal_class=None, active=False) %}
 <span
-  x-data="{ active: {{ 'true' if active else 'false' }} }"
+  x-data="{
+    active: {{ 'true' if active else 'false' }},
+    open() {
+      if (!this.active) {
+        this.active = true;
+        this.$nextTick(() => this.$el.dispatchEvent(new CustomEvent('dialog:opened', { bubbles: true })));
+      }
+    },
+    close() {
+      if (this.active) {
+        this.active = false;
+        this.$el.dispatchEvent(new CustomEvent('dialog:closed', { bubbles: true }));
+      }
+    },
+    toggle() {
+      this.active ? this.close() : this.open();
+    }
+  }"
   {% if id %}
   id="{{ id }}"
   x-init="
     if (!$store.dialogInitialized) {
-      Alpine.magic('dialog', () => id => Alpine.$data(document.querySelector('#' + id)).active = true);
+      Alpine.magic('dialog', () => (id, action = 'open') => {
+        const dialog = Alpine.$data(document.querySelector('#' + id));
+        if (action === 'open') dialog.open();
+        else if (action === 'close') dialog.close();
+        else if (action === 'toggle') dialog.toggle();
+        return dialog.active;
+      });
       $store.dialogInitialized = true;
     }
   "
@@ -13,8 +36,8 @@
 >
   {% if trigger %}
   <button
-    @click="active = true"
-    aria-controls="{{ id }}-dialog"
+    @click="open()"
+    {% if id %}aria-controls="{{ id }}-dialog"{% endif %}
     aria-expanded="false"
     :aria-expanded="active"
     {% if trigger_class %}class="{{ trigger_class }}"{% endif %}
@@ -24,8 +47,8 @@
   {% endif %}
 
   <div
-    @click="$event.target === $el && (active = false)"
-    @keydown.escape.window="active && (active = false)"
+    @click="$event.target === $el && close()"
+    @keydown.escape.window="active && close()"
     x-cloak
     role="dialog"
     inert
@@ -50,7 +73,7 @@
           {{ title | safe }}
         </h2>
         <button
-          @click="active = false"
+          @click="close()"
           aria-label="Close dialog"
         >
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

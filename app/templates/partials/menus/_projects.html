@@ -11,6 +11,6 @@
   </a>
 {% endfor %}
 <hr role="separator"/>
-<button type="button" @click="$dialog('add-project-dialog')" role="menuitem">
+<a href="{{ url_for('main.new_project') }}" role="menuitem">
   {{ _('Add new project') }}
-</button>
+</a>

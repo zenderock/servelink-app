@@ -28,11 +28,15 @@
   </a>
 
   {% if display_project %}
-    <span class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Project') }}">
+    <a
+      href="{{ url_for('main.project', project_name=deployment.project.name) }}"
+      class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
+      data-tooltip="{{ _('Project') }}"
+    >
       {% from "projects/components/thumbnail.html" import thumbnail %}
       {{ thumbnail(deployment.project, size='sm') }}
       {{ deployment.project.name }}
-    </span>
+    </a>
   {% endif %}
 
   <div class="flex items-center gap-x-2 text-muted-foreground whitespace-nowrap">
@@ -40,17 +44,28 @@
   </div>
 
   <span class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Environment') }}">
-    <svg class="w-4 h-4 shrink-0 opacity-60 dark:opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+    <svg class="w-4 h-4 shrink-0 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
     {{ deployment.environment }}
   </span>
 
+  
   <a
-    class="flex items-center gap-x-1 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
+    class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
+    href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.repo.branch }}"
+    target="_blank"
+    data-tooltip="{{ _('Branch') }}"
+  >
+    <svg class="w-4 h-4 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+    {{ deployment.repo.branch }}
+  </a>
+
+  <a
+    class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
     href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"
     target="_blank"
     data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit.sha[:7]) }}"
   >
-    <svg class="w-4 h-4 shrink-0 opacity-60 dark:opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></svg>
+    <svg class="w-4 h-4 shrink-0 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></svg>
     <span class="truncate">{{ deployment.commit.message }}</span>
   </a>
 

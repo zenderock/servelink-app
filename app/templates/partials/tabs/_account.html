@@ -1,0 +1,25 @@
+<nav aria-label="Secondary navigation">
+  <ul role="tablist" class="px-8 !border-b-0 -mt-2">
+    <li role="presentation">
+      <a
+        href="{{ url_for('main.index') }}"
+        role="tab"
+        aria-selected="{{ 'true' if request.path == url_for('main.index') else 'false' }}"	
+      >{{ _('Overview') }}</a>
+    </li>
+    <li role="presentation">
+      <a
+        href="{{ url_for('main.index') }}"
+        role="tab"
+        aria-selected="{{ 'false' if request.path.startswith(url_for('main.index')) else 'false' }}"
+      >{{ _('Projects') }}</a>
+    </li>
+    <li role="presentation">
+      <a
+        href="{{ url_for('main.index') }}"
+        role="tab"
+        aria-selected="{{ 'false' if request.path.startswith(url_for('main.index')) else 'false' }}"
+      >{{ _('Settings') }}</a>
+    </li>
+  </ul>
+</nav>

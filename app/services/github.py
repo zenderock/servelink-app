@@ -93,7 +93,9 @@ class GitHub:
             'https://api.github.com/search/repositories',
             params={
                 'q': f"{keywords} in:name org:{owner} fork:true".strip(),
-                'per_page': per_page
+                'per_page': per_page,
+                'sort': 'updated',
+                'order': 'desc'
             },
             headers={'Authorization': f'Bearer {user_access_token}'}
         )

@@ -27,57 +27,51 @@ def index():
         .order_by(Deployment.created_at.desc())
     ).all()
     
-    return render_template('index.html', projects=projects, deployments=deployments)
+    return render_template('pages/index.html', projects=projects, deployments=deployments)
 
 
-@bp.route('/select-repo')
+@bp.route('/new-project', methods=['GET', 'POST'])
 @login_required
-def select_repo():
+def new_project():
     installations = current_app.github.get_user_installations(current_user.github_token)
     accounts = [installation['account']['login'] for installation in installations]
     selected_account = request.args.get('account') or (accounts[0] if accounts else None)
     
-    query = request.args.get('query', '')
-    # TODO: add error handling?
-    repos = current_app.github.search_user_repositories(
-        current_user.github_token,
-        selected_account,
-        query
-    )
-
     return render_template(
-        'projects/create-repo.html',
+        'projects/pages/new/repo.html',
         accounts=accounts,
-        selected_account=selected_account,
-        repos=repos,
-        query=query
+        selected_account=selected_account
     )
 
 
-@bp.route('/add-project', methods=['GET', 'POST'])
+@bp.route('/new-project-details', methods=['GET', 'POST'])
 @login_required
-def add_project():
+def new_project_details():
     repo_id = request.args.get('repo_id')
     if not repo_id:
         flash(_('You must select a repository first.'))
-        return redirect(url_for('main.select_repo'))
+        return redirect(url_for('main.new_project'))
     
     # Make sure the repo suggested is accessible to the user
     try:
         repo = current_app.github.get_repository(current_user.github_token, repo_id)
     except Exception as e:
         flash("You do not have access to this repository.")
-        return redirect(url_for('main.select_repo'))
+        return redirect(url_for('main.new_project'))
     
     defaults = {
         'repo_id': repo.get('id'),
-        'name': repo.get('name')
+        'name': repo.get('name'),
+        'repo_branch': repo.get('default_branch')
     }
     form = ProjectForm(request.form or None, **defaults)
+    
     branches = current_app.github.get_repository_branches(current_user.github_token, repo_id)
     form.repo_branch.choices = [(branch['name'], branch['name']) for branch in branches]
+    
     if form.errors:
         print(form.errors)
+    
     if form.validate_on_submit():
         installation = current_app.github.get_repo_installation(repo.get('full_name'))
         # We get the installation instance as this force create/update the token
@@ -104,7 +98,7 @@ def add_project():
         flash(_('Project added.'))
         return redirect(url_for('main.index'))
 
-    return render_template('projects/create-details.html', repo=repo,  form=form)
+    return render_template('projects/pages/new/details.html', repo=repo,  form=form)
 
 
 @bp.route('/projects/<string:project_name>', methods=['GET', 'POST'])
@@ -158,7 +152,7 @@ def project(project):
     deployments = pagination.items
 
     return render_template(
-        'projects/index.html',
+        'projects/pages/index.html',
         project=project,
         deployments=deployments,
         pagination=pagination,
@@ -179,12 +173,13 @@ def project_settings(project):
     #     flash(_('Project updated.'))
     #     return redirect(url_for('main.project', project_name=name))
     
-    return render_template('projects/settings.html', project=project, form=form)
+    return render_template('projects/pages/settings.html', project=project, form=form)
+
 
 @bp.route('/projects/<string:project_name>/deployments')
 @login_required
 @load_project
-def deployments(project):
+def project_deployments(project):
     form = DeploymentForm()
     if form.validate_on_submit():
         # We retrieve the latest commit from the repo
@@ -232,7 +227,7 @@ def deployments(project):
     deployments = pagination.items
 
     return render_template(
-        'projects/deployments.html',
+        'projects/pages/deployments.html',
         project=project,
         deployments=deployments,
         pagination=pagination,
@@ -263,11 +258,26 @@ def deployment(project, deployment):
         return content, code
 
     return render_template(
-        'deployments/index.html', 
+        'deployments/pages/index.html', 
         project=deployment.project, 
         deployment=deployment,
         logs=deployment.parsed_logs
     )
+
+
+@bp.app_context_processor
+def inject_secondary_nav():
+    def get_secondary_nav():
+        endpoint = request.endpoint
+
+        if endpoint in ['main.index', 'main.projects', 'main.settings']:
+            return 'partials/tabs/_account.html'
+        elif endpoint in ['main.project', 'main.project_deployments', 'main.project_settings', 'main.deployment']:
+            return 'partials/tabs/_project.html'
+
+        return None
+    
+    return dict(secondary_nav_template=get_secondary_nav())
 
 
 @bp.app_context_processor
@@ -290,3 +300,10 @@ def inject_latest_deployments():
         return query.order_by(Deployment.created_at.desc()).limit(5).all()
 
     return dict(get_latest_deployments=get_latest_deployments)
+
+
+# TO REMOVE
+
+@bp.route('/kitchen-sink')
+def kitchen_sink():
+    return render_template('kitchen-sink.html')
