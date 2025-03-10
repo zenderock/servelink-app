@@ -90,7 +90,7 @@ def deploy(deployment_id: str):
             deployment.container_id = container.id
             db.session.commit()
 
-            # Save the build logs as we go until the deployment concludes
+            # Wait for the deployment to conclude and save logs as we go
             start_time = time.time()
             timeout = 90
             
@@ -186,8 +186,9 @@ def deploy(deployment_id: str):
             # If the deployment succeeded, log a final message
             if deployment.conclusion == 'succeeded':
                 container.exec_run(f"sh -c \"echo 'Deployment succeeded. Visit {deployment.url}' >> /proc/1/fd/1\"")
-
-            # Update the deployment in the DB
+            
+            # Update the deployment & project in the DB
+            project.updated_at = datetime.now(timezone.utc)
             deployment.status = 'completed'
             deployment.concluded_at = datetime.now(timezone.utc)
             if container:
@@ -196,6 +197,7 @@ def deploy(deployment_id: str):
                     stderr=True,
                     timestamps=True,
                 ).decode('utf-8')
+
             db.session.commit()
 
             app.logger.info(f'Deployment {deployment.id} completed with conclusion: {deployment.conclusion}')

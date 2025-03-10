@@ -1,25 +1,31 @@
 {% macro status(status=None, conclusion=None, compact=False) %}
   {% if conclusion %}
     {% if conclusion == 'succeeded' %}
-      <svg class="w-4 h-4 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-      {% if not compact %}<span class="text-success">{{ _('Succeeded') }}</span>{% endif %}
-    {% elif conclusion == 'failed' %}
-      <svg class="w-4 h-4 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-      {% if not compact %}<span class="text-danger">{{ _('Failed') }}</span>{% endif %}
-    {% else %}
-      <span class="bg-muted rounded-full flex items-center justify-center w-4 h-4 text-muted-foreground">
-        <svg class="w-2 h-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      <span class="text-success flex items-center gap-x-2">
+        {% include "icons/circle-check.svg" %}
+        {% if not compact %}{{ _('Succeeded') }}{% endif %}
       </span>
-      {% if not compact %}
-        {% if conclusion == 'skipped' %}
-          {{ _('Skipped') }}
-        {% else %}
-          {{ _('Canceled') }}
+    {% elif conclusion == 'failed' %}
+      <span class="text-danger flex items-center gap-x-2">
+        {% include "icons/circle-x.svg" %}
+        {% if not compact %}{{ _('Failed') }}{% endif %}
+      </span>
+    {% else %}
+      <span class="text-muted-foreground">
+        {% include "icons/circle-x.svg" %}
+        {% if not compact %}
+          {% if conclusion == 'skipped' %}
+            {{ _('Skipped') }}
+          {% else %}
+            {{ _('Canceled') }}
+          {% endif %}
         {% endif %}
-      {% endif %}
+      </span>
     {% endif %}
   {% else %}
-    <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
-    {% if not compact %}{{ _('In progress') }}{% endif %}
+    <span class="text-muted-foreground flex items-center gap-x-2">
+      {% include "icons/loader.svg" %}
+      {% if not compact %}{{ _('In progress') }}{% endif %}
+    </span>
   {% endif %}
 {% endmacro %}

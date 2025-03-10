@@ -1,0 +1,90 @@
+{% macro render_env_vars(form) %}
+<div
+  class="space-y-2"
+  x-data="{
+    env_vars: [
+      {% if form.env_vars.data %}
+        {% for env_var in form.env_vars.data %}
+          {
+            key: '{{ env_var.key }}',
+            value: '{{ env_var.value }}'
+          }{{ ',' if not loop.last }}
+        {% endfor %}
+      {% else %}
+        { key: '', value: '' }
+      {% endif %}
+    ],
+    env_vars_errors: [
+      {% if form.env_vars.errors %}
+        {% for error in form.env_vars.errors %}
+          {
+            key: {{ error.key|default([]) }},
+            value: {{ error.value|default([]) }}
+          }{{ ',' if not loop.last }}
+        {% endfor %}
+      {% endif %}
+    ],
+    env_vars_list_key: 0
+  }"
+>
+  <div class="flex gap-x-2 border-b border-border/50 pb-2">
+    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Key') }}</div>
+    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Value') }}</div>
+    <div class="shrink-0 w-10"></div>
+  </div>
+  <template x-for="(env_var, env_var_index) in env_vars" :key="`${env_vars_list_key}-${env_var_index}`">
+    <div class="flex gap-x-2 items-start">
+      <div class="field w-full">
+        <input
+          class="w-full font-mono"
+          type="text"
+          :name="'env_vars-' + env_var_index + '-key'"
+          x-model="env_var.key"
+          :aria-invalid="env_vars_errors[env_var_index]?.key.length > 0"
+          pattern="[A-Za-z_][A-Za-z0-9_]*"
+          placeholder="{{ _('e.g. MY_VAR') }}"
+        >
+        <template x-for="(error, error_index) in env_vars_errors[env_var_index]?.key" :key="error_index">
+          <p class="text-danger text-xs font-medium" x-text="error"></p>
+        </template>
+      </div>
+      <div class="field w-full">
+        <div
+          contenteditable="plaintext-only"
+          class="input font-mono !py-2.5"
+          @input="env_var.value = $event.target.textContent"
+          x-init="$el.textContent = env_var.value"
+          :aria-invalid="env_vars_errors[env_var_index]?.value.length > 0"
+        ></div>
+        <textarea
+          :name="'env_vars-' + env_var_index + '-value'"
+          x-model="env_var.value"
+          hidden
+        ></textarea>
+        <template x-for="(error, error_index) in env_vars_errors[env_var_index]?.value" :key="error_index">
+          <p class="text-danger text-xs font-medium" x-text="error"></p>
+        </template>
+      </div>
+      <div class="shrink-0">
+        <button
+          class="btn-ghost w-10 p-0"
+          type="button"
+          @click="env_vars.splice(env_var_index, 1); env_vars_errors.splice(env_var_index, 1); env_vars_list_key++"
+          aria-label="Remove"
+          data-tooltip="Remove"
+        >
+          {% include "icons/x.svg" %}
+        </button>
+      </div>
+    </div>
+  </template>
+  <button
+    class="btn-outline h-8 px-2.5 gap-x-2"
+    type="button"
+    @click="env_vars.push({ key: '', value: '' })"
+  >
+    {% include "icons/plus.svg" %}
+    {{ _('Add variable') }}
+  </button>
+</div>
+{% endmacro %}

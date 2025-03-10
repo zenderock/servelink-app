@@ -1,0 +1,68 @@
+{% from "components/dialog.html" import dialog %}
+{% call dialog(trigger=trigger, id="dialog-repo-select", title="Deploy", trigger_class="btn-outline font-normal px-3") %}
+  <div hx-get="{{ url_for('main.repo_select') }}" hx-trigger="dialog:opened from:#dialog-repo-select"></div>
+{% endcall %}
+
+<form
+  method="POST"
+  action=""
+  hx-post=""
+  x-data="{ changed: false }"
+  @input="changed = true"
+  @change="changed = true"
+  hx-indicator="next .htmx-indicator"
+>
+  {{ general_form.hidden_tag() }}
+  <input type="hidden" name="form_id" value="general_form">
+  <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
+    <div>
+      <h2 class="font-medium">{{ _('General') }}</h2>
+      <p class="text-muted-foreground">{{ _('General settings for the project including the Git repository.') }}</p>
+    </div>
+    <button
+      class="btn ml-auto"
+      :disabled="!changed"
+    >{{ _('Save') }}</button>
+  </header>
+  
+  <div class="p-4 space-y-6">    
+    <div class="field">
+      {{ general_form.name.label() }}
+      {{ general_form.name(class="input w-full") }}
+    </div>
+  
+    <div class="field">
+      <label for="name">{{ _('Avatar') }}</label>
+      <div class="flex items-center gap-x-2">
+        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {{ thumbnail(project, size="xl") }}
+        <button class="btn-outline h-8 px-2.5">
+          {% include "icons/arrow-up-from-line.svg" %}
+          {{ _('Upload avatar') }}
+        </button>
+      </div>
+    </div>
+  
+    <div class="field">
+      <label for="name">{{ _('Git repository') }}</label>
+      <button
+        type="button"
+        class="btn-outline font-normal px-3 flex items-center gap-x-2"
+        @click="$dialog('dialog-repo-select', 'open')"
+      >
+        {{ project.repo_full_name }}
+        <span class="text-muted-foreground">
+          {% include "icons/chevrons-up-down.svg" %}
+        </span>
+      </button>
+      
+    </div>
+  </div>
+</form>
+
+<div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+  <div class="flex items-center gap-x-2 text-muted-foreground">
+    {% include "icons/loader.svg" %}
+    {{ _('Saving...') }}
+  </div>
+</div>

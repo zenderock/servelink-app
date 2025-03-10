@@ -5,13 +5,13 @@
   'canceled': _('Status: Canceled'),
   'skipped': _('Status: Skipped')
 } %}
-<article
+<!-- <article
   class="flex gap-x-6 items-center w-full"
   {% if not deployment.conclusion %}
     hx-get="{{ url_for('main.deployment_teaser', project_name=project.name, deployment_id=deployment.id) }}"
     hx-trigger="every 1s"
   {% endif %}
->
+> -->
   <span
     data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
     data-tooltip-position="top-left"
@@ -43,11 +43,10 @@
     {{ deployment.created_at | timeago }}
   </div>
 
-  <span class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Environment') }}">
-    <svg class="w-4 h-4 shrink-0 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+  <span class="flex items-center gap-x-2 text-muted-foreground capitalize" data-tooltip="{{ _('Environment') }}">
+    <span class="inline-block rounded h-2.5 w-2.5 bg-purple-400 dark:bg-purple-600  shrink-0"></span>
     {{ deployment.environment }}
   </span>
-
   
   <a
     class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -55,7 +54,9 @@
     target="_blank"
     data-tooltip="{{ _('Branch') }}"
   >
-    <svg class="w-4 h-4 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+    <span class="opacity-50 dark:opacity-60">
+      {% include "icons/git-branch.svg" %}
+    </span>
     {{ deployment.repo.branch }}
   </a>
 
@@ -65,24 +66,26 @@
     target="_blank"
     data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit.sha[:7]) }}"
   >
-    <svg class="w-4 h-4 shrink-0 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></svg>
+    <span class="opacity-50 dark:opacity-60">
+      {% include "icons/git-commit.svg" %}
+    </span>
     <span class="truncate">{{ deployment.commit.message }}</span>
   </a>
 
   <div class="flex items-center ml-auto">
     {% if deployment.conclusion %}
-      <a href="{{ deployment.featured_url }}" class="btn-ghost w-9 h-9 px-0" target="_blank" data-tooltip="{{ _('Visit') }}">
-        <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+      <a href="{{ deployment.featured_url }}" class="btn-ghost w-8 h-8 px-0" target="_blank" data-tooltip="{{ _('Visit') }}">
+        {% include "icons/link.svg" %}
       </a>
     {% endif %}
 
     {% from "components/dropdown.html" import dropdown %}
     {% set trigger %}
-      <svg class="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      {% include "icons/ellipsis.svg" %}
     {% endset %}
-    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-9 h-9 px-0", menu_class="min-w-36" ) %}
-      {% include "deployments/partials/_menu.html" %}
+    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-8 h-8 px-0", menu_class="min-w-36" ) %}
+      {% include "deployments/partials/_options.html" %}
     {% endcall %}
   </div>
-</article>
+<!-- </article> -->
 {% endmacro %}

@@ -1,4 +1,11 @@
 COLORS = [
+    'blue',
+    'indigo',
+    'violet',
+    'purple',
+    'fuchsia',
+    'pink',
+    'rose',
     'red',
     'orange',
     'amber',
@@ -9,13 +16,7 @@ COLORS = [
     'teal',
     'cyan',
     'sky',
-    'blue',
-    'indigo',
-    'violet',
-    'purple',
-    'fuchsia',
-    'pink',
-    'rose'
+    'neutral'
 ]
 
 def get_project_color(id: str) -> str:

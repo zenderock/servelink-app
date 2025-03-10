@@ -1,0 +1,169 @@
+{% macro render_environments(form, colors) %}
+{% from "components/dropdown.html" import dropdown %}
+{% from "components/dialog.html" import dialog %}
+<div
+  class="space-y-2"
+  x-data='{
+    colors: {{ colors|tojson|safe }},
+    prodEnvColor: "{{ form.prod_environment_color.data or colors[0] }}",
+    customEnvs: {{
+      form.custom_environments.data|tojson|safe if form.custom_environments.data
+      else '[]'
+    }},
+    customEnvsErrors: {{
+      form.custom_environments.errors|tojson|safe if form.custom_environments.errors
+      else '[]'
+    }},
+    customEnvsListKey: 0,
+    moveUp(index) {
+      if (index > 0) {
+        [this.customEnvs[index], this.customEnvs[index - 1]] = 
+          [this.customEnvs[index - 1], this.customEnvs[index]];
+        
+        [this.customEnvsErrors[index], this.customEnvsErrors[index - 1]] = 
+          [this.customEnvsErrors[index - 1], this.customEnvsErrors[index]];
+      }
+    },
+    moveDown(index) {
+      if (index < this.customEnvs.length - 1) {
+        [this.customEnvs[index], this.customEnvs[index + 1]] = 
+          [this.customEnvs[index + 1], this.customEnvs[index]];
+        
+        [this.customEnvsErrors[index], this.customEnvsErrors[index + 1]] = 
+          [this.customEnvsErrors[index + 1], this.customEnvsErrors[index]];
+      }
+    },
+    getNewColor() {
+      const index = this.customEnvs.length;
+      const colorIndex = (7 * (index + 1)) % this.colors.length;
+      return this.colors[colorIndex];
+    },
+    addEnvironment() {
+      this.customEnvs.push({ name: "", slug: "", match: "", color: this.getNewColor() });
+      this.customEnvsErrors.push({ name: [], slug: [], match: [] });
+      this.customEnvsListKey++;
+    },
+    remove(index) {
+      this.customEnvs.splice(index, 1);
+      this.customEnvsErrors.splice(index, 1);
+      this.customEnvsListKey++;
+    }
+  }'
+>
+  <div class="flex gap-x-2 border-b border-border/50 pb-2">
+    <div class="shrink-0 w-10"></div>
+    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Name') }}</div>
+    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Identifier') }}</div>
+    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Branch pattern') }}</div>
+    <div class="shrink-0 w-20"></div>
+  </div>
+
+  <div class="flex gap-x-2">
+    {% set trigger %}
+      <span class="inline-block rounded h-4 w-4 shrink-0" :class="`bg-${prodEnvColor}-400 dark:bg-${prodEnvColor}-600`"></span>
+    {% endset %}
+    {% call dropdown(trigger=trigger, id="dropdown-example", trigger_class="btn-ghost w-10 p-0", menu_position="top-left") %}
+      <div class="grid grid-cols-6 gap-2">
+        {% for color in colors %}
+          <button
+            class="w-8 h-8 p-0"
+            :class="prodEnvColor === '{{ color }}' ? 'bg-muted' : ''"
+            aria-label="{{ color }}"
+            @click="prodEnvColor = '{{ color }}'"
+            type="button"
+            role="menuitem"
+          >
+            <span class="inline-block rounded h-4 w-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
+          </button>
+        {% endfor %}
+      </div>
+    {% endcall %}
+    {{ form.prod_environment_color(
+      class="hidden",
+      **{':value': 'prodEnvColor'}
+    ) }}
+    <div class="flex-1">
+      <input type="text" name="name" value="{{ _('Production') }}" class="w-full box-border" disabled>
+    </div>
+    <div class="flex-1">
+      <input type="text" name="name" value="production" class="w-full box-border font-mono" disabled>
+    </div>
+    <div class="flex-1">
+      {{ form.prod_environment_branch(
+        class="w-full"
+      ) }}
+    </div>
+    <div class="w-20 shrink-0"></div>
+  </div>
+
+  <div class="space-y-2">
+    <template x-for="(environment, environmentIndex) in customEnvs" :key="environmentIndex">
+      <div class="flex gap-x-2">
+        {% set trigger %}
+          <span class="inline-block rounded h-4 w-4 shrink-0" :class="`bg-${environment.color}-400 dark:bg-${environment.color}-600`"></span>
+        {% endset %}
+        {% call dropdown(trigger=trigger, id="dropdown-example", trigger_class="btn-ghost w-10 p-0", menu_position="top-left") %}
+          <div class="grid grid-cols-6 gap-2">
+            {% for color in colors %}
+              <button
+                class="w-8 h-8 p-0"
+                :class="environment.color === '{{ color }}' ? 'bg-muted' : ''"
+                aria-label="{{ color }}"
+                @click="environment.color = '{{ color }}'"
+                type="button"
+                role="menuitem"
+              >
+                <span class="inline-block rounded h-4 w-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
+              </button>
+          {% endfor %}
+          </div>
+        {% endcall %}
+        <input type="text" name="name" x-model="environment.name" class="w-full">
+        <input type="text" name="name" x-model="environment.slug" class="w-full font-mono">
+        <input type="text" name="name" x-model="environment.branch" class="w-full font-mono">
+        <div class="w-20 shrink-0 flex items-center justify-center">
+          <div class="shrink-0 flex flex-col">
+            <button
+              class="btn-ghost w-10 h-5 p-0"
+              aria-label="{{ _('Move up') }}"
+              data-tooltip="{{ _('Move up') }}"
+              :disabled="environmentIndex === 0"
+              @click="moveUp(environmentIndex)"
+            >
+              {% include "icons/chevron-up.svg" %}
+            </button>
+            <!-- If last item, disable the button -->
+            <button
+              class="btn-ghost w-10 h-5 p-0"
+              aria-label="{{ _('Move down') }}"
+              data-tooltip="{{ _('Move down') }}"
+              :disabled="environmentIndex === customEnvs.length - 1"
+              @click="moveDown(environmentIndex)"
+            >
+              {% include "icons/chevron-down.svg" %}
+            </button>
+          </div>
+          <button
+            class="btn-ghost w-10 p-0"
+            type="button"
+            @click="remove(environmentIndex)"
+            aria-label="{{ _('Remove') }}"
+            data-tooltip="{{ _('Remove') }}"
+          >
+            {% include "icons/x.svg" %}
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <button
+      class="btn-outline h-8 px-2.5 gap-x-2"
+      type="button"
+      @click="addEnvironment"
+    >
+      {% include "icons/plus.svg" %}
+      {{ _('Add environment') }}
+    </button>
+  </div>
+</div>
+{% endmacro %}

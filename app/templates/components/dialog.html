@@ -1,5 +1,5 @@
-{% macro dialog(id=None, trigger=None, title=None, trigger_class=None, modal_class=None, active=False) %}
-<span
+{% macro dialog(id=None, trigger=None, title=None, trigger_class=None, dialog_class=None, active=False) %}
+<div
   x-data="{
     active: {{ 'true' if active else 'false' }},
     open() {
@@ -60,8 +60,8 @@
     {% endif %}
   >
     <article
-      {% if modal_class %}
-      class="{{ modal_class }}"
+      {% if dialog_class %}
+      class="{{ dialog_class }}"
       {% endif %}
     >
       <header>
@@ -76,11 +76,11 @@
           @click="close()"
           aria-label="Close dialog"
         >
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          {% include "icons/x.svg" %}
         </button>
       </header>
       {{ caller() }}
     </article>
   </div>
-</span>
+</div>
 {% endmacro %}

@@ -1,0 +1,284 @@
+{% macro render_build_and_deploy(form) %}
+{% set frameworks_json %}
+{% include 'projects/partials/frameworks.json' %}
+{% endset %}
+<div
+  class="space-y-6"
+  x-data="{
+    frameworks: {{ frameworks_json | replace('"', "'") | safe }},
+    selectedFramework: '{{ form.framework.data }}',
+    get selectedFrameworkObject() {
+      return this.frameworks.find(f => f.slug === this.selectedFramework);
+    },
+    runtime: '{{ form.runtime.data }}',
+    rootDirectoryLocked: {{ 'true' if not form.use_custom_root_directory.data else 'false' }},
+    buildCommand: {
+      placeholder: '',
+      locked: {{ 'true' if not form.use_custom_build_command.data else 'false' }}
+    },
+    preDeployCommand: {
+      placeholder: '',
+      locked: {{ 'true' if not form.use_custom_pre_deploy_command.data else 'false' }}
+    },
+    startCommand: {
+      placeholder: '',
+      locked: {{ 'true' if not form.use_custom_start_command.data else 'false' }}
+    },
+    setPreset() {
+      if (!this.selectedFramework) return;
+      
+      const preset = this.frameworks.find(f => f.slug === this.selectedFramework);
+      
+      if (!preset) return;
+      
+      this.buildCommand.placeholder = preset.build_command || '';
+      this.preDeployCommand.placeholder = preset.pre_deploy_command || '';
+      this.startCommand.placeholder = preset.start_command || '';
+    }
+  }"
+  x-init="
+    setPreset();
+    $watch('selectedFramework', function() { setPreset(); });
+  "
+>
+  {# FRAMEWORK PRESET #}
+  <div class="field">
+    {{ form.framework.label() }}
+    {% from "components/dropdown.html" import dropdown %}
+    {% set trigger %}
+      <span x-html="selectedFrameworkObject?.logo"></span>
+      <span x-text="selectedFrameworkObject?.name"></span>
+      <span class="ml-auto text-muted-foreground">{% include "icons/chevrons-up-down.svg" %}</span>
+    {% endset %}
+    {% call dropdown(trigger=trigger, id="dropdown-example", trigger_class="btn-outline font-normal px-3 flex items-center gap-x-2", menu_position="top-left") %}
+      <template x-for="framework in frameworks" :key="framework.slug">
+        <button
+          type="button"
+          role="menuitem"
+          @click="
+            selectedFramework = framework.slug;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          "
+        >
+          <span x-html="framework.logo"></span>
+          <span x-text="framework.name"></span>
+          <span class="h-4 w-4 ml-auto text-muted-foreground">
+            <template x-if="framework.slug === selectedFramework">
+              {% include "icons/check.svg" %}
+            </template>
+          </span>
+        </button>
+      </template>
+    {% endcall %}
+    {% for error in form.framework.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+
+    {{ form.framework(
+      class="hidden",
+      **{':value': 'selectedFramework'}
+    ) }}
+  </div>
+
+  {# RUNTIME #}
+  <div class="field">
+    {{ form.runtime.label() }}
+    {{ form.runtime(class="font-mono") }}
+    {% for error in form.runtime.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+  </div>
+
+  {# ROOT DIRECTORY #}
+  <div class="field">
+    {{ form.root_directory.label() }}
+    <div class="relative">
+      {{ form.root_directory(
+          class="w-full font-mono",
+          pattern="^\.?/?([a-zA-Z0-9_\-]+/?)*$",
+          placeholder="./",
+          **{
+            'aria-invalid': 'true' if form.root_directory.errors,
+            ':disabled': 'rootDirectoryLocked',
+            'x-ref': 'rootDirectoryInput'
+          }
+      ) }}
+      <button
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        type="button"
+        @click="
+          rootDirectoryLocked = !rootDirectoryLocked;
+          if (rootDirectoryLocked) {
+            $refs.rootDirectoryInput.value = null;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          } else {
+            $refs.rootDirectoryInput.value = $refs.rootDirectoryInput.placeholder;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          }
+        "
+        :data-tooltip="rootDirectoryLocked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
+        data-tooltip-position="top-right"
+      >
+        <template x-if="rootDirectoryLocked">
+          {% include "icons/pencil.svg" %}
+        </template>
+        <template x-if="!rootDirectoryLocked">
+          {% include "icons/x.svg" %}
+        </template>
+      </button>
+    </div>
+    {{ form.use_custom_root_directory(
+        class="hidden",
+        **{':value': '!rootDirectoryLocked'}
+    ) }}
+    {% for error in form.root_directory.errors %}
+    <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+    <p class="text-xs text-muted-foreground">
+      {{ _('Commands will run from this directory.') }}
+    </p>
+  </div>
+  
+  {# BUILD COMMAND #}
+  <div class="field">
+    {{ form.build_command.label() }}
+    <div class="relative">
+      {{ form.build_command(
+          class="w-full font-mono !pr-9",
+          **{
+            ':disabled': 'buildCommand.locked',
+            ':placeholder': 'buildCommand.placeholder',
+            'x-ref': 'buildCommandInput'
+          }
+      ) }}
+      <button
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        type="button"
+        @click="
+          buildCommand.locked = !buildCommand.locked;
+          if (buildCommand.locked) {
+            $refs.buildCommandInput.value = null;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          } else {
+            $refs.buildCommandInput.value = $refs.buildCommandInput.placeholder;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          }
+        "
+        :data-tooltip="buildCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
+        data-tooltip-position="top-right"
+      >
+        <template x-if="buildCommand.locked">
+          {% include "icons/pencil.svg" %}
+        </template>
+        <template x-if="!buildCommand.locked">
+          {% include "icons/x.svg" %}
+        </template>
+      </button>
+      {{ form.use_custom_build_command(
+          class="hidden",
+          **{':value': '!buildCommand.locked'}
+      ) }}
+    </div>
+    {% for error in form.build_command.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+    <p class="text-xs text-muted-foreground">
+      {{ _('Install dependencies and build the project.') }}
+    </p>
+  </div>
+
+  {# PRE-DEPLOY COMMAND #}
+  <div class="field">
+    {{ form.pre_deploy_command.label() }}
+    <div class="relative">
+      {{ form.pre_deploy_command(
+          class="w-full font-mono !pr-9",
+          **{
+            ':disabled': 'preDeployCommand.locked',
+            ':placeholder': 'preDeployCommand.placeholder',
+            'x-ref': 'preDeployCommandInput'
+          }
+      ) }}
+      <button
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        type="button"
+        @click="
+          preDeployCommand.locked = !preDeployCommand.locked;
+          if (preDeployCommand.locked) {
+            $refs.preDeployCommandInput.value = null;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          } else {
+            $refs.preDeployCommandInput.value = $refs.preDeployCommandInput.placeholder;
+            $el.closest('form').dispatchEvent(new Event('change'));
+          }
+        "
+        :data-tooltip="preDeployCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
+        data-tooltip-position="top-right"
+      >
+        <template x-if="preDeployCommand.locked">
+          {% include "icons/pencil.svg" %}
+        </template>
+        <template x-if="!preDeployCommand.locked">
+          {% include "icons/x.svg" %}
+        </template>
+      </button>
+      {{ form.use_custom_pre_deploy_command(
+          class="hidden",
+          **{':value': '!preDeployCommand.locked'}
+      ) }}
+    </div>
+    {% for error in form.pre_deploy_command.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+    <p class="text-xs text-muted-foreground">
+      {{ _('Run commands before we start the app (e.g. migrate database).') }}
+    </p>
+  </div>
+
+  {# START COMMAND #}
+  <div class="field">
+    {{ form.start_command.label() }}
+    <div class="relative">
+      {{ form.start_command(
+          class="w-full font-mono !pr-9",
+          **{
+            ':disabled': 'startCommand.locked',
+            ':placeholder': 'startCommand.placeholder',
+            'x-ref': 'startCommandInput'
+          }
+      ) }}
+      <button
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        type="button"
+        @click="
+          startCommand.locked = !startCommand.locked;
+          if (startCommand.locked) {
+            $refs.startCommandInput.value = null;
+          } else {
+            $refs.startCommandInput.value = $refs.startCommandInput.placeholder;
+          }
+        "
+        :data-tooltip="startCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
+        data-tooltip-position="top-right"
+      >
+        <template x-if="startCommand.locked">
+          {% include "icons/pencil.svg" %}
+        </template>
+        <template x-if="!startCommand.locked">
+          {% include "icons/x.svg" %}
+        </template>
+      </button>
+      {{ form.use_custom_start_command(
+          class="hidden",
+          **{':value': '!startCommand.locked'}
+      ) }}
+    </div>
+    {% for error in form.start_command.errors %}
+      <p class="text-danger text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+    <p class="text-xs text-muted-foreground">
+      {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') }}
+    </p>
+  </div>
+</div>
+{% endmacro %}

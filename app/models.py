@@ -91,7 +91,6 @@ class Project(db.Model):
     name: Mapped[str] = mapped_column(String(100), index=True)
     repo_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     repo_full_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    repo_branch: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     repo_status: Mapped[str] = mapped_column(
         SQLAEnum(
             'active',
@@ -105,9 +104,10 @@ class Project(db.Model):
     )
     github_installation_id: Mapped[int] = mapped_column(ForeignKey(GithubInstallation.installation_id), nullable=False, index=True)
     github_installation: Mapped[GithubInstallation] = relationship(back_populates='projects')
-    config: Mapped[dict] = mapped_column(JSON, nullable=False)
+    environments: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=[])
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
     slug: Mapped[str] = mapped_column(String(40), nullable=True, unique=True)
+    config: Mapped[dict] = mapped_column(JSON, nullable=False, default={})
     created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id), index=True)
@@ -289,10 +289,9 @@ class Deployment(db.Model):
             # Snapshot repo, config and env_vars from project at time of creation
             self.repo = {
                 'id': project.repo_id,
-                'full_name': project.repo_full_name,
-                'branch': project.repo_branch
+                'full_name': project.repo_full_name
             }
-            self.config = project.config
+            self.config = project.environments
             self.env_vars = project.env_vars
 
     def __repr__(self):
@@ -326,11 +325,12 @@ class Deployment(db.Model):
     def environment(self) -> str:
         # TODO: add support for multiple environments
         # TODO: account for changes in production branch + redeploy/rollback
-        if self.commit.get('branch') == self.project.repo_branch:
-            current_app.logger.info(f"Deployment {self.id} is on production branch")
-            return 'production'
-        current_app.logger.info(f"Deployment {self.id} is on preview branch")
-        return 'preview'
+        return 'production'
+        # if self.commit.get('branch') == self.project.repo_branch:
+        #     current_app.logger.info(f"Deployment {self.id} is on production branch")
+        #     return 'production'
+        # current_app.logger.info(f"Deployment {self.id} is on preview branch")
+        # return 'preview'
 
 
 class Alias(db.Model):

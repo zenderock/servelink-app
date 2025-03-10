@@ -1,21 +1,46 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/app.html" %}
 
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
-  <header class="flex justify-between items-center">
-    <h1 class="h1 flex items-center gap-x-2.5">
-      {% from "projects/components/thumbnail.html" import thumbnail %}
-      {{ thumbnail(project) }}
-      {{ project.name }}
-    </h1>
-  </header>
+  <h1 class="h1 flex items-center gap-x-2.5">
+    {% from "projects/components/thumbnail.html" import thumbnail %}
+    {{ thumbnail(project) }}
+    {{ project.name }}
+  </h1>
 
-  <section class="space-y-2">
-    <h2 class="h4 mb-4">{{ _('Environments') }}</h2>
-    {% for environment in project.config.environments %}
+  <section class="space-y-4">
+    <header class="flex justify-between items-center gap-x-4">
+      <h2 class="h4">{{ _('Environments') }}</h2>
+      <a
+        href="{{ url_for('main.project_settings', project_name=project.name) }}"
+        class="btn inline-flex items-center gap-x-2 h-8 px-2.5"
+      >
+        {% include "icons/plus.svg" %}
+        {{ _('New environment') }}
+      </a>
+    </header>
+
+    {% for environment in project.environments %}
       {{ environment }}
     {% endfor %}
-    <h2 class="h4 font-medium mb-4">{{ _('Latest deployments') }}</h2>
+  </section>
+
+  <section class="space-y-4">
+    <header class="flex justify-between items-center gap-x-4">
+      <h2 class="h4">{{ _('Latest deployments') }}</h2>
+      {% from "components/dialog.html" import dialog %}
+      {% set trigger %}
+        {% include "icons/cloud-upload.svg" %}
+        {{ _('Deploy') }}
+      {% endset %}
+      {% call dialog(trigger=trigger, id="dialog-deploy", title="Deploy", trigger_class="btn inline-flex items-center gap-x-2 h-8 px-2.5") %}
+        
+        <footer>
+          <button class="btn-ghost" @click="active = false">Cancel</button>
+          <button class="btn-primary">Deploy</button>
+        </footer>
+      {% endcall %}
+    </header>
     {% from "deployments/components/list.html" import list %}
     {{ list(deployments=deployments) }}
   </section>

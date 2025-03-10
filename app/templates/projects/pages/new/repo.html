@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/app.html" %}
 
 {% block app_content %}
 <div class="container max-w-screen-sm mx-auto p-8 space-y-6">
@@ -6,33 +6,34 @@
     {{ _('New project') }}
   </h1>
   
-  <ol class="flex items-center justify-between gap-x-2 mb-8">
-    <li class="flex items-center gap-x-2">
-      <div class="shrink-0 rounded-full h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
+  <ol class="flex items-center justify-between gap-x-2.5 mb-8">
+    <li class="flex items-center gap-x-2.5">
+      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
       <h2 class="font-semibold">{{ _('Select repository') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border"/>
     </li>
-    <li class="flex items-center gap-x-2 opacity-50">
-      <div class="shrink-0 rounded-full h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">2</div>
+    <li class="flex items-center gap-x-2.5 opacity-50">
+      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">2</div>
       <h2 class="font-semibold">{{ _('Configure') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border"/>
     </li>
-    <li class="flex items-center gap-x-2 opacity-50">
-      <div class="shrink-0 rounded-full h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">3</div>
+    <li class="flex items-center gap-x-2.5 opacity-50">
+      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">3</div>
       <h2 class="font-semibold">{{ _('Deploy') }}</h2>
     </li>
   </ol>
 
-  {% from "projects/components/repo-select.html" import repo_select %}
-  {{ repo_select(
-    accounts=accounts,
-    selected_account=selected_account,
-    repos=repos,
-    query=query
-  ) }}
+  <div
+    hx-get="{{ url_for('main.repo_select') }}"
+    hx-trigger="load"
+    hx-swap="outerHTML"
+    class="flex items-center justify-center h-10"
+  >
+    {% include "icons/loader.svg" %}
+  </div>
 </div>
 {% endblock %}

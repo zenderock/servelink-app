@@ -5,10 +5,12 @@ from app import db
 from app.main import bp
 from app.models import Project, Deployment
 from sqlalchemy import select
-from app.main.forms import ProjectForm, DeploymentForm
+from app.main.forms import ProjectForm, DeploymentForm, ProdEnvironmentForm, CustomEnvironmentForm, EnvVarsForm, BuildAndDeployForm, GeneralForm, DeleteEnvironmentForm
 from app.tasks import deploy
 from app.helpers.github import get_installation_instance
 from app.main.decorators import load_project, load_deployment
+from app.helpers.colors import COLORS
+from app.helpers.htmx import render_htmx_partial
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -18,6 +20,7 @@ def index():
         select(Project)
         .where(Project.user_id == current_user.id)
         .order_by(Project.updated_at.desc())
+        .limit(6)
     ).all()
     
     deployments = db.session.scalars(
@@ -28,6 +31,20 @@ def index():
     ).all()
     
     return render_template('pages/index.html', projects=projects, deployments=deployments)
+
+
+@bp.route('/repo-select')
+@login_required
+def repo_select():
+    installations = current_app.github.get_user_installations(current_user.github_token)
+    accounts = [installation['account']['login'] for installation in installations]
+    selected_account = request.args.get('account') or (accounts[0] if accounts else None)
+    
+    return render_template(
+        'projects/partials/_repo-select.html',
+        accounts=accounts,
+        selected_account=selected_account
+    )
 
 
 @bp.route('/new-project', methods=['GET', 'POST'])
@@ -62,15 +79,12 @@ def new_project_details():
     defaults = {
         'repo_id': repo.get('id'),
         'name': repo.get('name'),
-        'repo_branch': repo.get('default_branch')
+        'production_branch': repo.get('default_branch')
     }
     form = ProjectForm(request.form or None, **defaults)
     
     branches = current_app.github.get_repository_branches(current_user.github_token, repo_id)
-    form.repo_branch.choices = [(branch['name'], branch['name']) for branch in branches]
-    
-    if form.errors:
-        print(form.errors)
+    form.production_branch.choices = [(branch['name'], branch['name']) for branch in branches]
     
     if form.validate_on_submit():
         installation = current_app.github.get_repo_installation(repo.get('full_name'))
@@ -80,18 +94,28 @@ def new_project_details():
             {'key': entry.key.data, 'value': entry.value.data}
             for entry in form.env_vars
         ]
+        
         project = Project(
             name=form.name.data,
-            config={
-                'runtime': 'cpython',
-                'runtime_version': '3.13',
-            },
-            env_vars=env_vars,
-            user=current_user,
-            github_installation=github_installation,
             repo_id=form.repo_id.data,
             repo_full_name=repo.get('full_name'),
-            repo_branch=form.repo_branch.data
+            github_installation=github_installation,
+            config={
+                'framework': form.framework.data,
+                'runtime': form.runtime.data,
+                'root_directory': form.root_directory.data,
+                'build_command': form.build_command.data if form.use_custom_build_command.data else None,
+                'pre_deploy_command': form.pre_deploy_command.data if form.use_custom_pre_deploy_command.data else None,
+                'start_command': form.start_command.data if form.use_custom_start_command.data else None
+            },
+            env_vars=env_vars,
+            environments=[{
+                'color': 'blue',
+                'name': 'Production',
+                'slug': 'production',
+                'branch': form.production_branch.data
+            }],
+            user=current_user
         )
         db.session.add(project)
         db.session.commit()
@@ -108,15 +132,16 @@ def project(project):
     form = DeploymentForm()
     if form.validate_on_submit():
         # We retrieve the latest commit from the repo
+        branch = project.environments[0].get('branch') if project.environments else None
         commits = current_app.github.get_repository_commits(
             current_user.github_token,
             project.repo_id,
-            project.repo_branch,
+            branch,
             1
         )
         # Error our if no commit (at least one)
         if len(commits) == 0:
-            flash(_('No commits found for branch {project.repo_branch}.'), 'error')
+            flash(_('No commits found for branch {branch}.'), 'error')
             return redirect(url_for('main.project', project_name=project.name))
         
         commit = commits[0]
@@ -160,20 +185,171 @@ def project(project):
     )
 
 
-@bp.route('/projects/<string:project_name>/settings')
+@bp.route('/projects/<string:project_name>/settings', methods=['GET', 'POST'])
 @login_required
 @load_project
 def project_settings(project):
-    form = ProjectForm()
-    # if form.validate_on_submit():
-    #     project.name = form.name.data
-    #     project.config = form.config.data
-    #     project.env_vars = form.env_vars.data
-    #     db.session.commit()
-    #     flash(_('Project updated.'))
-    #     return redirect(url_for('main.project', project_name=name))
+    # General
+    general_form = GeneralForm(data={
+        'name': project.name,
+        'repo_id': project.repo_id
+    })
+
+    if request.method == 'GET' or request.form.get('form_id') == 'general_form':
+        if general_form.validate_on_submit():
+            if general_form.repo_id.data != project.repo_id:
+                try:
+                    repo = current_app.github.get_repository(current_user.github_token, general_form.repo_id.data)
+                except Exception as e:
+                    flash("You do not have access to this repository.")
+                project.repo_full_name = repo.get('full_name')
+            
+            project.name = general_form.name.data
+            db.session.commit()
+            flash(_('Environment variables updated.'), 'success')
+
+        if request.headers.get('HX-Request'):
+            return render_template(
+                'projects/partials/settings/_general.html',
+                general_form=general_form
+            )
+
+    # Environment variables
+    env_vars_form = EnvVarsForm(data={
+        'env_vars': [
+            {'key': env['key'], 'value': env['value']}
+            for env in project.env_vars
+        ]
+    })
+
+    if request.method == 'GET' or request.form.get('form_id') == 'env_vars_form':
+        if env_vars_form.validate_on_submit():
+            project.env_vars = [
+                {'key': entry.key.data, 'value': entry.value.data}
+                for entry in env_vars_form.env_vars
+            ]
+            db.session.commit()
+            flash(_('Environment variables updated.'))
+
+        if request.headers.get('HX-Request'):
+            return render_template(
+                'projects/partials/settings/_env_vars.html',
+                env_vars_form=env_vars_form
+            )
+
+    # Environments
+    prod_environment_form = ProdEnvironmentForm(
+        color=project.environments[0].get('color'),
+        branch=project.environments[0].get('branch'),
+    )
+    custom_environment_form = CustomEnvironmentForm(project=project)
+    delete_environment_form = DeleteEnvironmentForm(project=project)
+
+    if request.method == 'GET' or request.form.get('form_id') in ('prod_environment_form', 'custom_environment_form', 'delete_environment_form'):
+        branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
+        prod_environment_form.branch.choices = [(branch['name'], branch['name']) for branch in branches]
+
+    if request.method == 'GET' or request.form.get('form_id') == 'prod_environment_form':
+        if prod_environment_form.validate_on_submit():
+            project_environments = project.environments.copy()
+            project_environments[0] = {
+                'color': prod_environment_form.color.data,
+                'name': 'Production',
+                'slug': 'production',
+                'branch': prod_environment_form.branch.data
+            }
+            project.environments = project_environments
+            db.session.commit()
+            flash(_('Environment updated.'), 'success')
+
+    if request.method == 'GET' or request.form.get('form_id') == 'custom_environment_form':
+        original_slug = request.form.get('original_slug')
+
+        if custom_environment_form.validate_on_submit():
+            if original_slug:
+                index = next((i for i, env in enumerate(project.environments) 
+                            if env['slug'] == original_slug), None)
+                project_environments = project.environments.copy()
+                project_environments[index] = {
+                    'color': custom_environment_form.color.data,
+                    'name': custom_environment_form.name.data,
+                    'slug': custom_environment_form.slug.data,
+                    'branch': custom_environment_form.branch.data
+                }
+                project.environments = project_environments
+                db.session.commit()
+                flash(_('Environment updated.'), 'success')
+            else:
+                project_environments = project.environments.copy()
+                project_environments.append({
+                    'color': custom_environment_form.color.data,
+                    'name': custom_environment_form.name.data,
+                    'slug': custom_environment_form.slug.data,
+                    'branch': custom_environment_form.branch.data
+                })
+                project.environments = project_environments
+                db.session.commit()
+                flash(_('Environment added.'), 'success')
+
+    if request.method == 'GET' or request.form.get('form_id') == 'delete_environment_form':
+        if delete_environment_form.validate_on_submit():
+            project.environments = [env for env in project.environments if env['slug'] != delete_environment_form.slug.data]
+            db.session.commit()
+            flash(_('Environment deleted.'), 'success')
+
+    if request.headers.get('HX-Request') and request.form.get('form_id') in ('prod_environment_form', 'custom_environment_form', 'delete_environment_form'):
+        return render_htmx_partial(
+            'projects/partials/settings/_environments.html',
+            project=project,
+            prod_environment_form=prod_environment_form,
+            custom_environment_form=custom_environment_form,
+            delete_environment_form=delete_environment_form,
+            colors=COLORS
+        )
     
-    return render_template('projects/pages/settings.html', project=project, form=form)
+    # Build and deploy
+    build_and_deploy_form = BuildAndDeployForm(
+        framework=project.config.get('framework'),
+        runtime=project.config.get('runtime'),
+        use_custom_root_directory=project.config.get('root_directory') is not None,
+        root_directory=project.config.get('root_directory'),
+        use_custom_build_command=project.config.get('build_command') is not None,
+        build_command=project.config.get('build_command'),
+        use_custom_pre_deploy_command=project.config.get('pre_deploy_command') is not None,
+        pre_deploy_command=project.config.get('pre_deploy_command'),
+        use_custom_start_command=project.config.get('start_command') is not None,
+        start_command=project.config.get('start_command')
+    )
+
+    if request.method == 'GET' or request.form.get('form_id') == 'build_and_deploy_form':
+        if build_and_deploy_form.validate_on_submit():
+            project.config = {
+                'framework': build_and_deploy_form.framework.data,
+                'runtime': build_and_deploy_form.runtime.data,
+                'root_directory': build_and_deploy_form.root_directory.data,
+                'build_command': build_and_deploy_form.build_command.data if build_and_deploy_form.use_custom_build_command.data else None,
+                'pre_deploy_command': build_and_deploy_form.pre_deploy_command.data if build_and_deploy_form.use_custom_pre_deploy_command.data else None,
+                'start_command': build_and_deploy_form.start_command.data if build_and_deploy_form.use_custom_start_command.data else None
+            }
+            db.session.commit()
+            
+        if request.headers.get('HX-Request'):
+          return render_template(
+              'projects/partials/settings/_build_and_deploy.html',
+              build_and_deploy_form=build_and_deploy_form
+          )
+    
+    return render_template(
+        'projects/pages/settings.html',
+        project=project,
+        general_form=general_form,
+        prod_environment_form=prod_environment_form,
+        custom_environment_form=custom_environment_form,
+        delete_environment_form=delete_environment_form,
+        build_and_deploy_form=build_and_deploy_form,
+        env_vars_form=env_vars_form,
+        colors=COLORS
+    )
 
 
 @bp.route('/projects/<string:project_name>/deployments')
@@ -183,15 +359,16 @@ def project_deployments(project):
     form = DeploymentForm()
     if form.validate_on_submit():
         # We retrieve the latest commit from the repo
+        branch = project.environments[0].get('branch') if project.environments else None
         commits = current_app.github.get_repository_commits(
             current_user.github_token,
             project.repo_id,
-            project.repo_branch,
+            branch,
             1
         )
         # Error our if no commit (at least one)
         if len(commits) == 0:
-            flash(_('No commits found for branch {project.repo_branch}.'), 'error')
+            flash(_('No commits found for branch {branch}.'), 'error')
             return redirect(url_for('main.project', project_name=project.name))
         
         commit = commits[0]
@@ -306,4 +483,18 @@ def inject_latest_deployments():
 
 @bp.route('/kitchen-sink')
 def kitchen_sink():
+    flash('This is a simple text message.')
+    flash('This is a simple text success message.', 'success')
+    flash('This is a simple text warning message.', 'warning')
+    flash('This is a simple text error message.', 'error')
+    flash('This is a simple text error message.', 'info')
+    flash({
+        'title': 'Structured error',
+        'description': 'This is a structured error message with a title, description and action.',
+        'action': {
+            'label': 'This is a simple text action',
+            'url': 'https://google.com',
+            'click': 'console.log("Clicked!")'
+        }
+    }, 'error')
     return render_template('kitchen-sink.html')

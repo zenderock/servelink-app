@@ -5,7 +5,8 @@ module.exports = {
   darkMode: 'class',
   content: [
     './app/templates/**/*.html',
-    './app/static/**/*.js',
+    './app/templates/icons/**/*.svg',
+    './app/static/**/*.js'
   ],
   theme: {
     extend: {
@@ -56,14 +57,17 @@ module.exports = {
   safelist: [
     ...['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 
        'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 
-       'fuchsia', 'pink', 'rose'].flatMap(color => [
+       'fuchsia', 'pink', 'rose', 'neutral'].flatMap(color => [
       `from-${color}-100`,
       `to-${color}-100/50`,
       `border-${color}-200`,
       `dark:from-${color}-950/50`,
       `dark:to-${color}-950`,
       `dark:border-${color}-900`,
-      `text-${color}-500`
+      `text-${color}-500`,
+      `border-${color}-500`,
+      `bg-${color}-400`,
+      `dark:bg-${color}-600`
     ])
   ],
   plugins: [

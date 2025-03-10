@@ -1,15 +1,19 @@
-<span role="menuitem" class="flex items-center gap-x-1">
+<span role="menuitem" class="flex items-center gap-x-2">
   <img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded bg-muted"/>
   {{ current_user.username }}
-  <svg class="ml-auto w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span class="h-4 w-4 ml-auto text-muted-foreground">
+    {% include "icons/check.svg" %}
+  </span>
 </span>
-<a href="{{ url_for('main.index') }}" role="menuitem" class="flex items-center gap-x-1">
+<a href="{{ url_for('main.index') }}" role="menuitem">
   <img src="https://github.com/github.png" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
   GitHub
+  <span class="h-4 w-4 ml-auto"></span>
 </a>
-<a href="{{ url_for('main.index') }}" role="menuitem" class="flex items-center gap-x-1">
+<a href="{{ url_for('main.index') }}" role="menuitem">
   <img src="https://github.com/stripe.png" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
   Stripe
+  <span class="h-4 w-4 ml-auto"></span>
 </a>
 <hr role="separator"/>
 <a href="{{ url_for('main.index') }}" role="menuitem">

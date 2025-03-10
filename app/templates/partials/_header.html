@@ -13,15 +13,15 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.index') }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+					<a href="{{ url_for('main.index') }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
 						<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
 						{{ current_user.username }}
 					</a>
 					{% from "components/dropdown.html" import dropdown %}
 					{% set trigger %}
-						<svg class="w-4 h-4 text-muted-foreground opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+						{% include "icons/chevrons-up-down.svg" %}
 					{% endset %}
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
 						{% include "partials/menus/_accounts.html" %}
 					{% endcall %}
 				</div>
@@ -31,12 +31,12 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 
 				<div class="flex items-center">
-					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
 						{% from "projects/components/thumbnail.html" import thumbnail %}
 						{{ thumbnail(project, size="sm") }}
 						{{ project.name }}
 					</a>
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
 						{% include "partials/menus/_projects.html" %}
 					{% endcall %}
 				</div>
@@ -46,12 +46,12 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-ghost px-2 h-8 flex items-center gap-x-2">
+					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
 						{% from "deployments/components/status.html" import status %}
 						{{ status(status=deployment.status, conclusion=deployment.conclusion, compact=True) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost w-6 h-8 px-0", menu_class="min-w-36", menu_position="left" ) %}
+					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
 						{% include "partials/menus/_deployments.html" %}
 					{% endcall %}
 				</div>
@@ -69,8 +69,12 @@
 				class="btn-ghost h-8 w-8 p-0 rounded-full"
 				aria-label="Toggle theme"
 			>
-				<svg x-show="$store.theme.isDark" :aria-hidden="!$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-				<svg x-cloak x-show="!$store.theme.isDark" :aria-hidden="$store.theme.isDark" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+				<template x-if="$store.theme.isDark">
+					{% include "icons/moon.svg" %}
+				</template>
+				<template x-if="!$store.theme.isDark">
+					{% include "icons/sun.svg" %}
+				</template>
 			</button>
 
 			{% if current_user.is_authenticated %}
@@ -78,10 +82,10 @@
 				{% set trigger %}
 					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
 				{% endset %}
-				{% call dropdown(trigger=trigger, trigger_class="block", menu_class="min-w-36") %}
+				{% call dropdown(trigger=trigger, trigger_class="block") %}
 					<header class="px-2.5 py-1.5">
-						<span class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</span>
-						<span class="text-muted-foreground">{{ current_user.email }}</span>
+						<div class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</div>
+						<div class="text-muted-foreground">{{ current_user.email }}</div>
 					</header>
 					<hr role="separator"/>
 					<a href="#" role="menuitem">{{ _('Account') }}</a>

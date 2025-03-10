@@ -78,14 +78,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  {% include 'components/notifications.html' %}
-  
-  {% include 'partials/_header.html' %}
-  
-  {% block app_content %}{% endblock %}
-  
-  {% include 'partials/_footer.html' %}
-
-  {% block body %}{% endblock %}
+  {% block base_content %}{% endblock %}
+  {% block scripts %}{% endblock %}
 </body>
 </html>

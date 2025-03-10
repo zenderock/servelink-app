@@ -1,0 +1,8 @@
+{% if fragment_content %}
+  {{ fragment_content | safe }}
+{% else %}
+  {% block content %}{% endblock %}
+{% endif %}
+
+{% from "components/toasts.html" import toasts %}
+{{ toasts(is_fragment=True) }}

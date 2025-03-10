@@ -1,0 +1,34 @@
+<form
+  method="POST"
+  action=""
+  hx-post=""
+  x-data="{ changed: false }"
+  @input="changed = true"
+  @change="changed = true"
+  hx-indicator="next .htmx-indicator"
+>
+  {{ env_vars_form.hidden_tag() }}
+  <input type="hidden" name="form_id" value="env_vars_form">
+  <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
+    <div>
+      <h2 class="font-medium">{{ _('Environment variables') }}</h2>
+      <p class="text-muted-foreground">{{ _('Variables available at build time and runtime. Changes will take effect after a new deployment.') }}</p>
+    </div>
+    <button
+      class="btn ml-auto"
+      :disabled="!changed"
+    >{{ _('Save') }}</button>
+  </header>
+  
+  <div class="p-4 space-y-6">    
+    {% from "projects/components/forms/env_vars.html" import render_env_vars %}
+    {{ render_env_vars(env_vars_form) }}
+  </div>
+</form>
+
+<div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+  <div class="flex items-center gap-x-2 text-muted-foreground">
+    {% include "icons/loader.svg" %}
+    {{ _('Saving...') }}
+  </div>
+</div>

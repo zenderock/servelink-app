@@ -1,0 +1,243 @@
+{% from "components/dropdown.html" import dropdown %}
+{% from "components/dialog.html" import dialog %}
+
+{% macro render_environment_form(environment, index=0) %}
+{% if environment and environment['slug'] == 'production' %}
+  {% set form = prod_environment_form %}
+  {% set form_id = 'prod_environment_form' %}
+  {% set is_active = prod_environment_form.errors %}
+{% else %}
+  {% set form = custom_environment_form %}
+  {% set form_id = 'custom_environment_form' %}
+  {% if environment %}
+    {% set is_active = form.errors and form.original_slug.data == environment['slug'] %}
+  {% else %}
+    {% set is_active = form.errors and not form.original_slug.data %}
+  {% endif %}
+{% endif %}
+<form
+  method="POST"
+  action=""
+  hx-post=""
+  x-data="{ color: '{{ form.color.data if is_active else environment.color if environment else '' }}' }"
+  hx-target="closest section"
+  hx-indicator="next .htmx-indicator"
+  x-show="active === {{ index }}"
+  x-init="
+    {% if is_active and form.errors %}active = {{ index }}{% endif %}
+    if (!color) {
+      colorIndex = {% if index %}{{ index }}{% else %}{{ project.environments|length }} + 1{% endif %};
+      color = getEnvironmentColor(colorIndex);
+    }
+  "
+  class="flex items-start gap-x-2 border-b border-border/50 pb-2"
+>
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="form_id" value="{{ form_id }}">
+  {% if form_id == 'custom_environment_form' %}
+    {% if environment %}
+      {{ form.original_slug(value=environment.slug, class='hidden') }}
+    {% else %}
+      {{ form.original_slug(class='hidden') }}
+    {% endif %}
+  {% endif %}
+  {{ form.color(
+    class='w-full hidden',
+    **{':value': 'color'}
+  ) }}
+  <div class="w-10">
+    {% set trigger %}
+      <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></span>
+    {% endset %}
+    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-10 p-0", menu_position="top-left") %}
+      <div class="grid grid-cols-6 gap-2">
+        {% for color in colors %}
+          <button
+            class="w-8 h-8 p-0"
+            :class="color === '{{ color }}' ? 'bg-muted' : ''"
+            aria-label="{{ color }}"
+            @click="color = '{{ color }}'"
+            type="button"
+            role="menuitem"
+          >
+            <span class="inline-block rounded h-4 w-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
+          </button>
+      {% endfor %}
+      </div>
+    {% endcall %}
+  </div>
+  <div class="field flex-1">
+    {% if environment and environment.slug == 'production' %}
+      <input type="text" class="w-full" value="{{ environment.name }}" disabled>
+    {% else %}
+      {{ form.name(
+        class='w-full',
+        value=form.name.data if is_active else environment.name if environment else '',
+        **({'aria-invalid': 'true'} if is_active and form.name.errors else {})
+      ) }}
+      {% if is_active %}
+        {% for error in form.name.errors %}
+          <p class="text-danger text-xs font-medium">{{ error }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+  </div>
+  <div class="field flex-1">
+    {% if environment and environment.slug == 'production' %}
+      <input type="text" class="w-full font-mono" value="{{ environment.slug }}" disabled>
+    {% else %}              
+      {{ form.slug(
+        class='w-full font-mono',
+        value=form.slug.data if is_active else environment.slug if environment else '',
+        **({'aria-invalid': 'true'} if is_active and form.slug.errors else {})
+      ) }}
+      {% if is_active %}
+        {% for error in form.slug.errors %}
+          <p class="text-danger text-xs font-medium">{{ error }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+  </div>
+  <div class="field flex-1">
+    {{ form.branch(
+      class='w-full font-mono',
+      value=form.branch.data if is_active else environment.branch if environment else '',
+      **({'aria-invalid': 'true'} if is_active and form.branch.errors else {})
+    ) }}
+    {% if is_active %}
+      {% for error in form.branch.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="w-20 shrink-0 flex items-center justify-center">
+    <button
+      class="btn-ghost w-10 p-0 text-success"
+      type="submit"
+      aria-label="{{ _('Save') }}"
+      data-tooltip="{{ _('Save') }}"
+    >
+      {% include "icons/check.svg" %}
+    </button>
+    <button
+      class="btn-ghost w-10 p-0"
+      type="button"
+      @click="active = null"
+      aria-label="{{ _('Cancel') }}"
+      data-tooltip="{{ _('Cancel') }}"
+    >
+      {% include "icons/x.svg" %}
+    </button>
+  </div>
+</form>
+{% endmacro %}
+
+<section>
+  <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
+    <div>
+      <h2 class="font-medium">{{ _('Environments') }}</h2>
+      <p class="text-muted-foreground">{{ _('Deployments will be associated with the first environment with a matching branch pattern.') }}</p>
+    </div>
+  </header>
+  
+  <div class="p-4 space-y-6">    
+    <div
+      class="space-y-2"
+      x-data='{
+        active: null,
+        getEnvironmentColor: (index) => {
+          const colors = {{ colors|tojson }};
+          const colorIndex = (5 * (index - 1)) % colors.length;
+          return colors[colorIndex];
+        }
+      }'
+    >
+      <div class="flex gap-x-2 border-b border-border/50 pb-2">
+        <div class="shrink-0 w-10"></div>
+        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Name') }}</div>
+        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Identifier') }}</div>
+        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Branch pattern') }}</div>
+        <div class="shrink-0 w-20"></div>
+      </div>
+    
+      {% for environment in project.environments %}
+        <div
+          x-show="active !== {{ loop.index }}"
+          class="flex items-center gap-x-2 border-b border-border/50 pb-2"
+        >
+          <div class="flex items-center justify-center w-10">
+            <span class="inline-block rounded h-2.5 w-2.5 shrink-0 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600"></span>
+          </div>
+          <div class="flex-1 font-medium">{{ environment.name }}</div>
+          <div class="flex-1 font-mono text-muted-foreground">{{ environment.slug }}</div>
+          <div class="flex-1 font-mono text-muted-foreground">{{ environment.branch }}</div>
+          <div class="flex items-center w-20">
+            <button
+              type="button"
+              class="btn-ghost w-10 p-0"
+              aria-label="{{ _('Edit') }}"
+              data-tooltip="{{ _('Edit') }}"
+              @click="active = {{ loop.index }}"
+              :disabled="active"
+            >
+              {% include "icons/pencil.svg" %}
+            </button>
+            {% if environment and environment.slug != 'production' %}
+              {% set trigger %}
+                <div data-tooltip="{{ _('Delete') }}">
+                  {% include "icons/trash.svg" %}
+                  <!-- :disabled="active" -->
+                </div>
+              {% endset %}
+              {% call dialog(trigger=trigger, title=_('Delete "%(name)s"?', name=environment.name), trigger_class="btn-ghost w-10 p-0 text-danger", dialog_class="max-w-md") %}
+                <div class="space-y-4" x-data="{ confirm: '' }">
+                  <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
+                  <p>{{ _('To confirm, enter the environment name <b>"%(name)s"</b> below.', name=environment.name) }}</p>
+                  <form
+                    method="POST"
+                    action=""
+                    hx-post=""
+                    hx-target="closest section"
+                    hx-indicator="next .htmx-indicator"
+                    @submit.prevent="!active"
+                  >
+                    {{ delete_environment_form.hidden_tag() }}
+                    <input type="hidden" name="form_id" value="delete_environment_form">
+                    {{ delete_environment_form.slug(value=environment.slug, class='hidden') }}
+                    <input type="text" x-model="confirm" class="w-full" placeholder="{{ _('Type the enviroment name to confirm') }}">
+                    <footer class="flex justify-end gap-x-2 pt-4">
+                      <button type="button" class="btn-ghost" @click="active = false">Cancel</button>
+                    
+                      <button class="btn-danger" :disabled="confirm !== '{{ environment.name }}'" type="submit">Delete</button>
+                    </footer>
+                  </form>
+                </div>
+              {% endcall %}
+            {% endif %}
+          </div>
+        </div>
+        {{ render_environment_form(environment, loop.index) }}
+      {% endfor %}
+
+      {# NEW ENVIRONMENT #}
+      {{ render_environment_form(index=0) }}
+      
+      <button
+        class="btn-outline h-8 px-2.5 gap-x-2"
+        type="button"
+        @click="active = 0"
+        x-show="active !== 0"
+      >
+        {% include "icons/plus.svg" %}
+        {{ _('Add environment') }}
+      </button>
+    </div>
+  </div>
+</section>
+
+<div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+  <div class="flex items-center gap-x-2 text-muted-foreground">
+    {% include "icons/loader.svg" %}
+    {{ _('Saving...') }}
+  </div>
+</div>

@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+
+{% block base_content %}
+{% include 'partials/_header.html' %}
+
+{% block app_content %}{% endblock %}
+
+{% include 'partials/_footer.html' %}
+
+{% from 'components/toasts.html' import toasts %}
+{{ toasts() }}
+{% endblock %}

@@ -8,7 +8,9 @@
     {{ status(status=deployment.status, conclusion=deployment.conclusion) }}
   </li>
   <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Duration') }}">
-    <svg class="w-4 h-4 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+    <span class="opacity-50 dark:opacity-60">
+      {% include "icons/timer.svg" %}
+    </span>
     {% from "deployments/components/duration.html" import duration %}
     {{ duration(started_at=deployment.created_at, concluded_at=deployment.concluded_at) }}
   </li>
@@ -20,7 +22,9 @@
         data-tooltip="{{ _('Link') }}"
         target="_blank"
       >
-        <svg class="w-4 h-4 opacity-50 dark:opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+        <span class="opacity-50 dark:opacity-60">
+          {% include "icons/link.svg" %}
+        </span>
         {{ deployment.hostname }}
       </a>
       {% if deployment.aliases %}
@@ -35,7 +39,7 @@
               target="_blank"
             >
               {{ alias.hostname }}
-              <svg class="w-3 h-3 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              {% include "icons/external-link.svg" %}
             </a>
           {% endfor %}
         {% endcall %}
