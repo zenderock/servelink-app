@@ -1,4 +1,4 @@
-{% macro dialog(id=None, trigger=None, title=None, trigger_class=None, dialog_class=None, active=False) %}
+{% macro dialog(id=None, trigger=None, title=None, trigger_attrs={}, dialog_attrs={}, active=False) %}
 <div
   x-data="{
     active: {{ 'true' if active else 'false' }},
@@ -40,7 +40,9 @@
     {% if id %}aria-controls="{{ id }}-dialog"{% endif %}
     aria-expanded="false"
     :aria-expanded="active"
-    {% if trigger_class %}class="{{ trigger_class }}"{% endif %}
+    {% for key, value in trigger_attrs.items() %}
+    {{ key }}="{{ value }}"
+    {% endfor %}
   >
     {{ trigger }}
   </button>
@@ -60,9 +62,9 @@
     {% endif %}
   >
     <article
-      {% if dialog_class %}
-      class="{{ dialog_class }}"
-      {% endif %}
+      {% for key, value in dialog_attrs.items() %}
+      {{ key }}="{{ value }}"
+      {% endfor %}
     >
       <header>
         <h2

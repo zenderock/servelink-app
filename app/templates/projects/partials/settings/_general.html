@@ -1,13 +1,43 @@
 {% from "components/dialog.html" import dialog %}
-{% call dialog(trigger=trigger, id="dialog-repo-select", title="Deploy", trigger_class="btn-outline font-normal px-3") %}
-  <div hx-get="{{ url_for('main.repo_select') }}" hx-trigger="dialog:opened from:#dialog-repo-select"></div>
+{% call dialog(
+  trigger=trigger,
+  id="dialog-repo-select",
+  title="Select Git repository",
+  trigger_attrs={"class": "btn-outline font-normal px-3"},
+  dialog_attrs={
+    "class": "max-w-screen-sm w-full",
+    "@repo-selected": "close()"
+  }
+) %}
+  <div
+    hx-get="{{ url_for('main.repo_select', account=repo_owner) }}"
+    hx-trigger="dialog:opened from:#dialog-repo-select"
+    hx-swap="outerHTML"
+    class="flex items-center justify-center h-[296px]"
+  >
+    <span class="text-muted-foreground flex items-center gap-x-2">
+      {% include "icons/loader.svg" %}
+      {{ _('Loading accounts') }}
+    </span>
+  </div>
 {% endcall %}
 
 <form
   method="POST"
   action=""
   hx-post=""
-  x-data="{ changed: false }"
+  x-data="{
+    changed: false,
+    repo_id: {{ project.repo_id }},
+    repo_owner: '{{ project.repo_full_name.split('/')[0] }}',
+    repo_full_name: '{{ project.repo_full_name }}'
+  }"
+  @repo-selected.window="
+    repo_id = $event.detail.id;
+    repo_owner = $event.detail.owner;
+    repo_full_name = $event.detail.fullName;
+    changed = true;
+  "
   @input="changed = true"
   @change="changed = true"
   hx-indicator="next .htmx-indicator"
@@ -45,17 +75,23 @@
   
     <div class="field">
       <label for="name">{{ _('Git repository') }}</label>
-      <button
-        type="button"
-        class="btn-outline font-normal px-3 flex items-center gap-x-2"
-        @click="$dialog('dialog-repo-select', 'open')"
-      >
-        {{ project.repo_full_name }}
-        <span class="text-muted-foreground">
-          {% include "icons/chevrons-up-down.svg" %}
-        </span>
-      </button>
-      
+      <div class="flex items-center gap-x-2">
+        <button
+          type="button"
+          class="btn-outline font-normal px-3 flex items-center gap-x-2"
+          @click="$dialog('dialog-repo-select', 'open')"
+        >
+          <img :src="`https://github.com/${repo_owner}.png`" :alt="`${repo_owner}'s avatar`" class="w-6 h-6 rounded">
+          <span x-text="repo_full_name"></span>
+          <span class="text-muted-foreground">
+            {% include "icons/chevrons-up-down.svg" %}
+          </span>
+        </button>
+      </div>
+      {{ general_form.repo_id(
+        class="hidden",
+        **{':value': 'repo_id'}
+      ) }}
     </div>
   </div>
 </form>
@@ -63,6 +99,6 @@
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground">
     {% include "icons/loader.svg" %}
-    {{ _('Saving...') }}
+    {{ _('Saving') }}
   </div>
 </div>

@@ -54,7 +54,7 @@
     <input type="hidden" name="account" x-model="selected_account" x-ref="accountInput">
 
     <div class="relative flex-1">
-      <input name="query" type="search" class="w-full !pl-9" x-model="query" placeholder="{{ _('Search by name...') }}">
+      <input name="query" type="search" class="w-full !pl-9" x-model="query" placeholder="{{ _('Search by name') }}">
       <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
         {% include "icons/search.svg" %}
       </span>
@@ -65,15 +65,15 @@
     <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
       <div class="flex items-center gap-x-2 text-muted-foreground">
         {% include "icons/loader.svg" %}
-        <span>Loading results</span>
+        <span>Loading repositories</span>
       </div>
     </div>
     <div role="listbox" aria-label="Repository list" aria-live="polite">
       <div
         role="status"
         class="h-60 text-xs text-muted-foreground flex items-center justify-center"
-        aria-label="{{ _('Loading results') }}"
-        ></div>
+        aria-label="{{ _('Loading repositories') }}"
+      ></div>
     </div>
   </div>
 </section>

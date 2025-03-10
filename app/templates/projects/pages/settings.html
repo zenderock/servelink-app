@@ -14,14 +14,12 @@
   </header>
 
   <div class="flex flex-row-reverse gap-x-6">
-    <nav class="sticky top-[360px] min-w-48">
-      <ul class="space-y-4">
-        <li><a href="#general" class="font-medium text-muted-foreground hover:text-foreground transition-colors">{{ _('General') }}</a></li>
-        <li><a href="#environment-variables" class="font-medium text-muted-foreground hover:text-foreground transition-colors">{{ _('Environment variables') }}</a></li>
-        <li><a href="#git" class="font-medium text-muted-foreground hover:text-foreground transition-colors">{{ _('Git') }}</a></li>
-        <li><a href="#environments" class="font-medium text-muted-foreground hover:text-foreground transition-colors">{{ _('Environments') }}</a></li>
-        <li><a href="#commands" class="font-medium text-muted-foreground hover:text-foreground transition-colors">{{ _('Commands') }}</a></li>
-      </ul>
+    <nav class="sticky top-[122px] min-w-48 h-full flex flex-col gap-y-1">
+      <a href="#general" class="btn-ghost h-8 px-2.5 justify-start">{{ _('General') }}</a>
+      <a href="#environment-variables" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Environment variables') }}</a>
+      <a href="#environments" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Environments') }}</a>
+      <a href="#build-and-deploy" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Build & Deploy') }}</a>
+      <a href="#danger" class="btn-ghost h-8 px-2.5 justify-start text-danger">{{ _('Danger') }}</a>
     </nav>
     
     <div class="space-y-6 w-full form">
@@ -31,52 +29,23 @@
       </section>
 
       {# ENVIRONMENT VARIABLES #}
-      <section class="border rounded-xl relative" id="env-vars">
+      <section class="border rounded-xl relative" id="environment-variables">
         {% include "projects/partials/settings/_env_vars.html" %}
       </section>
 
       {# ENVIRONMENTS #}
-      <section class="border rounded-xl relative" id="env-vars">
+      <section class="border rounded-xl relative" id="environments">
         {% include "projects/partials/settings/_environments.html" %}
       </section>
 
       {# BUILD & DEPLOY #}
-      <section class="border rounded-xl relative" id="env-vars">
+      <section class="border rounded-xl relative" id="build-and-deploy">
         {% include "projects/partials/settings/_build_and_deploy.html" %}
       </section>
 
       {# DANGER ZONE #}
-      <section class="border rounded-xl" id="general">
-        <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center rounded-t-xl">
-          <div>
-            <h2 class="font-medium">{{ _('Danger zone') }}</h2>
-            <p class="text-muted-foreground">{{ _('Permanently delete the project and all of its configuration, environments and deployments.') }}</p>
-          </div>
-        </header>
-        
-        <div class="p-4 space-y-6">
-          <div class="field">
-            {% from "components/dialog.html" import dialog %}
-            {% set trigger %}
-              {% include "icons/trash.svg" %}
-              {{ _('Delete project') }}
-            {% endset %}
-            {% call dialog(trigger=trigger, id="dialog-delete-project", title=_('Delete "%(name)s"?', name=project.name), trigger_class="btn-outline text-danger", dialog_class="max-w-md") %}
-              <div class="space-y-4" x-data="{ confirm: '' }">
-                <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>
-                <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
-                <input type="text" x-model="confirm" class="w-full" placeholder="{{ _('Type the project name to confirm') }}">
-                <footer class="flex justify-end gap-x-2">
-                  <button class="btn-ghost" @click="active = false">Cancel</button>
-                  <button class="btn-outline text-danger" :disabled="confirm !== '{{ project.name }}'">
-                    {% include "icons/trash.svg" %}
-                    {{ _('Delete') }}
-                  </button>
-                </footer>
-              </div>
-            {% endcall %}
-          </div>
-        </div>
+      <section class="border rounded-xl" id="danger">
+        {% include "projects/partials/settings/_danger.html" %}
       </section>
     </div>
   </div>

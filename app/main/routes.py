@@ -206,12 +206,13 @@ def project_settings(project):
             
             project.name = general_form.name.data
             db.session.commit()
-            flash(_('Environment variables updated.'), 'success')
+            flash(_('General settings updated.'), 'success')
 
         if request.headers.get('HX-Request'):
-            return render_template(
+            return render_htmx_partial(
                 'projects/partials/settings/_general.html',
-                general_form=general_form
+                general_form=general_form,
+                project=project
             )
 
     # Environment variables
@@ -229,10 +230,10 @@ def project_settings(project):
                 for entry in env_vars_form.env_vars
             ]
             db.session.commit()
-            flash(_('Environment variables updated.'))
+            flash(_('Environment variables updated.'), 'success')
 
         if request.headers.get('HX-Request'):
-            return render_template(
+            return render_htmx_partial(
                 'projects/partials/settings/_env_vars.html',
                 env_vars_form=env_vars_form
             )
@@ -332,9 +333,10 @@ def project_settings(project):
                 'start_command': build_and_deploy_form.start_command.data if build_and_deploy_form.use_custom_start_command.data else None
             }
             db.session.commit()
+            flash(_('Build & Deploy settings updated.'), 'success')
             
         if request.headers.get('HX-Request'):
-          return render_template(
+          return render_htmx_partial(
               'projects/partials/settings/_build_and_deploy.html',
               build_and_deploy_form=build_and_deploy_form
           )

@@ -15,11 +15,17 @@
       {% if repo.updated_at %}
         <p class="text-muted-foreground truncate">{{ repo.updated_at | timeago }}</p>
       {% endif %}
-      <a
-        href="{{ url_for('main.new_project_details', repo_id=repo.id) }}"
-        class="h-8 px-3 btn-primary ml-auto">
-          {{ _('Select') }}
-        </a>
+      <button
+        @click="$dispatch('repo-selected', { 
+          id: {{ repo.id }}, 
+          owner: '{{ repo.owner.login }}',
+          name: '{{ repo.name }}',
+          fullName: '{{ repo.full_name }}'
+        })"
+        class="h-8 px-3 btn-primary ml-auto"
+      >
+        {{ _('Select') }}
+      </button>
     </li>
   {% endfor %}
 </ul>

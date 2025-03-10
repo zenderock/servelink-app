@@ -12,7 +12,7 @@
   <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
     <div>
       <h2 class="font-medium">{{ _('Build & Deploy') }}</h2>
-      <p class="text-muted-foreground">{{ _('.') }}</p>
+      <p class="text-muted-foreground">{{ _('Configuration for building and deploying the project: root folder, runtime, commands, etc.') }}</p>
     </div>
     <button
       class="btn ml-auto"
@@ -29,6 +29,6 @@
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground">
     {% include "icons/loader.svg" %}
-    {{ _('Saving...') }}
+    {{ _('Saving') }}
   </div>
 </div>

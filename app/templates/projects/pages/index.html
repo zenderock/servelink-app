@@ -33,7 +33,7 @@
         {% include "icons/cloud-upload.svg" %}
         {{ _('Deploy') }}
       {% endset %}
-      {% call dialog(trigger=trigger, id="dialog-deploy", title="Deploy", trigger_class="btn inline-flex items-center gap-x-2 h-8 px-2.5") %}
+      {% call dialog(trigger=trigger, title="Deploy", trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5"}) %}
         
         <footer>
           <button class="btn-ghost" @click="active = false">Cancel</button>

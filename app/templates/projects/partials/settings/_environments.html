@@ -22,9 +22,9 @@
   x-data="{ color: '{{ form.color.data if is_active else environment.color if environment else '' }}' }"
   hx-target="closest section"
   hx-indicator="next .htmx-indicator"
-  x-show="active === {{ index }}"
+  x-show="activeForm === {{ index }}"
   x-init="
-    {% if is_active and form.errors %}active = {{ index }}{% endif %}
+    {% if is_active and form.errors %}activeForm = {{ index }}{% endif %}
     if (!color) {
       colorIndex = {% if index %}{{ index }}{% else %}{{ project.environments|length }} + 1{% endif %};
       color = getEnvironmentColor(colorIndex);
@@ -122,7 +122,7 @@
     <button
       class="btn-ghost w-10 p-0"
       type="button"
-      @click="active = null"
+      @click="activeForm = null"
       aria-label="{{ _('Cancel') }}"
       data-tooltip="{{ _('Cancel') }}"
     >
@@ -144,7 +144,7 @@
     <div
       class="space-y-2"
       x-data='{
-        active: null,
+        activeForm: null,
         getEnvironmentColor: (index) => {
           const colors = {{ colors|tojson }};
           const colorIndex = (5 * (index - 1)) % colors.length;
@@ -162,7 +162,7 @@
     
       {% for environment in project.environments %}
         <div
-          x-show="active !== {{ loop.index }}"
+          x-show="activeForm !== {{ loop.index }}"
           class="flex items-center gap-x-2 border-b border-border/50 pb-2"
         >
           <div class="flex items-center justify-center w-10">
@@ -177,19 +177,26 @@
               class="btn-ghost w-10 p-0"
               aria-label="{{ _('Edit') }}"
               data-tooltip="{{ _('Edit') }}"
-              @click="active = {{ loop.index }}"
-              :disabled="active"
+              @click="activeForm = {{ loop.index }}"
+              :disabled="activeForm"
             >
               {% include "icons/pencil.svg" %}
             </button>
             {% if environment and environment.slug != 'production' %}
               {% set trigger %}
-                <div data-tooltip="{{ _('Delete') }}">
-                  {% include "icons/trash.svg" %}
-                  <!-- :disabled="active" -->
-                </div>
+                {% include "icons/trash.svg" %}
               {% endset %}
-              {% call dialog(trigger=trigger, title=_('Delete "%(name)s"?', name=environment.name), trigger_class="btn-ghost w-10 p-0 text-danger", dialog_class="max-w-md") %}
+              {% call dialog(
+                trigger=trigger,
+                title=_('Delete "%(name)s"?', name=environment.name),
+                trigger_attrs={
+                  "class": "btn-ghost w-10 p-0 text-danger",
+                  "aria-label": _('Delete'),
+                  "data-tooltip": _('Delete'),
+                  ":disabled": "activeForm"
+                },
+                dialog_attrs={"class": "max-w-md"}
+              ) %}
                 <div class="space-y-4" x-data="{ confirm: '' }">
                   <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
                   <p>{{ _('To confirm, enter the environment name <b>"%(name)s"</b> below.', name=environment.name) }}</p>
@@ -199,7 +206,7 @@
                     hx-post=""
                     hx-target="closest section"
                     hx-indicator="next .htmx-indicator"
-                    @submit.prevent="!active"
+                    @submit.prevent="!confirm"
                   >
                     {{ delete_environment_form.hidden_tag() }}
                     <input type="hidden" name="form_id" value="delete_environment_form">
@@ -225,8 +232,9 @@
       <button
         class="btn-outline h-8 px-2.5 gap-x-2"
         type="button"
-        @click="active = 0"
-        x-show="active !== 0"
+        @click="activeForm = 0"
+        x-show="activeForm !== 0"
+        :disabled="activeForm"
       >
         {% include "icons/plus.svg" %}
         {{ _('Add environment') }}
@@ -238,6 +246,6 @@
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground">
     {% include "icons/loader.svg" %}
-    {{ _('Saving...') }}
+    {{ _('Saving') }}
   </div>
 </div>
