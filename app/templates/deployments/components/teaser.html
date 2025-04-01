@@ -5,13 +5,7 @@
   'canceled': _('Status: Canceled'),
   'skipped': _('Status: Skipped')
 } %}
-<!-- <article
-  class="flex gap-x-6 items-center w-full"
-  {% if not deployment.conclusion %}
-    hx-get="{{ url_for('main.deployment_teaser', project_name=project.name, deployment_id=deployment.id) }}"
-    hx-trigger="every 1s"
-  {% endif %}
-> -->
+
   <span
     data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
     data-tooltip-position="top-left"
@@ -34,7 +28,7 @@
       data-tooltip="{{ _('Project') }}"
     >
       {% from "projects/components/thumbnail.html" import thumbnail %}
-      {{ thumbnail(deployment.project, size='sm') }}
+      {{ thumbnail(deployment.project, size='xs') }}
       {{ deployment.project.name }}
     </a>
   {% endif %}
@@ -44,21 +38,9 @@
   </div>
 
   <span class="flex items-center gap-x-2 text-muted-foreground capitalize" data-tooltip="{{ _('Environment') }}">
-    <span class="inline-block rounded h-2.5 w-2.5 bg-purple-400 dark:bg-purple-600  shrink-0"></span>
-    {{ deployment.environment }}
+    <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+    {{ deployment.environment.name }}
   </span>
-  
-  <a
-    class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
-    href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.repo.branch }}"
-    target="_blank"
-    data-tooltip="{{ _('Branch') }}"
-  >
-    <span class="opacity-50 dark:opacity-60">
-      {% include "icons/git-branch.svg" %}
-    </span>
-    {{ deployment.repo.branch }}
-  </a>
 
   <a
     class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
@@ -83,9 +65,13 @@
     {% set trigger %}
       {% include "icons/ellipsis.svg" %}
     {% endset %}
-    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-8 h-8 px-0", menu_class="min-w-36" ) %}
+    {% call dropdown(
+      trigger=trigger,
+      trigger_attrs={"class": "btn-ghost w-8 h-8 px-0"},
+      menu_attrs={"menu-class": "min-w-36"}
+    ) %}
       {% include "deployments/partials/_options.html" %}
     {% endcall %}
   </div>
-<!-- </article> -->
+
 {% endmacro %}

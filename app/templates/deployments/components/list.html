@@ -1,101 +1,132 @@
-{% macro list(deployments=[], pagination=None, display_project=False) %}
-{% from "deployments/components/teaser.html" import teaser %}
+{% macro list(deployments=[], project=None, pagination=None, display_project=False, display_empty=True) %}
 
-{# Extract current route parameters #}
-{% set route_params = request.view_args.copy() %}
-{% if 'page' in route_params %}
-  {% set _ = route_params.pop('page') %}
-{% endif %}
+{% if deployments %}
+  {% from "deployments/components/teaser.html" import teaser %}
+  {% set route_params = request.view_args.copy() %}
 
-<ul>
-  {% for deployment in deployments %}
-    <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
-      {{ teaser(deployment, display_project=display_project) }}
-    </li>
-  {% endfor %}
-</ul>
+  <ul>
+    {% for deployment in deployments %}
+      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
+        {{ teaser(deployment, display_project=display_project) }}
+      </li>
+    {% endfor %}
+  </ul>
 
-{% if pagination and pagination.pages > 1 %}
-  <nav
-    class="flex items-center justify-end gap-x-2"
-    aria-label="Pagination"
-  >
-    {% if pagination.page == 1 %}
-      <button
-        class="btn-outline h-8 w-8 p-0 disabled"
-        type="button"
-        aria-label="{{ _('Newest deployments') }}"
-        disabled
-      >
-        {% include "icons/chevrons-left.svg" %}
-      </button>
-    {% else %}
-      <a
-        href="{{ url_for(request.endpoint, page=1, **route_params) }}"
-        class="btn-outline h-8 w-8 p-0"
-        aria-label="{{ _('Newest deployments') }}"
-      >
-        {% include "icons/chevrons-left.svg" %}
-      </a>
-    {% endif %}
+  {% if pagination and pagination.pages > 1 %}
+    <nav
+      class="flex items-center justify-end gap-x-2"
+      aria-label="Pagination"
+    >
+      {% if pagination.page == 1 %}
+        <button
+          class="btn-outline h-8 w-8 p-0 disabled"
+          type="button"
+          aria-label="{{ _('Newest deployments') }}"
+          disabled
+        >
+          {% include "icons/chevrons-left.svg" %}
+        </button>
+      {% else %}
+        <a
+          href="{{ url_for(request.endpoint, page=1, **route_params) }}"
+          class="btn-outline h-8 w-8 p-0"
+          aria-label="{{ _('Newest deployments') }}"
+        >
+          {% include "icons/chevrons-left.svg" %}
+        </a>
+      {% endif %}
 
-    {% if pagination.has_prev %}
-      <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **route_params) }}" 
-        class="btn-outline h-8 w-8 p-0"
-        aria-label="{{ _('Newer deployments') }}"
-      >
-        {% include "icons/chevron-left.svg" %}
-      </a>
-    {% else %}
-      <button
-        class="btn-outline h-8 w-8 p-0 disabled"
-        type="button"
-        aria-label="{{ _('Newer deployments') }}"
-        disabled
-      >
-        {% include "icons/chevron-left.svg" %}
-      </button>
-    {% endif %}
+      {% if pagination.has_prev %}
+        <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **route_params) }}" 
+          class="btn-outline h-8 w-8 p-0"
+          aria-label="{{ _('Newer deployments') }}"
+        >
+          {% include "icons/chevron-left.svg" %}
+        </a>
+      {% else %}
+        <button
+          class="btn-outline h-8 w-8 p-0 disabled"
+          type="button"
+          aria-label="{{ _('Newer deployments') }}"
+          disabled
+        >
+          {% include "icons/chevron-left.svg" %}
+        </button>
+      {% endif %}
 
-    {% if pagination.has_next %}
-      <a
-        href="{{ url_for(request.endpoint, page=pagination.next_num, **route_params) }}"
-        class="btn-outline h-8 w-8 p-0"
-        aria-label="{{ _('Older deployments') }}"
-        disabled
-      >
-        {% include "icons/chevron-right.svg" %}
-      </a>
-    {% else %}
-      <button
-        class="btn-outline h-8 w-8 p-0 disabled"
-        type="button"
-        aria-label="{{ _('Older deployments') }}"
-        disabled
-      >
-        {% include "icons/chevron-right.svg" %}
-      </button>
-    {% endif %}
+      {% if pagination.has_next %}
+        <a
+          href="{{ url_for(request.endpoint, page=pagination.next_num, **route_params) }}"
+          class="btn-outline h-8 w-8 p-0"
+          aria-label="{{ _('Older deployments') }}"
+          disabled
+        >
+          {% include "icons/chevron-right.svg" %}
+        </a>
+      {% else %}
+        <button
+          class="btn-outline h-8 w-8 p-0 disabled"
+          type="button"
+          aria-label="{{ _('Older deployments') }}"
+          disabled
+        >
+          {% include "icons/chevron-right.svg" %}
+        </button>
+      {% endif %}
 
-    <!-- If we're on the last page we don't display the next button -->
-    {% if pagination.page == pagination.pages %}
-      <button
-        class="btn-outline h-8 w-8 p-0 disabled"
-        type="button"
-        aria-label="{{ _('Oldest deployments') }}"
-        disabled
-      >
-        {% include "icons/chevrons-right.svg" %}
-      </button>
-    {% else %}
-      <a
-        href="{{ url_for(request.endpoint, page=pagination.pages, **route_params) }}"
-        class="btn-outline h-8 w-8 p-0"
-        aria-label="{{ _('Oldest deployments') }}"
-      >
-        {% include "icons/chevrons-right.svg" %}
-      </a>
-    {% endif %}
-  </nav>
+      <!-- If we're on the last page we don't display the next button -->
+      {% if pagination.page == pagination.pages %}
+        <button
+          class="btn-outline h-8 w-8 p-0 disabled"
+          type="button"
+          aria-label="{{ _('Oldest deployments') }}"
+          disabled
+        >
+          {% include "icons/chevrons-right.svg" %}
+        </button>
+      {% else %}
+        <a
+          href="{{ url_for(request.endpoint, page=pagination.pages, **route_params) }}"
+          class="btn-outline h-8 w-8 p-0"
+          aria-label="{{ _('Oldest deployments') }}"
+        >
+          {% include "icons/chevrons-right.svg" %}
+        </a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% elif display_empty and project %}
+  <section class="flex items-center justify-center min-h-60 bg-muted rounded-xl p-4">
+    <div class="max-w-sm text-center">
+      <h2 class="h4">{{ _('No deployments') }}</h2>
+      <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
+      {% from "components/dialog.html" import dialog %}
+      {% set trigger %}
+        {% include "icons/cloud-upload.svg" %}
+        {{ _('Deploy') }}
+      {% endset %}
+      {% call dialog(
+        trigger=trigger,
+        title="Deploy",
+        id="dialog-deploy",
+        trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5 mt-4"},
+        dialog_attrs={
+          "class": "max-w-screen-sm w-full"
+        }
+      ) %}
+        <div
+          hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
+          hx-trigger="dialog:opened from:#dialog-deploy"
+          hx-swap="outerHTML"
+          class="flex items-center justify-center"
+        >
+          <span class="text-muted-foreground flex items-center gap-x-2">
+            {% include "icons/loader.svg" %}
+            {{ _('Loading accounts') }}
+          </span>
+        </div>
+      {% endcall %}
+    </div>
+  </section>
 {% endif %}
 {% endmacro %}

@@ -1,0 +1,45 @@
+{% if not commits %}
+<p class="bg-muted px-4 h-12 rounded-lg text-muted-foreground flex items-center justify-center">
+  {{ _('No commits found') }}
+</p>
+{% endif %}
+{% for commit in commits %}
+  <label class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
+    <input
+      type="radio"
+      name="commit"
+      value="{{ commit['branch'] }}:{{ commit['sha'] }}"
+      {% if loop.first %}checked{% endif %} 
+      class="input"
+    >
+    <span class="font-medium">
+      {{ commit['sha'][:7] }}
+    </span>
+    <span
+      class="flex items-center gap-x-2 text-muted-foreground"
+      data-tooltip="{{ _('Branch') }}"
+    >
+      <span class="opacity-50 dark:opacity-60">
+        {% include "icons/git-branch.svg" %}
+      </span>
+      {{ commit['branch'] }}
+    </span>
+    <span
+      class="flex items-center gap-x-2 text-muted-foreground min-w-0 flex-1"
+      data-tooltip="{{ _('Commit message') }}"
+    >
+      <span class="opacity-50 dark:opacity-60">
+        {% include "icons/git-commit.svg" %}
+      </span>
+      <span class="truncate">{{ commit['commit']['message'] }}</span>
+    </span>
+    <a
+      href="https://github.com/{{ project.repo_full_name }}/commit/{{ commit['sha'] }}"
+      target="_blank"
+      class="btn-ghost h-8 w-8 p-0"
+      data-tooltip="{{ _('View on GitHub') }}"
+    >
+      {% include "icons/arrow-up-right.svg" %}
+    </a>
+  </label>
+{% endfor %}

@@ -5,7 +5,7 @@
   <header class="flex justify-between items-center">
     <h1 class="h1 flex items-center gap-x-2.5">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
-        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {% from "projects/components/thumbnail/project.html" import thumbnail %}
         {{ thumbnail(project) }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>

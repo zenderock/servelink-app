@@ -42,8 +42,10 @@ def deploy(deployment_id: str):
             # Prepare commands
             commands = []
 
+            app.logger.info(f"config: {deployment.config}")
+
             # Step 1: Clone the repository
-            commands.append(f"echo 'Cloning {deployment.repo['full_name']} (Branch: {deployment.repo['branch']}, Commit: {deployment.commit['sha'][:7]})'")
+            commands.append(f"echo 'Cloning {deployment.repo['full_name']} (Branch: {deployment.commit['branch']}, Commit: {deployment.commit['sha'][:7]})'")
             installation = get_installation_instance(deployment.project.github_installation_id)
             commands.append(
                 "git init -q && "
@@ -67,6 +69,8 @@ def deploy(deployment_id: str):
             )
             commands.append("echo 'Starting application...'")
             commands.append(deployment.config.get('start_command', 'gunicorn --log-level warning --bind 0.0.0.0:8000 main:app'))
+
+            app.logger.info(f"Commands: {commands}")
 
             # Run the container
             # TODO: Add cache for pip
@@ -139,7 +143,7 @@ def deploy(deployment_id: str):
                 app.logger.error(f"Failed to setup branch alias {branch_hostname}: {e}")
 
             # Setup environment domain
-            if deployment.environment == 'production':
+            if deployment.environment_id == 'prod':
                 env_subdomain = project.slug
                 env_hostname = f"{env_subdomain}.{base_domain}"
                 try:
@@ -153,12 +157,12 @@ def deploy(deployment_id: str):
                         subdomain=env_subdomain,
                         deployment_id=deployment.id,
                         type='environment',
-                        value=deployment.environment
+                        value=deployment.environment_id
                     )
                 except Exception as e:
                     app.logger.error(f"Failed to setup production domain {env_hostname}: {e}")
-            elif deployment.environment not in ['preview', None]:
-                env_subdomain = f"{project.slug}-env-{deployment.environment}"
+            elif deployment.environment:
+                env_subdomain = f"{project.slug}-env-{deployment.environment['slug']}"
                 env_hostname = f"{env_subdomain}.{base_domain}"
                 try:
                     response = requests.post(
@@ -171,7 +175,7 @@ def deploy(deployment_id: str):
                         subdomain=env_subdomain,
                         deployment_id=deployment.id,
                         type='environment',
-                        value=deployment.environment
+                        value=deployment.environment_id
                     )
                 except Exception as e:
                     app.logger.error(f"Failed to setup environment domain {env_hostname}: {e}")
@@ -179,9 +183,10 @@ def deploy(deployment_id: str):
             db.session.commit()
             
         except Exception as e:
+            db.session.rollback()  # Clear any failed transaction
             deployment.conclusion = 'failed'
-            app.logger.error(f"Deployment {deployment_id} failed: {e}")
-
+            app.logger.error(f"Deployment {deployment_id} failed: {e}", exc_info=True)
+            
         finally:
             # If the deployment succeeded, log a final message
             if deployment.conclusion == 'succeeded':

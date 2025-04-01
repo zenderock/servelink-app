@@ -40,7 +40,7 @@
   <meta property="og:url" content="{{ request.url }}">
   <meta property="og:title" content="{% if title %}{{ title }} | {{ config.APP_NAME }}{% else %}{{ config.APP_NAME }}{% endif %}">
   <meta property="og:description" content="{{ description or config.APP_DESCRIPTION }}">
-  <meta property="og:image" content="{{ url_for('static', filename='assets/social.png') }}">
+  <meta property="og:image" content="{{ url_for('static', filename='social.png') }}">
   <meta property="og:site_name" content="{{ config.APP_NAME }}">
 
   <!-- X/Twitter -->
@@ -48,19 +48,19 @@
   <meta name="twitter:url" content="{{ request.url }}">
   <meta name="twitter:title" content="{% if title %}{{ title }} | {{ config.APP_NAME }}{% else %}{{ config.APP_NAME }}{% endif %}">
   <meta name="twitter:description" content="{{ description or config.APP_DESCRIPTION }}">
-  <meta name="twitter:image" content="{{ url_for('static', filename='assets/social.png') }}">
+  <meta name="twitter:image" content="{{ url_for('static', filename='social.png') }}">
   <!-- <meta name="twitter:creator" content="@hunvreus">
   <meta property="og:locale" content="en_US"> -->
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='assets/favicon.svg') }}" />
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='assets/apple-touch-icon.png') }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
 
   <!-- CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{url_for('static',filename='assets/styles.css')}}">
+  <link rel="stylesheet" href="{{url_for('static',filename='styles.css')}}">
 
   <!-- Inter font -->
   <link rel="preconnect" href="https://rsms.me/">

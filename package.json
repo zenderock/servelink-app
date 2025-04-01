@@ -1,8 +1,8 @@
 {
   "scripts": {
     "build": "npm run css:build && npm run email",
-    "css:dev": "tailwindcss --silent -i ./src/main.css -o ./app/static/assets/styles.css --watch",
-    "css:build": "tailwindcss -i ./src/main.css -o ./app/static/assets/styles.css --minify",
+    "css:dev": "tailwindcss --silent -i ./src/main.css -o ./app/static/styles.css --watch",
+    "css:build": "tailwindcss -i ./src/main.css -o ./app/static/styles.css --minify",
     "email": "mjml src/login.mjml -o app/templates/email/login.html"
   },
   "devDependencies": {

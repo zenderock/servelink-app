@@ -1,0 +1,84 @@
+{% macro image_upload(field, delete_field, current_image, default_image, max_size=3, extensions=None) %}
+<div
+  class="space-y-2"
+  x-data="{
+    preview: null,
+    maxSize: {{ max_size }},
+    error: null,
+    remove: false,
+    validateAndPreview(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      if (file.size > this.maxSize * 1024 * 1024) {
+        this.error = `{{ _('File is too large. Maximum size is %(size)sMB', size=max_size) }}`;
+        event.target.value = '';
+        this.preview = null;
+        return;
+      }
+      
+      this.error = null;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.preview = e.target.result;
+        this.remove = false;
+        $el.closest('form').dispatchEvent(new Event('change'));
+      };
+      reader.readAsDataURL(file);
+    },
+    removeImage() {
+      this.preview = null;
+      this.remove = true;
+      $el.closest('form').dispatchEvent(new Event('change'));
+    }
+  }"
+>
+  <div class="flex items-center gap-x-2">
+    <div id="image-preview-container">
+      <template x-if="preview">
+        <img :src="preview" class="w-14 h-14 object-cover rounded-lg">
+      </template>
+      <template x-if="!preview && !remove">
+        {{ current_image }}
+      </template>
+      <template x-if="!preview && remove">
+        {{ default_image }}
+      </template>
+    </div>
+    <label>
+      {{ field(
+        class="hidden",
+        accept=('image/' + extensions|join(',image/') if extensions else 'image/*'),
+        **{
+          '@change': 'validateAndPreview($event)'
+        }
+      ) }}
+      <div class="btn-outline h-8 px-2.5 cursor-pointer">
+        {% include "icons/arrow-up-from-line.svg" %}
+        {{ _('Upload image') }}
+      </div>
+    </label>
+    
+    <button
+      type="button"
+      class="btn-outline h-8 w-8 p-0 text-muted-foreground"
+      @click="removeImage()"
+      x-show="!remove"
+      data-tooltip="{{ _('Delete image') }}"
+    >
+      {% include "icons/trash.svg" %}
+    </button>
+    
+  </div>
+  <template x-if="error">
+    <p class="text-danger text-xs font-medium" x-text="error"></p>
+  </template>
+  {% for error in field.errors %}
+    <p class="text-danger text-xs font-medium">{{ error }}</p>
+  {% endfor %}
+  {{ delete_field(
+    class='hidden',
+    **{ ':value': 'remove' }
+  ) }}
+</div>
+{% endmacro %}

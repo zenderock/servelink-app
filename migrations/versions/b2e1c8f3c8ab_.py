@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: d8ccee896894
+Revision ID: b2e1c8f3c8ab
 Revises: 
-Create Date: 2025-03-06 19:32:21.901459
+Create Date: 2025-03-29 17:56:59.467558
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd8ccee896894'
+revision = 'b2e1c8f3c8ab'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -43,6 +43,7 @@ def upgrade():
     op.create_table('project',
     sa.Column('id', sa.String(length=32), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('avatar_updated_at', sa.DateTime(), nullable=True),
     sa.Column('repo_id', sa.BigInteger(), nullable=False),
     sa.Column('repo_full_name', sa.String(length=255), nullable=False),
     sa.Column('repo_status', sa.Enum('active', 'deleted', 'removed', 'transferred', name='project_github_status'), nullable=False),
@@ -50,11 +51,11 @@ def upgrade():
     sa.Column('environments', sa.JSON(), nullable=False),
     sa.Column('env_vars', sa.Text(), nullable=False),
     sa.Column('slug', sa.String(length=40), nullable=True),
+    sa.Column('config', sa.JSON(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('status', sa.Enum('active', 'paused', 'deleted', name='project_status'), nullable=False),
-    sa.Column('mapping', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['github_installation_id'], ['github_installation.installation_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -74,6 +75,7 @@ def upgrade():
     sa.Column('project_id', sa.String(length=32), nullable=False),
     sa.Column('repo', sa.JSON(), nullable=False),
     sa.Column('container_id', sa.String(length=64), nullable=True),
+    sa.Column('environment_id', sa.String(length=8), nullable=False),
     sa.Column('config', sa.JSON(), nullable=False),
     sa.Column('env_vars', sa.Text(), nullable=False),
     sa.Column('commit', sa.JSON(), nullable=False),

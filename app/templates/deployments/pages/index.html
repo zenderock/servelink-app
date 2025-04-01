@@ -5,7 +5,7 @@
   <header class="flex items-center gap-x-4 justify-between">
     <h1 class="h1 flex items-center gap-x-2.5">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
-        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {% from "projects/components/thumbnail/project.html" import thumbnail %}
         {{ thumbnail(project) }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
@@ -21,7 +21,11 @@
         {% include "icons/ellipsis.svg" %}
       {% endset %}
       {% from "components/dropdown.html" import dropdown %}
-      {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-8 h-8 px-0", menu_class="min-w-36" ) %}
+      {% call dropdown(
+        trigger=trigger,
+        trigger_attrs={"class": "btn-ghost w-8 h-8 px-0"},
+        menu_attrs={"menu-class": "min-w-36"}
+      ) %}
         {% include "deployments/partials/_options.html" %}
       {% endcall %}
 
@@ -43,10 +47,8 @@
 
     <ul class="flex gap-x-6 items-start" id="deployment-details">
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Environment') }}">
-        <span class="opacity-50 dark:opacity-60">
-          {% include "icons/zap.svg" %}
-        </span>
-        {{ deployment.environment }}
+        <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+        {{ deployment.environment.name }}
       </li>
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Trigger') }}">
         <span class="opacity-50 dark:opacity-60">
@@ -57,14 +59,14 @@
       <li>
         <a
           class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
-          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.repo.branch }}"
+          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.commit.branch }}"
           target="_blank"
           data-tooltip="{{ _('Branch') }}"
         >
           <span class="opacity-50 dark:opacity-60">
             {% include "icons/git-branch.svg" %}
           </span>
-          {{ deployment.repo.branch }}
+          {{ deployment.commit.branch }}
         </a>
       </li>
       <li>

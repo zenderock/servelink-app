@@ -8,7 +8,8 @@ from sqlalchemy import update, select
 from app.models import GithubInstallation, Project, Deployment
 from datetime import datetime
 from secrets import token_urlsafe
-from app.tasks import deploy
+from app.tasks.deploy import deploy
+from app.helpers.environments import get_environment_for_branch
 
 
 @bp.route('/github/repos', methods=['GET'])
@@ -129,32 +130,50 @@ def github_webhook():
             
             case 'push':
                 # Code pushed to a repository
-                projects = db.session.execute(
+                projects = db.session.scalars(
                     select(Project)
-                    .where(Project.repo_id == data['repository']['id'])
-                ).scalars().all()
+                    .where(
+                        Project.repo_id == data['repository']['id'],
+                        Project.status == 'active'
+                    )
+                ).all()
                 
                 if not projects:
                     current_app.logger.info(f"No projects found for repo {data['repository']['id']}")
                     return '', 200
                 
+                branch = data['ref'].replace('refs/heads/', '')  # Convert refs/heads/main to main
+                
                 for project in projects:
+                    # Check if branch matches any environment
+                    matched_env = get_environment_for_branch(branch, project.active_environments)
+                    if not matched_env:
+                        current_app.logger.info(
+                            f"Skipping deployment for project {project.name}: "
+                            f"branch '{branch}' doesn't match any environment"
+                        )
+                        continue
+
                     deployment = Deployment(
                         project=project,
+                        environment_id=matched_env['id'],
                         trigger='webhook',
                         commit={
                             'sha': data['after'],
                             'author': data['pusher']['name'],
                             'message': data['head_commit']['message'],
                             'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat(),
-                            'branch': data['ref'].replace('refs/heads/', '')  # Convert refs/heads/main to main
+                            'branch': branch
                         },
                     )
                     db.session.add(deployment)
                     db.session.commit()
 
                     current_app.deployment_queue.enqueue(deploy, deployment.id)
-                    current_app.logger.info(f'Deployment {deployment.id} created and queued for project {project.name} ({project.id})')
+                    current_app.logger.info(
+                        f'Deployment {deployment.id} created and queued for '
+                        f'project {project.name} ({project.id}) to environment {matched_env.get('slug')}'
+                    )
 
             case 'pull_request':
                 # TODO: Add logic for PRs
@@ -164,6 +183,7 @@ def github_webhook():
         return '', 200
 
     except Exception as e:
-        current_app.logger.error(f'Error processing GitHub webhook: {str(e)}')
+        import traceback
+        current_app.logger.error(f'Error processing GitHub webhook: {str(e)}', exc_info=True)
         db.session.rollback()
         return '', 500

@@ -4,14 +4,9 @@
     href="{{ url_for('main.project', project_name=project.name) }}"
     class="flex items-center gap-x-2.5 mr-auto"
   >
-    {% from "projects/components/thumbnail.html" import thumbnail %}
+    {% from "projects/components/thumbnail/project.html" import thumbnail %}
     {{ thumbnail(project) }}
-    <div>
-      <h2 class="h4">{{ project.name }}</h2>
-      <!-- <span class="text-muted-foreground">
-        {{ project.updated_at | timeago }}
-      </span> -->
-    </div>
+    <h2 class="h4">{{ project.name }}</h2>
   </a>
 </header>
 <ul class="space-y-1">
@@ -20,7 +15,7 @@
       <span class="opacity-50 dark:opacity-60">
         {% include "icons/link.svg" %}
       </span>
-      {{ project.hostname }}
+      <span class="truncate">{{ project.hostname }}</span>
     </a>
   </li>
   <li>
@@ -28,7 +23,7 @@
       <span class="opacity-50 dark:opacity-60">
         {% include "icons/github.svg" %}
       </span>
-      {{ project.repo_full_name }}
+      <span class="truncate">{{ project.repo_full_name }}</span>
     </a>
   </li>
 </ul>

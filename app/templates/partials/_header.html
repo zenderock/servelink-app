@@ -6,7 +6,10 @@
 				class="w-6 h-8 shrink-0 flex items-center justify-center"
 				aria-label="{{ config.APP_NAME }}"
 			>
-				<svg class="aspect-square w-full" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M170 230L170 86C170 66.1177 186.118 50 206 50L224 50C243.882 50 260 66.1177 260 86L260 104C260 123.882 243.882 140 224 140L56 140C36.1178 140 20 156.118 20 176L20 194C20 213.882 36.1178 230 56 230L74 230C93.8823 230 110 213.882 110 194L110 50" stroke="currentColor" stroke-width="24" stroke-linejoin="round"/></svg>
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M39.9265 17L16.5652 103.791H0L23.3612 17H39.9265Z"/>
+        <path d="M81.7018 98.5804L71.6494 88.5988L92.6037 67.6445H47.1555V52.9198H92.6037L71.6494 31.9655L81.7018 21.9839L120 60.2822L81.7018 98.5804Z"/>
+        </svg>
 			</a>
 
 			{% if current_user.is_authenticated %}
@@ -21,7 +24,11 @@
 					{% set trigger %}
 						{% include "icons/chevrons-up-down.svg" %}
 					{% endset %}
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
+					{% call dropdown(
+            trigger=trigger,
+            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
+            menu_attrs={"data-menu-position": "left"}
+          ) %}
 						{% include "partials/menus/_accounts.html" %}
 					{% endcall %}
 				</div>
@@ -32,11 +39,15 @@
 
 				<div class="flex items-center">
 					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
-						{% from "projects/components/thumbnail.html" import thumbnail %}
-						{{ thumbnail(project, size="sm") }}
+						{% from "projects/components/thumbnail/project.html" import thumbnail %}
+						{{ thumbnail(project, size="xs") }}
 						{{ project.name }}
 					</a>
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
+					{% call dropdown(
+            trigger=trigger,
+            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
+            menu_attrs={"data-menu-position": "left"}
+          ) %}
 						{% include "partials/menus/_projects.html" %}
 					{% endcall %}
 				</div>
@@ -51,7 +62,11 @@
 						{{ status(status=deployment.status, conclusion=deployment.conclusion, compact=True) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
-					{% call dropdown(trigger=trigger, trigger_class="btn-ghost text-muted-foreground w-6 h-8 px-0", menu_position="left" ) %}
+					{% call dropdown(
+            trigger=trigger,
+            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
+            menu_attrs={"data-menu-position": "left"}
+          ) %}
 						{% include "partials/menus/_deployments.html" %}
 					{% endcall %}
 				</div>
@@ -82,7 +97,7 @@
 				{% set trigger %}
 					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
 				{% endset %}
-				{% call dropdown(trigger=trigger, trigger_class="block") %}
+				{% call dropdown(trigger=trigger, trigger_attrs={'class': 'block'}) %}
 					<header class="px-2.5 py-1.5">
 						<div class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</div>
 						<div class="text-muted-foreground">{{ current_user.email }}</div>

@@ -3769,6 +3769,18 @@ ul[role="tablist"] li [role="tab"][aria-selected="true"] {
   height: 296px;
 }
 
+.h-16 {
+  height: 4rem;
+}
+
+.h-24 {
+  height: 6rem;
+}
+
+.h-2 {
+  height: 0.5rem;
+}
+
 .min-h-60 {
   min-height: 15rem;
 }
@@ -3825,6 +3837,30 @@ ul[role="tablist"] li [role="tab"][aria-selected="true"] {
   width: 100vw;
 }
 
+.w-0 {
+  width: 0px;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+.w-24 {
+  width: 6rem;
+}
+
+.w-2 {
+  width: 0.5rem;
+}
+
+.w-40 {
+  width: 10rem;
+}
+
+.w-36 {
+  width: 9rem;
+}
+
 .min-w-0 {
   min-width: 0px;
 }
@@ -3835,6 +3871,10 @@ ul[role="tablist"] li [role="tab"][aria-selected="true"] {
 
 .min-w-48 {
   min-width: 12rem;
+}
+
+.min-w-\[1px\] {
+  min-width: 1px;
 }
 
 .max-w-96 {
@@ -3859,6 +3899,10 @@ ul[role="tablist"] li [role="tab"][aria-selected="true"] {
 
 .max-w-xs {
   max-width: 20rem;
+}
+
+.max-w-full {
+  max-width: 100%;
 }
 
 .flex-1 {
@@ -3886,6 +3930,10 @@ ul[role="tablist"] li [role="tab"][aria-selected="true"] {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 .grid-cols-2 {

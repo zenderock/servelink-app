@@ -11,6 +11,7 @@ flask-sqlalchemy
 flask-wtf
 gunicorn
 humanize
+Pillow
 pyjwt
 python-dotenv
 redis

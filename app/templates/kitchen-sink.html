@@ -165,7 +165,12 @@
   <h2>Dropbown</h2>
 
   {% from "components/dropdown.html" import dropdown %}
-  {% call dropdown(trigger="Open dropdown", id="dropdown-example", trigger_class="btn-outline", menu_class="min-w-36") %}
+  {% call dropdown(
+    trigger="Open dropdown",
+    id="dropdown-example",
+    trigger_attrs={"class": "btn-outline"},
+    menu_attrs={"menu-class": "min-w-36"}
+  ) %}
     <a href="#" role="menuitem">Profile</a>
     <a href="#" role="menuitem">Settings</a>
     <hr role="separator"/>

@@ -1,4 +1,12 @@
-{% macro dialog(id=None, trigger=None, title=None, trigger_attrs={}, dialog_attrs={}, active=False) %}
+{% macro dialog(
+  id=None,
+  trigger=None,
+  title=None,
+  trigger_attrs={},
+  dialog_attrs={},
+  active=False,
+  modal=True
+) %}
 <div
   x-data="{
     active: {{ 'true' if active else 'false' }},

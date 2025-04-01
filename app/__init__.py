@@ -10,6 +10,8 @@ from datetime import datetime
 import humanize
 from redis import Redis
 from rq import Queue
+import json
+import os
 
 
 def get_locale():
@@ -37,6 +39,12 @@ def create_app(config_class=Config):
     redis_conn = Redis.from_url(app.config['REDIS_URL'])
     deployment_queue = Queue('deployments', connection=redis_conn)
     app.deployment_queue = deployment_queue
+    
+    # Load settings for frameworks presets
+    project_root = os.path.dirname(app.root_path)
+    settings_path = os.path.join(project_root, 'settings', 'frameworks.json')
+    with open(settings_path) as f:
+        app.frameworks = json.load(f)
 
     def timeago(value):
         """Convert a datetime or ISO string to a human readable time ago."""

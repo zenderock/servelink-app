@@ -518,7 +518,7 @@
 /* Notifications */
 @layer components {
   .toasts {
-    @apply fixed bottom-0 right-0 p-6 space-y-2 pointer-events-none z-40 max-w-sm;
+    @apply fixed bottom-0 right-0 p-6 space-y-2 pointer-events-none z-[100] max-w-sm;
   }
   .toasts > [role="alert"],
   .toasts > [role="status"] {

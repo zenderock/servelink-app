@@ -30,7 +30,11 @@
       {% if deployment.aliases %}
         {% from "components/dropdown.html" import dropdown %}
         {% set trigger %}+{{ deployment.aliases|length }}{% endset %}
-        {% call dropdown(trigger=trigger, trigger_class="btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full", menu_class="max-w-96") %}
+        {% call dropdown(
+          trigger=trigger,
+          trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"},
+          menu_attrs={"menu-class": "max-w-96"}
+        ) %}
           {% for alias in deployment.aliases %}
             <a
               role="menuitem"

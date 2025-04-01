@@ -3,46 +3,98 @@
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
   <h1 class="h1 flex items-center gap-x-2.5">
-    {% from "projects/components/thumbnail.html" import thumbnail %}
+    {% from "projects/components/thumbnail/project.html" import thumbnail %}
     {{ thumbnail(project) }}
     {{ project.name }}
   </h1>
 
   <section class="space-y-4">
-    <header class="flex justify-between items-center gap-x-4">
+    <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Environments') }}</h2>
       <a
-        href="{{ url_for('main.project_settings', project_name=project.name) }}"
+        href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
         class="btn inline-flex items-center gap-x-2 h-8 px-2.5"
       >
-        {% include "icons/plus.svg" %}
-        {{ _('New environment') }}
+        {% include "icons/settings.svg" %}
+        {{ _('Manage environments') }}
       </a>
     </header>
 
-    {% for environment in project.environments %}
-      {{ environment }}
-    {% endfor %}
+    <ul class="grid grid-cols-3 gap-4">
+      {% for environment in project.active_environments %}
+        <li class="border border-border rounded-xl p-4">
+          <header class="flex items-center gap-x-2 mb-4  truncate">
+            <a
+              href=""
+              class="flex items-center gap-x-2 mr-auto h-4 truncate"
+            >
+              <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
+              <span class=" flex-1 truncate">{{ environment.name }}</span>
+            </a>
+          </header>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
+                class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors"
+                target="_blank"
+                data-tooltip="{{ _('Visit') }}"
+              >
+                <span class="opacity-50 dark:opacity-60">
+                  {% include "icons/link.svg" %}
+                </span>
+                <span class="truncate">{{ project.slug }}-{{ environment.slug }}.{{ base_domain }}</span>
+              </a>
+            </li>
+            <li>
+              <span
+                class="text-muted-foreground flex items-center gap-x-2 mr-auto"
+                data-tooltip="{{ _('Branch pattern') }}"
+              >
+                <span class="opacity-50 dark:opacity-60">
+                  {% include "icons/git-branch.svg" %}
+                </span>
+                <span class="font-mono truncate">{{ environment.branch }}</span>
+              </span>
+            </li>
+          </ul>
+        </li>
+      {% endfor %}
+    </ul>
   </section>
 
   <section class="space-y-4">
-    <header class="flex justify-between items-center gap-x-4">
+    <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Latest deployments') }}</h2>
-      {% from "components/dialog.html" import dialog %}
-      {% set trigger %}
-        {% include "icons/cloud-upload.svg" %}
-        {{ _('Deploy') }}
-      {% endset %}
-      {% call dialog(trigger=trigger, title="Deploy", trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5"}) %}
-        
-        <footer>
-          <button class="btn-ghost" @click="active = false">Cancel</button>
-          <button class="btn-primary">Deploy</button>
-        </footer>
-      {% endcall %}
+      {% if deployments %}
+        {% from "components/dialog.html" import dialog %}
+        {% set trigger %}
+          {% include "icons/cloud-upload.svg" %}
+          {{ _('Deploy') }}
+        {% endset %}
+        {% call dialog(
+          trigger=trigger,
+          title="Deploy",
+          id="dialog-deploy",
+          trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5"},
+          dialog_attrs={"class": "w-full max-w-xl"}
+        ) %}
+          <div
+            hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
+            hx-trigger="load, dialog:opened from:#dialog-deploy"
+            hx-swap="outerHTML"
+            class="flex items-center justify-center"
+          >
+            <span class="text-muted-foreground flex items-center gap-x-2">
+              {% include "icons/loader.svg" %}
+              {{ _('Loading') }}
+            </span>
+          </div>
+        {% endcall %}
+      {% endif %}
     </header>
     {% from "deployments/components/list.html" import list %}
-    {{ list(deployments=deployments) }}
+    {{ list(deployments=deployments, project=project) }}
   </section>
 </div>
 {% endblock %}

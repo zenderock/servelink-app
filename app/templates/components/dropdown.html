@@ -1,5 +1,6 @@
-{% macro dropdown(id=None, trigger=None, main_class=None, trigger_class=None, menu_class=None, menu_position=None) %}
-<span
+{% macro dropdown(id=None, trigger=None, main_attrs={}, trigger_attrs={}, menu_attrs={}) %}
+<div
+  class="dropdown {{ main_attrs.pop('class', '') }}"
   x-data="{ 
     active: false,
     focusedIndex: -1,
@@ -23,8 +24,10 @@
     }
   }"
   @click.away="active = false"
-  class="dropdown {{ main_class }}"
   {% if id %}id="{{ id }}"{% endif %}
+  {% for key, value in main_attrs.items() %}
+  {{ key }}="{{ value }}"
+  {% endfor %}
 >
   {% if trigger %}
   <button
@@ -40,7 +43,9 @@
     id="{{ id }}-trigger"
     aria-controls="{{ id }}-menu"
     {% endif %}
-    {% if trigger_class %}class="{{ trigger_class }}"{% endif %}
+    {% for key, value in trigger_attrs.items() %}
+    {{ key }}="{{ value }}"
+    {% endfor %}
   >
     {{ trigger }}
   </button>
@@ -55,15 +60,16 @@
     @keydown.end.prevent="focusItem(menuItems.length - 1)"
     x-cloak
     {% if id %}id="{{ id }}-menu"{% endif %}
-    {% if menu_class %}class="{{ menu_class }}"{% endif %}
     role="menu"
     aria-orientation="vertical"
     aria-hidden="true"
     :aria-hidden="!active"
-    {% if menu_position %}data-menu-position="{{ menu_position }}"{% endif %}
     @click="$event.target.closest('[role=menuitem]') && ($event.target.closest('[role=menuitem]').blur(), active = false)"
+    {% for key, value in menu_attrs.items() %}
+    {{ key }}="{{ value }}"
+    {% endfor %}
   >
     {{ caller() }}
   </nav>
-</span>
+</div>
 {% endmacro %}

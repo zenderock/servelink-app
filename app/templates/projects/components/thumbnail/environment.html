@@ -1,20 +1,3 @@
-{% macro environment_thumbnail(environment) %}
-  {% if project.thumbnail %}
-    <img src="{{ project.thumbnail }}" alt="{{ project.name }}" class="w-9 h-9 object-cover rounded-lg"/>
-  {% else %}
-    <div class="
-      flex items-center justify-center uppercase font-semibold bg-gradient-to-tl border shrink-0
-      {% if size == 'sm' %}w-5 h-5 rounded text-xs
-      {% elif size == 'md' %}w-6 h-6 rounded-md text-sm
-      {% else %}w-8 h-8 rounded-lg text-lg
-      {% endif %}
-      from-{{ project.color }}-100 to-{{ project.color }}-100/50 
-      border-{{ project.color }}-200 
-      dark:from-{{ project.color }}-950/50 dark:to-{{ project.color }}-950
-      dark:border-{{ project.color }}-900
-      text-{{ project.color }}-500
-    ">
-      {{ project.name[0] }}
-    </div>
-  {% endif %}
-{% endmacro %}
+{% macro thumbnail(environment) -%}
+<span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
+{%- endmacro -%}

@@ -16,7 +16,6 @@ COLORS = [
     'teal',
     'cyan',
     'sky',
-    'neutral'
 ]
 
 def get_project_color(id: str) -> str:

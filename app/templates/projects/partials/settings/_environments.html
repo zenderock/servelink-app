@@ -1,24 +1,24 @@
 {% from "components/dropdown.html" import dropdown %}
 {% from "components/dialog.html" import dialog %}
 
-{% macro render_environment_form(environment, index=0) %}
+{% macro render_environment_form(environment, index=0, update=False) %}
 {% if environment and environment['slug'] == 'production' %}
   {% set form = prod_environment_form %}
-  {% set form_id = 'prod_environment_form' %}
+  {% set fragment = 'prod_environment' %}
   {% set is_active = prod_environment_form.errors %}
 {% else %}
   {% set form = custom_environment_form %}
-  {% set form_id = 'custom_environment_form' %}
+  {% set fragment = 'custom_environment' %}
   {% if environment %}
-    {% set is_active = form.errors and form.original_slug.data == environment['slug'] %}
+    {% set is_active = form.errors and form.environment_id.data == environment['id'] %}
   {% else %}
-    {% set is_active = form.errors and not form.original_slug.data %}
+    {% set is_active = form.errors and not form.environment_id.data %}
   {% endif %}
 {% endif %}
 <form
   method="POST"
-  action=""
-  hx-post=""
+  action="{{ url_for('main.project_settings', project_name=project.name, fragment=fragment) }}"
+  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment=fragment) }}"
   x-data="{ color: '{{ form.color.data if is_active else environment.color if environment else '' }}' }"
   hx-target="closest section"
   hx-indicator="next .htmx-indicator"
@@ -26,19 +26,18 @@
   x-init="
     {% if is_active and form.errors %}activeForm = {{ index }}{% endif %}
     if (!color) {
-      colorIndex = {% if index %}{{ index }}{% else %}{{ project.environments|length }} + 1{% endif %};
+      colorIndex = {% if index %}{{ index }}{% else %}{{ project.active_environments|length }} + 1{% endif %};
       color = getEnvironmentColor(colorIndex);
     }
   "
   class="flex items-start gap-x-2 border-b border-border/50 pb-2"
 >
-  {{ form.hidden_tag() }}
-  <input type="hidden" name="form_id" value="{{ form_id }}">
-  {% if form_id == 'custom_environment_form' %}
+  {{ form.csrf_token }}
+  {% if fragment == 'custom_environment' %}
     {% if environment %}
-      {{ form.original_slug(value=environment.slug, class='hidden') }}
+      {{ form.environment_id(value=environment.id, class='hidden') }}
     {% else %}
-      {{ form.original_slug(class='hidden') }}
+      {{ form.environment_id(class='hidden') }}
     {% endif %}
   {% endif %}
   {{ form.color(
@@ -49,7 +48,11 @@
     {% set trigger %}
       <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></span>
     {% endset %}
-    {% call dropdown(trigger=trigger, trigger_class="btn-ghost w-10 p-0", menu_position="top-left") %}
+    {% call dropdown(
+      trigger=trigger,
+      trigger_attrs={"class": "btn-ghost w-10 p-0"},
+      menu_attrs={"data-menu-position": "top-left"}
+    ) %}
       <div class="grid grid-cols-6 gap-2">
         {% for color in colors %}
           <button
@@ -147,10 +150,11 @@
         activeForm: null,
         getEnvironmentColor: (index) => {
           const colors = {{ colors|tojson }};
-          const colorIndex = (5 * (index - 1)) % colors.length;
+          const colorIndex = (4 * (index - 1)) % colors.length;
           return colors[colorIndex];
         }
       }'
+      {% if updated %}x-init='$dispatch("environments:updated", {{ project.active_environments | tojson }});'{% endif %}
     >
       <div class="flex gap-x-2 border-b border-border/50 pb-2">
         <div class="shrink-0 w-10"></div>
@@ -160,7 +164,7 @@
         <div class="shrink-0 w-20"></div>
       </div>
     
-      {% for environment in project.environments %}
+      {% for environment in project.active_environments %}
         <div
           x-show="activeForm !== {{ loop.index }}"
           class="flex items-center gap-x-2 border-b border-border/50 pb-2"
@@ -199,23 +203,25 @@
               ) %}
                 <div class="space-y-4" x-data="{ confirm: '' }">
                   <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
-                  <p>{{ _('To confirm, enter the environment name <b>"%(name)s"</b> below.', name=environment.name) }}</p>
+                  <p>{{ _('To confirm, enter the environment identifier <b>"%(slug)s"</b> below.', slug=environment.slug) }}</p>
                   <form
                     method="POST"
-                    action=""
-                    hx-post=""
+                    action="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
+                    hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
                     hx-target="closest section"
                     hx-indicator="next .htmx-indicator"
                     @submit.prevent="!confirm"
                   >
-                    {{ delete_environment_form.hidden_tag() }}
-                    <input type="hidden" name="form_id" value="delete_environment_form">
-                    {{ delete_environment_form.slug(value=environment.slug, class='hidden') }}
-                    <input type="text" x-model="confirm" class="w-full" placeholder="{{ _('Type the enviroment name to confirm') }}">
+                    {{ delete_environment_form.csrf_token }}
+                    {{ delete_environment_form.environment_id(value=environment.id) }}
+                    {{ delete_environment_form.confirm(
+                      class_='w-full',
+                      placeholder=_('Type the environment identifier to confirm'),
+                      **{'x-model': 'confirm'}
+                    ) }}
                     <footer class="flex justify-end gap-x-2 pt-4">
                       <button type="button" class="btn-ghost" @click="active = false">Cancel</button>
-                    
-                      <button class="btn-danger" :disabled="confirm !== '{{ environment.name }}'" type="submit">Delete</button>
+                      {{ delete_environment_form.submit(class_="btn-danger", **{':disabled': "confirm !== '" + environment.slug + "'"}) }}
                     </footer>
                   </form>
                 </div>

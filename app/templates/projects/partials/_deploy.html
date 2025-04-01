@@ -1,0 +1,63 @@
+{% set environment_options = [] %}
+{% for environment in project.active_environments %}
+{% set _ = environment_options.append({
+  'value': environment['slug'],
+  'label': '<span class="flex items-center gap-x-2"><span class="inline-block rounded h-2.5 w-2.5 shrink-0 bg-'+ environment['color'] +'-400 dark:bg-'+ environment['color'] +'-600`"></span>' + environment['name'] + '</span>',
+  'attrs': {
+    'hx-get': url_for('main.project_environment_commits', project_name=project.name, environment_slug=environment['slug']),
+    'hx-target': '#commits',
+    'hx-indicator': 'next .htmx-indicator'
+  }
+}) %}
+{% endfor %}
+
+<form
+  method="POST"
+  action="{{ url_for('main.project_deploy', project_name=project.name) }}"
+  hx-post="{{ url_for('main.project_deploy', project_name=project.name) }}"
+  class="space-y-4"
+>
+  {% from "components/select.html" import select %}
+  {{ deployment_form.csrf_token }}
+  <div class="flex items-center gap-x-2">
+    {{ _('Deploy to:') }}
+    {{ select(
+      options=environment_options,
+      id='deploy-environment',
+      input_name='environment_slug'
+    ) }}
+  </div>
+  <div class="relative">
+    <div
+      id="commits"
+      hx-get="{{ url_for('main.project_environment_commits', project_name=project.name, environment_slug=project.active_environments[0]['slug']) }}"
+      hx-trigger="load"
+      hx-indicator="next .htmx-indicator"
+    >
+      <div class="h-60" aria-hidden="true"></div>
+    </div>
+    <div
+      class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20"
+      role="alert"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="{{ _('Loading commits') }}"
+    >
+      <span class="text-muted-foreground flex items-center gap-x-2">
+        {% include "icons/loader.svg" %}
+        {{ _('Loading commits') }}
+      </span>
+    </div>
+  </div>
+  {% if deployment_form.errors %}
+    {% for field_name, field_errors in deployment_form.errors.items() %}
+      {% for error in field_errors %}
+        <p class="text-danger text-xs font-medium">{{ field_name }}: {{ error }}</p>
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+  <footer class="flex justify-end gap-x-2">
+    <button type="button" class="btn-ghost" @click="active = false">{{ _('Cancel') }}</button>
+    {{ deployment_form.submit(class_="btn-primary") }}
+  </footer>
+</form>

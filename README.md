@@ -51,7 +51,7 @@ Variable | Default | Description
 `APP_SOCIAL_IMAGE` | `'/social.png'` | The image used for social cards.
 `MAIL_SENDER_NAME` | `APP_NAME` | The name used when sending emails.
 `MAIL_SENDER_EMAIL` | `'noreply@example.com'` | The email used when sending emails.
-`MAIL_LOGO` | `'/assets/logo/logo-72x72.png'` | Logo used in the HTML email template (see `app/templates/email/login.html`).
+`MAIL_LOGO` | `'/logo/logo-72x72.png'` | Logo used in the HTML email template (see `app/templates/email/login.html`).
 `MAIL_FOOTER` | `None` | A text to be included in the footer of your emails (e.g. your business address).
 `SECRET_KEY` | `'random-unique-secret-key'` | [Secret key used for signing session cookies](https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY). On MacOS/Linux, you can generate it with `openssl rand -base64 32`.
 `SQLALCHEMY_DATABASE_URI` | `None` | [A valid database connection URI](https://flask-sqlalchemy.readthedocs.io/en/stable/config/#flask_sqlalchemy.config.SQLALCHEMY_DATABASE_URI). If undefined, the app will use an SQLite database saved at `app.db`.

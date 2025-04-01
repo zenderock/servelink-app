@@ -1,12 +1,9 @@
-{% macro render_build_and_deploy(form) %}
-{% set frameworks_json %}
-{% include 'projects/partials/frameworks.json' %}
-{% endset %}
+{% macro render_build_and_deploy(form, frameworks) %}
 <div
   class="space-y-6"
   x-data="{
-    frameworks: {{ frameworks_json | replace('"', "'") | safe }},
-    selectedFramework: '{{ form.framework.data }}',
+    frameworks: {{ frameworks | tojson | replace('"', "'") | safe }},
+    selectedFramework: '{{ form.framework.data or '' }}',
     get selectedFrameworkObject() {
       return this.frameworks.find(f => f.slug === this.selectedFramework);
     },
@@ -25,7 +22,8 @@
       locked: {{ 'true' if not form.use_custom_start_command.data else 'false' }}
     },
     setPreset() {
-      if (!this.selectedFramework) return;
+      console.log(this.selectedFramework);
+      if (!this.selectedFramework) this.selectedFramework = this.frameworks[0].slug;
       
       const preset = this.frameworks.find(f => f.slug === this.selectedFramework);
       
@@ -50,7 +48,11 @@
       <span x-text="selectedFrameworkObject?.name"></span>
       <span class="ml-auto text-muted-foreground">{% include "icons/chevrons-up-down.svg" %}</span>
     {% endset %}
-    {% call dropdown(trigger=trigger, id="dropdown-example", trigger_class="btn-outline font-normal px-3 flex items-center gap-x-2", menu_position="top-left") %}
+    {% call dropdown(
+      trigger=trigger,
+      trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
+      menu_attrs={"data-menu-position": "top-left"}
+    ) %}
       <template x-for="framework in frameworks" :key="framework.slug">
         <button
           type="button"

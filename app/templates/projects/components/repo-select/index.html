@@ -27,7 +27,11 @@
         {% include "icons/chevrons-up-down.svg" %}
       </span>
     {% endset %}
-    {% call dropdown(trigger=trigger, id="dropdown-example", trigger_class="btn-outline font-normal px-3 flex items-center gap-x-2", menu_position="top-left") %}
+    {% call dropdown(
+      trigger=trigger,
+      trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
+      menu_attrs={"data-menu-position": "top-left"}
+    ) %}
       <template x-for="account in accounts" :key="account">
         <button
           type="button"
@@ -69,11 +73,7 @@
       </div>
     </div>
     <div role="listbox" aria-label="Repository list" aria-live="polite">
-      <div
-        role="status"
-        class="h-60 text-xs text-muted-foreground flex items-center justify-center"
-        aria-label="{{ _('Loading repositories') }}"
-      ></div>
+      <div class="h-60" aria-hidden="true"></div>
     </div>
   </div>
 </section>

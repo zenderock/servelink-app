@@ -24,18 +24,20 @@
 
 <form
   method="POST"
-  action=""
-  hx-post=""
+  action="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
+  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
+  enctype="multipart/form-data"
   x-data="{
     changed: false,
-    repo_id: {{ project.repo_id }},
-    repo_owner: '{{ project.repo_full_name.split('/')[0] }}',
-    repo_full_name: '{{ project.repo_full_name }}'
+    repoId: {{ project.repo_id }},
+    repoOwner: '{{ project.repo_full_name.split('/')[0] }}',
+    repoFullName: '{{ project.repo_full_name }}',
+    deleteAvatar: false
   }"
   @repo-selected.window="
-    repo_id = $event.detail.id;
-    repo_owner = $event.detail.owner;
-    repo_full_name = $event.detail.fullName;
+    repoId = $event.detail.id;
+    repoOwner = $event.detail.owner;
+    repoFullName = $event.detail.fullName;
     changed = true;
   "
   @input="changed = true"
@@ -43,7 +45,6 @@
   hx-indicator="next .htmx-indicator"
 >
   {{ general_form.hidden_tag() }}
-  <input type="hidden" name="form_id" value="general_form">
   <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
     <div>
       <h2 class="font-medium">{{ _('General') }}</h2>
@@ -59,18 +60,28 @@
     <div class="field">
       {{ general_form.name.label() }}
       {{ general_form.name(class="input w-full") }}
+      {% for error in general_form.name.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
     </div>
   
     <div class="field">
       <label for="name">{{ _('Avatar') }}</label>
-      <div class="flex items-center gap-x-2">
-        {% from "projects/components/thumbnail.html" import thumbnail %}
-        {{ thumbnail(project, size="xl") }}
-        <button class="btn-outline h-8 px-2.5">
-          {% include "icons/arrow-up-from-line.svg" %}
-          {{ _('Upload avatar') }}
-        </button>
-      </div>
+      {% from "components/image_upload.html" import image_upload %}
+      {% from "projects/components/thumbnail/project.html" import thumbnail %}
+      {% set current_image %}
+        {{ thumbnail(project, size="lg") }}
+      {% endset %}
+      {% set default_image %}
+        {{ thumbnail(project, size="lg", ignore_avatar=True) }}
+      {% endset %}
+      {{ image_upload(
+        general_form.avatar,
+        general_form.delete_avatar,
+        current_image,
+        default_image,
+        extensions=["jpg", "jpeg", "png", "gif", "webp"]
+      ) }}
     </div>
   
     <div class="field">
@@ -81,17 +92,20 @@
           class="btn-outline font-normal px-3 flex items-center gap-x-2"
           @click="$dialog('dialog-repo-select', 'open')"
         >
-          <img :src="`https://github.com/${repo_owner}.png`" :alt="`${repo_owner}'s avatar`" class="w-6 h-6 rounded">
-          <span x-text="repo_full_name"></span>
+          <img :src="`https://github.com/${repoOwner}.png`" :alt="`${repoOwner}'s avatar`" class="w-6 h-6 rounded">
+          <span x-text="repoFullName"></span>
           <span class="text-muted-foreground">
             {% include "icons/chevrons-up-down.svg" %}
           </span>
         </button>
       </div>
       {{ general_form.repo_id(
-        class="hidden",
-        **{':value': 'repo_id'}
+        class_="hidden",
+        **{':value': 'repoId'}
       ) }}
+      {% for error in general_form.repo_id.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
     </div>
   </div>
 </form>

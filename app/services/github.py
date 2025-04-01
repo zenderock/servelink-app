@@ -120,17 +120,47 @@ class GitHub:
         response.raise_for_status()
         return response.json()
     
-    def get_repository_commits(self, user_access_token: str,repo_id: int, branch: str | None = None, per_page: int = 30, page: int = 1) -> list:
-        """Get commits for a repository."""
+    def get_repository_commits(self, user_access_token: str, repo_id: int, branch: str | None = None, search: str | None = None, per_page: int = 30, page: int = 1) -> list:
+        """Get commits for a repository.
+        
+        Args:
+            user_access_token: GitHub access token
+            repo_id: Repository ID
+            branch: Optional branch name to filter commits
+            search: Optional search query for commit messages
+            per_page: Number of results per page
+            page: Page number
+        """
         params = {
             'page': page,
             'per_page': per_page
         }
         if branch:
             params['sha'] = branch
-        
+        if search:
+            params['q'] = search
+
         response = requests.get(
             f'https://api.github.com/repositories/{repo_id}/commits',
+            headers={'Authorization': f'Bearer {user_access_token}'},
+            params=params
+        )
+        response.raise_for_status()
+        return response.json()
+        
+    def get_repository_commit(self, user_access_token: str, repo_id: int, commit_sha: str, branch: str | None = None) -> dict:
+        """
+        Get details for a specific commit by its SHA.
+        If branch is specified, it's used for validation but not in the URL.
+        """
+        url = f'https://api.github.com/repositories/{repo_id}/commits/{commit_sha}'
+        
+        params = {}
+        if branch:
+            params['ref'] = branch
+        
+        response = requests.get(
+            url,
             headers={'Authorization': f'Bearer {user_access_token}'},
             params=params
         )

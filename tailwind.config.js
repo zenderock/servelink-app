@@ -67,7 +67,11 @@ module.exports = {
       `text-${color}-500`,
       `border-${color}-500`,
       `bg-${color}-400`,
-      `dark:bg-${color}-600`
+      `dark:bg-${color}-600`,
+      `border-${color}-400`,
+      `dark:border-${color}-600`,
+      `text-${color}-400`,
+      `dark:text-${color}-600`
     ])
   ],
   plugins: [

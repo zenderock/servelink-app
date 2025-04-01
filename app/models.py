@@ -89,6 +89,7 @@ class GithubInstallation(db.Model):
 class Project(db.Model):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: token_hex(16))
     name: Mapped[str] = mapped_column(String(100), index=True)
+    avatar_updated_at = db.Column(db.DateTime, nullable=True)
     repo_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     repo_full_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     repo_status: Mapped[str] = mapped_column(
@@ -117,7 +118,6 @@ class Project(db.Model):
         nullable=False,
         default='active'
     )
-    mapping: Mapped[list[str]] = mapped_column(JSON, nullable=True, default={"environments": {}, "branches": {}})
     deployments: WriteOnlyMapped['Deployment'] = relationship(
         back_populates='project',
         foreign_keys='Deployment.project_id'
@@ -174,6 +174,125 @@ class Project(db.Model):
     def __repr__(self):
         return f'<Project {self.name}>'
 
+    def get_config(self, environment: str | None = None) -> dict:
+        """Get complete project configuration with framework defaults."""
+        framework_slug = self.config.get('framework', 'python')
+        framework = next((f for f in current_app.frameworks if f.get('slug') == framework_slug), {})
+
+        return {
+            'framework': framework,
+            'build_command': self.config.get('build_command') or framework.get('build_command'),
+            'pre_deploy_command': self.config.get('pre_deploy_command') or framework.get('pre_deploy_command'),
+            'start_command': self.config.get('start_command') or framework.get('start_command'),
+            'root_directory': self.config.get('root_directory') or framework.get('root_directory', './'),
+        }
+    
+    def get_env_vars(self, environment: str) -> list[dict[str, str]]:
+        """Flattened env vars for a specific environment."""
+        env_vars = [var for var in self.env_vars if not var.get('environment')]
+        for var in self.env_vars:
+            if var.get('environment') == environment:
+                env_vars = [v for v in env_vars if v['key'] != var['key']] # Remove dupes
+                env_vars.append(var)
+        return env_vars
+
+    def has_active_environment_with_slug(self, slug: str, exclude_id: str | None = None) -> bool:
+        """Check if an active environment with given slug exists"""
+        return any(e for e in self.active_environments 
+                  if e['slug'] == slug and (exclude_id is None or e['id'] != exclude_id))
+
+    def create_environment(self, name: str, slug: str, **kwargs) -> dict:
+        """Create a new environment with a unique ID"""
+        if self.has_active_environment_with_slug(slug):
+            raise ValueError(f"An active environment with slug '{slug}' already exists")
+
+        env = {
+            'id': token_hex(4),
+            'name': name,
+            'slug': slug,
+            'status': 'active',
+            **kwargs
+        }
+        environments = self.environments.copy()
+        environments.append(env)
+        self.environments = environments
+        return env
+
+    def update_environment(self, environment_id: str, **updates) -> dict | None:
+        """Update environment"""
+        env = self.get_environment_by_id(environment_id)
+        if not env:
+            return None
+        
+        # Prevent production rename
+        if env['slug'] == 'production' and ('name' in updates or 'slug' in updates):
+            raise ValueError("Cannot delete production environment")
+
+        # If changing slug, check it's unique
+        new_slug = updates.get('slug')
+        if new_slug and new_slug != env['slug'] and self.has_active_environment_with_slug(new_slug, exclude_id=environment_id):
+            raise ValueError(f"An active environment with slug '{new_slug}' already exists")
+
+        # Update the environment
+        env_index = next(i for i, e in enumerate(self.environments) if e['id'] == environment_id)
+        old_slug = self.environments[env_index]['slug']
+        
+        environments = self.environments.copy()
+        environments[env_index] = {
+            **environments[env_index],
+            **updates
+        }
+        self.environments = environments
+
+        # Update env vars if slug changed
+        if new_slug and new_slug != old_slug:
+            env_vars = self.env_vars.copy()
+            for var in env_vars:
+                if var.get('environment') == old_slug:
+                    var['environment'] = new_slug
+            self.env_vars = env_vars
+
+        return environments[env_index]
+
+    def delete_environment(self, environment_id: str) -> bool:
+        """Soft delete environment"""
+        if environment_id == 'prod':
+            raise ValueError("Cannot delete production environment")
+        
+        env = self.get_environment_by_id(environment_id)
+        if not env:
+            return False
+
+        # Remove env vars for this environment (still need slug here)
+        env_vars = self.env_vars.copy()
+        env_vars = [var for var in env_vars if var.get('environment') != env['slug']]
+        self.env_vars = env_vars
+
+        # Mark environment as deleted
+        env_index = next(i for i, e in enumerate(self.environments) if e['id'] == environment_id)
+        environments = self.environments.copy()
+        environments[env_index] = {
+            **environments[env_index],
+            'status': 'deleted'
+        }
+        self.environments = environments
+        return True
+
+    @property
+    def active_environments(self) -> list[dict]:
+        """Get only active environments"""
+        return [env for env in self.environments 
+                if env.get('status') == 'active']
+
+    def get_environment_by_id(self, env_id: str) -> dict | None:
+        """Get environment by ID"""
+        return next((env for env in self.environments if env['id'] == env_id), None)
+
+    def get_environment_by_slug(self, slug: str, active_only: bool = True) -> dict | None:
+        """Get environment by slug"""
+        environments = self.active_environments if active_only else self.environments
+        return next((env for env in environments if env['slug'] == slug), None)
+
 
 @event.listens_for(Project, 'after_insert')
 def set_project_slug(mapper, connection, project):
@@ -205,6 +324,7 @@ class Deployment(db.Model):
     project: Mapped[Project] = relationship(back_populates='deployments', foreign_keys=[project_id])
     repo: Mapped[dict] = mapped_column(JSON, nullable=False)
     container_id: Mapped[str] = mapped_column(String(64), nullable=True)
+    environment_id: Mapped[str] = mapped_column(String(8), nullable=False)
     config: Mapped[dict] = mapped_column(JSON, nullable=False)
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
     commit: Mapped[dict] = mapped_column(JSON, nullable=False)
@@ -229,6 +349,11 @@ class Deployment(db.Model):
         back_populates='deployment',
         foreign_keys='Alias.deployment_id'
     )
+
+    @property
+    def environment(self) -> dict | None:
+        """Get environment configuration"""
+        return self.project.get_environment_by_id(self.environment_id)
 
     @property
     def env_vars(self) -> list[dict[str, str]]:
@@ -276,23 +401,24 @@ class Deployment(db.Model):
             return None
         return f"{current_app.config['URL_SCHEME']}://{self.featured_hostname}"
     
-    @env_vars.setter
+    @env_vars.setter 
     def env_vars(self, value: list[dict[str, str]] | None):
         json_str = json.dumps(value or [])
         f = Fernet(current_app.config['ENCRYPTION_KEY'])
         self._env_vars = f.encrypt(json_str.encode()).decode()
 
-    def __init__(self, project: Project, **kwargs):
+    def __init__(self, **kwargs):
         with db.session.no_autoflush:
             super().__init__(**kwargs)
-            self.project = project
-            # Snapshot repo, config and env_vars from project at time of creation
+            # Snapshot repo, config, environments and env_vars from project at time of creation
+            project = kwargs['project']
             self.repo = {
                 'id': project.repo_id,
                 'full_name': project.repo_full_name
             }
-            self.config = project.environments
-            self.env_vars = project.env_vars
+            self.config = project.get_config()
+            environment = project.get_environment_by_id(kwargs['environment_id'])
+            self.env_vars = project.get_env_vars(environment['slug'])
 
     def __repr__(self):
         return f'<Deployment {self.id}>'
@@ -320,17 +446,6 @@ class Deployment(db.Model):
     @property
     def parsed_logs(self):
         return self.parse_logs()
-    
-    @property
-    def environment(self) -> str:
-        # TODO: add support for multiple environments
-        # TODO: account for changes in production branch + redeploy/rollback
-        return 'production'
-        # if self.commit.get('branch') == self.project.repo_branch:
-        #     current_app.logger.info(f"Deployment {self.id} is on production branch")
-        #     return 'production'
-        # current_app.logger.info(f"Deployment {self.id} is on preview branch")
-        # return 'preview'
 
 
 class Alias(db.Model):

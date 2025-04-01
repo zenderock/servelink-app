@@ -5,7 +5,7 @@
   <header class="flex justify-between items-center">
     <h1 class="h1 flex items-center gap-x-2.5">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
-        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {% from "projects/components/thumbnail/project.html" import thumbnail %}
         {{ thumbnail(project) }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
@@ -18,10 +18,6 @@
       {% include "icons/cloud-upload.svg" %}
       {{ _('Deploy') }}
     </button>
-      <!-- <form action="" method="post">
-        {{ form.hidden_tag() }}
-        {{ form.submit(class="btn h-9 px-3") }}
-      </form> -->
   </header>
 
   <section class="space-y-2">
@@ -35,7 +31,7 @@
     </header>
 
     {% from "deployments/components/list.html" import list %}
-    {{ list(deployments=deployments, pagination=pagination) }}
+    {{ list(deployments=deployments, project=project, pagination=pagination) }}
   </section>
 </div>
 {% endblock %}

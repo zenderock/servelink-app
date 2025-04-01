@@ -1,0 +1,84 @@
+{% macro select(
+  options=[],
+  id=None,
+  default_value=None,
+  input_name=None,
+  main_attrs={},
+  trigger_attrs={},
+  menu_attrs={}
+) %}
+{% from "components/dropdown.html" import dropdown %}
+
+{% if options %}
+
+{% set default = namespace() %}
+{% set default.value = options[0].value %}
+{% set default.label = options[0].label %}
+
+{% if default_value %}
+  {% for option in options %}
+    {% if option.value == default_value %}
+      {% set default.value = option.value %}
+      {% set default.label = option.label %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% set trigger_attrs = dict(trigger_attrs, **{'class': 'btn-outline truncate font-normal px-3 flex items-center gap-x-2 w-full'} if 'class' not in trigger_attrs else {}) %}
+{% set menu_attrs = dict(menu_attrs, **{'data-menu-position': 'top-left'} if 'data-menu-position' not in menu_attrs else {}) %}
+
+<div x-data="{ 
+  selectedValue: '{{ default.value }}',
+  selectedLabel: '{{ default.label }}',
+  get displayText() {
+    return this.selectedLabel;
+  }
+}" {% if id %}id="{{ id }}"{% endif %}>
+  {% set trigger %}
+    <div x-html="displayText" class="truncate flex-1"></div>
+    <span class="text-muted-foreground ml-auto">
+      {% include "icons/chevrons-up-down.svg" %}
+    </span>
+  {% endset %}
+
+  {% call dropdown(
+    trigger=trigger,
+    main_attrs=main_attrs,
+    trigger_attrs=trigger_attrs,
+    menu_attrs=menu_attrs
+  ) %}
+    {% for option in options %}
+      <button
+        type="button"
+        role="menuitem"
+        @click="
+          selectedValue = '{{ option.value }}';
+          selectedLabel = '{{ option.label }}';
+          $dispatch('select-changed', { value: selectedValue });
+          $el.closest('form')?.dispatchEvent(new Event('change'));
+        "
+        {% if option.attrs %}
+          {% for key, value in option.attrs.items() %}
+            {{ key }}="{{ value }}"
+          {% endfor %}
+        {% endif %}
+      >
+        <div>{{ option.label | safe }}</div>
+        <span class="h-4 w-4 ml-auto text-muted-foreground">
+          <span x-show="selectedValue === '{{ option.value }}'">
+            {% include "icons/check.svg" %}
+          </span>
+        </span>
+      </button>
+    {% endfor %}
+  {% endcall %}
+  {% if input_name %}
+  <input type="hidden" name="{{ input_name }}" x-bind:value="selectedValue">
+  {% endif %}
+</div>
+
+{% endif %}
+{% endmacro %}
+
+
+
