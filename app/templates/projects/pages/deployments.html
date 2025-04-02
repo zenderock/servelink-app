@@ -3,35 +3,193 @@
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
   <header class="flex justify-between items-center">
-    <h1 class="h1 flex items-center gap-x-2.5">
+    <h1 class="h1 flex items-center gap-x-3">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
-        {% from "projects/components/thumbnail/project.html" import thumbnail %}
-        {{ thumbnail(project) }}
+        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {{ thumbnail(project, size='md') }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
-      <a href="{{ url_for('main.project_deployments', project_name=project.name) }}">
-        {{ _('Deployments') }}
-      </a>
+      {{ _('Deployments') }}
     </h1>
 
-    <button class="btn h-8 px-2.5 gap-x-2">
+    {% from "components/dialog.html" import dialog %}
+    {% set trigger %}
       {% include "icons/cloud-upload.svg" %}
       {{ _('Deploy') }}
-    </button>
+    {% endset %}
+    {% call dialog(
+      trigger=trigger,
+      title="Deploy",
+      id="dialog-deploy",
+      trigger_attrs={"class": "btn gap-x-2"},
+      dialog_attrs={"class": "w-full max-w-xl"}
+    ) %}
+      <div
+        hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
+        hx-trigger="dialog:opened from:#dialog-deploy"
+        hx-swap="outerHTML"
+        class="flex items-center justify-center"
+      >
+        <span class="text-muted-foreground flex items-center gap-x-2">
+          {% include "icons/loader.svg" %}
+          {{ _('Loading') }}
+        </span>
+      </div>
+    {% endcall %}
   </header>
 
-  <section class="space-y-2">
-    <header class="flex justify-between items-center gap-x-4">
-      <input class="input flex-1" type="text" placeholder="Search deployments">
-      <select class="input">
-        <option value="all">{{ _('All') }}</option>
-        <option value="success">{{ _('Success') }}</option>
-        <option value="failed">{{ _('Failed') }}</option>
-      </select>
-    </header>
+  <section class="space-y-4">
+    <form
+      class="flex justify-start items-center gap-x-4"
+      hx-get="{{ url_for('main.project_deployments', project_name=project.name) }}"
+      hx-target="#deployments"
+      hx-indicator="next .htmx-indicator"
+      hx-trigger="change delay:10ms"
+      hx-push-url="true"
+      hx-swap="outerHTML"
+    >
+      {% from "components/select.html" import select %}
+      
+      {# Environments #}
+      {% from "deployments/components/color.html" import color %}
+      {% set environment_options = [{ 'value': '', 'label': _('All environments') }] %}
+      {% for environment in project.active_environments %}
+        {% set option_label %}
+          <span class="flex items-center gap-x-2">
+            {{ color(environment['color']) }}
+            {{ environment['name'] }}
+          </span>
+        {% endset %}
+        {% set _ = environment_options.append({
+          'value': environment['slug'],
+          'label': option_label
+        }) %}
+      {% endfor %}
+
+      {{ select(
+        options=environment_options,
+        input_name='environment',
+        main_attrs={'x-init': '
+          const params = new URLSearchParams(window.location.search);
+          const value = params.get("environment") || "";
+          if (value) select(value);
+        '}
+      ) }}
+
+      {% from "deployments/components/status.html" import status %}
+      {% set status_options = [
+        {
+          'value': '',
+          'label': _('All statuses')
+        },
+        {
+          'value': 'succeeded',
+          'label': status(conclusion='succeeded') | safe
+        },
+        {
+          'value': 'failed',
+          'label': status(conclusion='failed') | safe
+        },
+        {
+          'value': 'skipped',
+          'label': status(conclusion='skipped') | safe
+        },
+        {
+          'value': 'canceled',
+          'label': status(conclusion='canceled') | safe
+        },
+        {
+          'value': 'in_progress',
+          'label': status(conclusion='') | safe
+        }
+      ] %}
+      {{ select(
+        options=status_options,
+        input_name='status',
+        main_attrs={'x-init': '
+          const params = new URLSearchParams(window.location.search);
+          const value = params.get("status") || "";
+          if (value) select(value);
+        '}
+      ) }}
+      
+      {% from "components/dropdown.html" import dropdown %}
+      {% set date_range_trigger %}
+        <span class="truncate">
+          <span x-show="dateFrom && !dateTo">
+            {{ _('From') }} <span x-html="dateFrom"></span>
+          </span>
+          <span x-show="!dateFrom && dateTo">
+            {{ _('To') }} <span x-html="dateTo"></span>
+          </span>
+          <span x-show="dateFrom && dateTo">
+            <span x-html="dateFrom"></span> - <span x-html="dateTo"></span>
+          </span>
+          <span x-show="!dateFrom && !dateTo">
+            {{ _('All dates') }}
+          </span>
+        </span>
+        <span class="text-muted-foreground ml-auto">
+          {% include "icons/chevrons-up-down.svg" %}
+        </span>
+      {% endset %}
+      {% call dropdown(
+        trigger=date_range_trigger,
+        trigger_attrs={ 'class': 'btn-outline' },
+        menu_attrs={
+          'class': '!p-4 space-y-4',
+          'data-menu-position': 'top-left'
+        },
+        main_attrs={
+          'x-data': '{ dateFrom: null, dateTo: null }',
+          'x-init': '
+            const params = new URLSearchParams(window.location.search);
+            dateFrom = params.get("date-from") || "";
+            dateTo = params.get("date-to") || "";
+          '
+        }
+      ) %}
+        <div class="field">
+          <label class="label">From</label>
+          <input class="input" type="date" name="date-from" x-model="dateFrom"/>
+        </div>
+        <div class="field">
+          <label class="label">To</label>
+          <input class="input" type="date" name="date-to" x-model="dateTo"/>
+        </div>
+      {% endcall %}
+      
+      {% set branch_options = [{ 'value': '', 'label': _('All branches') }] %}
+      {% for branch in branches %}
+        {% set _ = branch_options.append({
+          'value': branch['name'],
+          'label': branch['name']
+        }) %}
+      {% endfor %}
+      {{ select(
+        options=branch_options,
+        input_name='branch',
+        main_attrs={'x-init': '
+          const params = new URLSearchParams(window.location.search);
+          const value = params.get("branch") || "";
+          if (value) select(value);
+        '}
+      ) }}
+    </form>
 
     {% from "deployments/components/list.html" import list %}
-    {{ list(deployments=deployments, project=project, pagination=pagination) }}
+
+    <div class="relative">
+      <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
+        <div class="flex items-center gap-x-2 text-muted-foreground">
+          {% include "icons/loader.svg" %}
+          <span>Searching</span>
+        </div>
+      </div>
+      <div id="deployments">
+        {{ list(deployments=deployments, project=project, pagination=pagination) }}
+      </div>
+    </div>
   </section>
 </div>
 {% endblock %}

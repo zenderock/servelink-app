@@ -2,9 +2,9 @@
 
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
-  <h1 class="h1 flex items-center gap-x-2.5">
-    {% from "projects/components/thumbnail/project.html" import thumbnail %}
-    {{ thumbnail(project) }}
+  <h1 class="h1 flex items-center gap-x-3">
+    {% from "projects/components/thumbnail.html" import thumbnail %}
+    {{ thumbnail(project, size='md') }}
     {{ project.name }}
   </h1>
 
@@ -25,10 +25,10 @@
         <li class="border border-border rounded-xl p-4">
           <header class="flex items-center gap-x-2 mb-4  truncate">
             <a
-              href=""
+              href="{{ url_for('main.project_deployments', project_name=project.name, environment=environment.slug) }}"
               class="flex items-center gap-x-2 mr-auto h-4 truncate"
             >
-              <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
+              <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
               <span class=" flex-1 truncate">{{ environment.name }}</span>
             </a>
           </header>
@@ -81,7 +81,7 @@
         ) %}
           <div
             hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
-            hx-trigger="load, dialog:opened from:#dialog-deploy"
+            hx-trigger="dialog:opened from:#dialog-deploy"
             hx-swap="outerHTML"
             class="flex items-center justify-center"
           >

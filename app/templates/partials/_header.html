@@ -39,7 +39,7 @@
 
 				<div class="flex items-center">
 					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
-						{% from "projects/components/thumbnail/project.html" import thumbnail %}
+						{% from "projects/components/thumbnail.html" import thumbnail %}
 						{{ thumbnail(project, size="xs") }}
 						{{ project.name }}
 					</a>
@@ -59,7 +59,7 @@
 				<div class="flex items-center">
 					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
 						{% from "deployments/components/status.html" import status %}
-						{{ status(status=deployment.status, conclusion=deployment.conclusion, compact=True) }}
+						{{ status(conclusion=deployment.conclusion, compact=True, id='header-nav-trigger-deployment-status-' + deployment.id[:7]) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
 					{% call dropdown(
@@ -84,12 +84,12 @@
 				class="btn-ghost h-8 w-8 p-0 rounded-full"
 				aria-label="Toggle theme"
 			>
-				<template x-if="$store.theme.isDark">
+				<span x-show="$store.theme.isDark">
 					{% include "icons/moon.svg" %}
-				</template>
-				<template x-if="!$store.theme.isDark">
+				</span>
+				<span x-show="!$store.theme.isDark">
 					{% include "icons/sun.svg" %}
-				</template>
+				</span>
 			</button>
 
 			{% if current_user.is_authenticated %}

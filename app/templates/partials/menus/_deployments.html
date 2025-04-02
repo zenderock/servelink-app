@@ -1,14 +1,14 @@
-<span role="menuitem" class="flex items-center gap-x-2">
+<span role="menuitem" class="flex items-center gap-x-2" id="header-nav-menuitem-deployment-status-{{ deployment.id[:7] }}">
   {% from "deployments/components/status.html" import status %}
-  {{ status(status=deployment.status, conclusion=deployment.conclusion, compact=True) }}
+  {{ status(conclusion=deployment.conclusion, compact=True) }}
   <span class="font-mono">{{ deployment.id[:7] }}</span>
   <span class="h-4 w-4 ml-auto text-muted-foreground">
     {% include "icons/check.svg" %}
   </span>
 </span>
 {% for other_deployment in get_latest_deployments(deployment) %}
-  <a href="{{ url_for('main.deployment', project_name=other_deployment.project.name, deployment_id=other_deployment.id) }}" role="menuitem">
-    {{ status(status=other_deployment.status, conclusion=other_deployment.conclusion, compact=True) }}
+  <a href="{{ url_for('main.deployment', project_name=other_deployment.project.name, deployment_id=other_deployment.id) }}" role="menuitem" id="header-nav-menuitem-deployment-status-{{ other_deployment.id }}">
+    {{ status(conclusion=other_deployment.conclusion, compact=True) }}
     {{ other_deployment.id[:7] }}
     <span class="h-4 w-4 ml-auto"></span>
   </a>

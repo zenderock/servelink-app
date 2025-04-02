@@ -22,7 +22,6 @@
       locked: {{ 'true' if not form.use_custom_start_command.data else 'false' }}
     },
     setPreset() {
-      console.log(this.selectedFramework);
       if (!this.selectedFramework) this.selectedFramework = this.frameworks[0].slug;
       
       const preset = this.frameworks.find(f => f.slug === this.selectedFramework);

@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.main import bp
 from app.models import Project, Deployment
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.main.forms import ProjectForm, DeployForm, ProdEnvironmentForm, CustomEnvironmentForm, EnvVarsForm, BuildAndDeployForm, GeneralForm, DeleteEnvironmentForm, DeleteProjectForm
 from app.tasks.deploy import deploy
 from app.helpers.github import get_installation_instance
@@ -330,6 +330,7 @@ def project_settings(project, fragment=None):
             
             # Avatar upload
             avatar_file = general_form.avatar.data
+            current_app.logger.info(f"Avatar file: {avatar_file}")
             if avatar_file and hasattr(avatar_file, 'filename') and avatar_file.filename:
                 try:
                     from PIL import Image
@@ -438,6 +439,7 @@ def project_settings(project, fragment=None):
     if (request.method == 'GET' and not fragment) or fragment in ('prod_environment', 'custom_environment', 'delete_environment'):
         branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
         prod_environment_form.branch.choices = [(branch['name'], branch['name']) for branch in branches]
+        prod_environment_form.branch.choices = [('production', 'production')]
 
     if (request.method == 'GET' and not fragment) or fragment == 'prod_environment':
         if prod_environment_form.validate_on_submit():
@@ -566,60 +568,69 @@ def project_settings(project, fragment=None):
 @login_required
 @load_project
 def project_deployments(project):
-    form = DeployForm(project)
-    if form.validate_on_submit():
-        # We retrieve the latest commit from the repo
-        # branch = project.environments[0].get('branch') if project.environments else None
-        branch = 'production'
-        commits = current_app.github.get_repository_commits(
-            current_user.github_token,
-            project.repo_id,
-            branch,
-            1
-        )
-        # Error our if no commit (at least one)
-        if len(commits) == 0:
-            flash(_('No commits found for branch {branch}.'), 'error')
-            return redirect(url_for('main.project', project_name=project.name))
-        
-        commit = commits[0]
-
-        # We create a new deployment and associate it with the project
-        deployment = Deployment(
-            project=project,
-            trigger='user',
-            commit={
-                'branch': 'production',
-                'sha': commit['sha'],
-                'author': commit['author']['login'],
-                'message': commit['commit']['message'],
-                'date': commit['commit']['author']['date']
-            },
-        )
-        db.session.add(deployment)
-        db.session.commit()
-        
-        current_app.deployment_queue.enqueue(deploy, deployment.id)
-
-        return redirect(url_for('main.deployment', project_name=project.name, deployment_id=deployment.id))
-    
     page = request.args.get('page', 1, type=int)
     per_page = 10
+    
+    # Start with base query
+    query = project.deployments.select().order_by(Deployment.created_at.desc())
+    
+    # Filter by environment
+    if environment_slug := request.args.get('environment'):
+        environment = project.get_environment_by_slug(environment_slug)
+        if environment:
+            query = query.where(Deployment.environment_id == environment['id'])
+    
+    # Filter by status (conclusion)
+    if status := request.args.get('status'):
+        if status == 'in_progress':
+            query = query.where(Deployment.conclusion == None)
+        else:
+            query = query.where(Deployment.conclusion == status)
+    
+    # Filter by date range
+    if date_from := request.args.get('date-from'):
+        try:
+            from_date = datetime.fromisoformat(date_from)
+            query = query.where(Deployment.created_at >= from_date)
+        except ValueError:
+            pass
+            
+    if date_to := request.args.get('date-to'):
+        try:
+            to_date = datetime.fromisoformat(date_to)
+            query = query.where(Deployment.created_at <= to_date)
+        except ValueError:
+            pass
+    
+    # Filter by branch
+    if branch := request.args.get('branch'):
+        query = query.where(func.json_extract(Deployment.commit, '$.branch') == branch)
 
     pagination = db.paginate(
-        project.deployments.select().order_by(Deployment.created_at.desc()),
+        query,
         page=page,
         per_page=per_page,
         error_out=False
     )
     deployments = pagination.items
 
+    if request.headers.get('HX-Request'):
+        return render_htmx_partial(
+            'projects/partials/_deployments.html',
+            project=project,
+            deployments=deployments,
+            pagination=pagination
+        )
+
+    # Retrieve branches to pass to the template
+    branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
+
     return render_template(
         'projects/pages/deployments.html',
         project=project,
         deployments=deployments,
         pagination=pagination,
-        form=form
+        branches=branches
     )
 
 @bp.route('/projects/<string:project_name>/deployments/<string:deployment_id>/teaser')
@@ -637,13 +648,11 @@ def deployment_teaser(project, deployment):
 def deployment(project, deployment):
     if request.headers.get('HX-Request'):
         content = render_template('deployments/partials/_logs.html', logs=deployment.parsed_logs)
-        code = 200
 
         if deployment.conclusion:
-            code = 286
-            content += render_template('deployments/partials/_info.html', deployment=deployment, oob=True)
+            content += render_template('deployments/partials/_deployment_status.html', deployment=deployment, oob=True)
 
-        return content, code
+        return content
 
     return render_template(
         'deployments/pages/index.html', 

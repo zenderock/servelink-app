@@ -35,15 +35,15 @@
 >
   <div class="flex items-center gap-x-2">
     <div id="image-preview-container">
-      <template x-if="preview">
+      <span x-show="preview">
         <img :src="preview" class="w-14 h-14 object-cover rounded-lg">
-      </template>
-      <template x-if="!preview && !remove">
+      </span>
+      <span x-show="!preview && !remove">
         {{ current_image }}
-      </template>
-      <template x-if="!preview && remove">
+      </span>
+      <span x-show="!preview && remove">
         {{ default_image }}
-      </template>
+      </span>
     </div>
     <label>
       {{ field(
@@ -70,9 +70,7 @@
     </button>
     
   </div>
-  <template x-if="error">
-    <p class="text-danger text-xs font-medium" x-text="error"></p>
-  </template>
+  <p x-show="error" class="text-danger text-xs font-medium" x-text="error"></p>
   {% for error in field.errors %}
     <p class="text-danger text-xs font-medium">{{ error }}</p>
   {% endfor %}

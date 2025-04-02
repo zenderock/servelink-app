@@ -1,17 +1,110 @@
-{% macro list(deployments=[], project=None, pagination=None, display_project=False, display_empty=True) %}
+{% macro list(
+  deployments=[],
+  project=None,
+  pagination=None,
+  display_project=False,
+  display_empty=True,
+  main_attrs={}
+) %}
 
 {% if deployments %}
-  {% from "deployments/components/teaser.html" import teaser %}
-  {% set route_params = request.view_args.copy() %}
+  {% from "deployments/components/status.html" import status %}
+  {% from "projects/components/thumbnail.html" import thumbnail %}
+  {% from "components/dropdown.html" import dropdown %}
+  {% set status_labels = {
+    'succeeded': _('Status: Succeeded'),
+    'failed': _('Status: Failed'),
+    'canceled': _('Status: Canceled'),
+    'skipped': _('Status: Skipped')
+  } %}
 
-  <ul>
+  <ul
+    {% for key, value in main_attrs.items() %}
+    {{ key }}="{{ value }}"
+    {% endfor %}
+  >
     {% for deployment in deployments %}
       <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
-        {{ teaser(deployment, display_project=display_project) }}
+        <span
+          data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
+          data-tooltip-position="top-left"
+        >
+          {{ status(conclusion=deployment.conclusion, compact=True) }}
+        </span>
+      
+        <a
+          href="{{ url_for('main.deployment', project_name=deployment.project.name, deployment_id=deployment.id) }}"
+          data-tooltip="{{ _('Deployment ID') }}"
+        >
+          <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
+        </a>
+      
+        {% if display_project %}
+          <a
+            href="{{ url_for('main.project', project_name=deployment.project.name) }}"
+            class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
+            data-tooltip="{{ _('Project') }}"
+          >
+            {{ thumbnail(deployment.project, size='xs') }}
+            {{ deployment.project.name }}
+          </a>
+        {% endif %}
+      
+        <span class="flex items-center gap-x-2 text-muted-foreground capitalize" data-tooltip="{{ _('Environment') }}">
+          <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+          {{ deployment.environment.name }}
+        </span>
+
+        <div class="flex items-center gap-x-2 text-muted-foreground whitespace-nowrap">
+          {{ deployment.created_at | timeago }}
+        </div>
+      
+        <a
+          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.commit.branch }}"
+          target="_blank"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
+          data-tooltip="{{ _('Branch') }}"
+        >
+          <span class="opacity-50 dark:opacity-60">
+            {% include "icons/git-branch.svg" %}
+          </span>
+          {{ deployment.commit.branch }}
+        </a>
+
+        <a
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
+          href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"
+          target="_blank"
+          data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit.sha[:7]) }}"
+        >
+          <span class="opacity-50 dark:opacity-60">
+            {% include "icons/git-commit.svg" %}
+          </span>
+          <span class="truncate">{{ deployment.commit.message }}</span>
+        </a>
+      
+        <div class="flex items-center ml-auto">
+          {% if deployment.conclusion %}
+            <a href="{{ deployment.featured_url }}" class="btn-ghost w-8 h-8 px-0" target="_blank" data-tooltip="{{ _('Visit') }}">
+              {% include "icons/link.svg" %}
+            </a>
+          {% endif %}
+      
+          {% set trigger %}
+            {% include "icons/ellipsis.svg" %}
+          {% endset %}
+          {% call dropdown(
+            trigger=trigger,
+            trigger_attrs={"class": "btn-ghost w-8 h-8 px-0"},
+          ) %}
+            {% include "deployments/partials/_options.html" %}
+          {% endcall %}
+        </div>
       </li>
     {% endfor %}
   </ul>
 
+  {% set route_params = request.view_args.copy() %}
   {% if pagination and pagination.pages > 1 %}
     <nav
       class="flex items-center justify-end gap-x-2"
@@ -122,7 +215,7 @@
         >
           <span class="text-muted-foreground flex items-center gap-x-2">
             {% include "icons/loader.svg" %}
-            {{ _('Loading accounts') }}
+            {{ _('Loading') }}
           </span>
         </div>
       {% endcall %}

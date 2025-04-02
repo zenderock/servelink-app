@@ -68,7 +68,7 @@
     <div class="field">
       <label for="name">{{ _('Avatar') }}</label>
       {% from "components/image_upload.html" import image_upload %}
-      {% from "projects/components/thumbnail/project.html" import thumbnail %}
+      {% from "projects/components/thumbnail.html" import thumbnail %}
       {% set current_image %}
         {{ thumbnail(project, size="lg") }}
       {% endset %}

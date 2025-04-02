@@ -3,10 +3,10 @@
 {% block app_content %}
 <div class="container max-w-screen-lg mx-auto p-8 space-y-6">
   <header class="flex items-center gap-x-4 justify-between">
-    <h1 class="h1 flex items-center gap-x-2.5">
+    <h1 class="h1 flex items-center gap-x-3">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
-        {% from "projects/components/thumbnail/project.html" import thumbnail %}
-        {{ thumbnail(project) }}
+        {% from "projects/components/thumbnail.html" import thumbnail %}
+        {{ thumbnail(project, size='md') }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
       <a href="{{ url_for('main.project_deployments', project_name=project.name) }}">
@@ -23,8 +23,7 @@
       {% from "components/dropdown.html" import dropdown %}
       {% call dropdown(
         trigger=trigger,
-        trigger_attrs={"class": "btn-ghost w-8 h-8 px-0"},
-        menu_attrs={"menu-class": "min-w-36"}
+        trigger_attrs={"class": "btn-ghost w-10 p-0"}
       ) %}
         {% include "deployments/partials/_options.html" %}
       {% endcall %}
@@ -32,7 +31,7 @@
       {% if deployment.conclusion %}
         <a
           href="{{ deployment.featured_url }}"
-          class="btn-outline h-8 px-2.5 gap-x-2"
+          class="btn-outline gap-x-2"
           target="_blank"
         >
           {% include "icons/link.svg" %}
@@ -43,11 +42,11 @@
   </header>
 
   <div class="space-y-4">
-    {% include 'deployments/partials/_info.html' %}
+    {% include 'deployments/partials/_deployment_status.html' %}
 
     <ul class="flex gap-x-6 items-start" id="deployment-details">
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Environment') }}">
-        <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded-sm h-2 w-2 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+        <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
         {{ deployment.environment.name }}
       </li>
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Trigger') }}">

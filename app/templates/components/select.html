@@ -27,13 +27,21 @@
 {% set trigger_attrs = dict(trigger_attrs, **{'class': 'btn-outline truncate font-normal px-3 flex items-center gap-x-2 w-full'} if 'class' not in trigger_attrs else {}) %}
 {% set menu_attrs = dict(menu_attrs, **{'data-menu-position': 'top-left'} if 'data-menu-position' not in menu_attrs else {}) %}
 
-<div x-data="{ 
-  selectedValue: '{{ default.value }}',
-  selectedLabel: '{{ default.label }}',
-  get displayText() {
-    return this.selectedLabel;
-  }
-}" {% if id %}id="{{ id }}"{% endif %}>
+<div
+  x-data='{ 
+    selectedValue: "{{ default.value }}",
+    selectedLabel: "{{ default.label | js_escape | safe }}",
+    options: {{ options | tojson | safe }},
+    get displayText() {
+      return this.selectedLabel;
+    },
+    select(value) {
+      this.selectedValue = value;
+      this.selectedLabel = this.options.find(o => o.value === value).label;
+    }
+  }'
+  {% if id %}id="{{ id }}"{% endif %}
+>
   {% set trigger %}
     <div x-html="displayText" class="truncate flex-1"></div>
     <span class="text-muted-foreground ml-auto">
@@ -53,7 +61,7 @@
         role="menuitem"
         @click="
           selectedValue = '{{ option.value }}';
-          selectedLabel = '{{ option.label }}';
+          selectedLabel = '{{ option.label | safe | js_escape }}';
           $dispatch('select-changed', { value: selectedValue });
           $el.closest('form')?.dispatchEvent(new Event('change'));
         "
@@ -79,6 +87,3 @@
 
 {% endif %}
 {% endmacro %}
-
-
-

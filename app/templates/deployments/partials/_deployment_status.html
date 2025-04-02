@@ -1,11 +1,11 @@
 <ul
   class="flex gap-x-6 items-start"
   {% if oob %}hx-swap-oob="true"{% endif %}
-  id="deployment-status"
+  id="build-info"
 >
   <li class="flex items-center gap-x-2" data-tooltip="{{ _('Status') }}">
     {% from "deployments/components/status.html" import status %}
-    {{ status(status=deployment.status, conclusion=deployment.conclusion) }}
+    {{ status(conclusion=deployment.conclusion) }}
   </li>
   <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Duration') }}">
     <span class="opacity-50 dark:opacity-60">
@@ -32,8 +32,7 @@
         {% set trigger %}+{{ deployment.aliases|length }}{% endset %}
         {% call dropdown(
           trigger=trigger,
-          trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"},
-          menu_attrs={"menu-class": "max-w-96"}
+          trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"}
         ) %}
           {% for alias in deployment.aliases %}
             <a

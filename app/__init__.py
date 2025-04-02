@@ -46,13 +46,24 @@ def create_app(config_class=Config):
     with open(settings_path) as f:
         app.frameworks = json.load(f)
 
+    # Time ago filter (e.g. "just now", "1 hour ago", "2 days ago")
     def timeago(value):
         """Convert a datetime or ISO string to a human readable time ago."""
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-        return humanize.naturaltime(value)
-    
+        return humanize.naturaltime(value)    
     app.jinja_env.filters['timeago'] = timeago
+
+    # Escape strings for JavaScript
+    def js_escape(value):
+        return (
+            value.replace('\\', '\\\\')
+                .replace('"', '\\"')
+                .replace("'", "\\'")
+                .replace('\n', '')
+                .replace('\r', '')
+        )
+    app.jinja_env.filters['js_escape'] = js_escape
 
     db.init_app(app)
     migrate.init_app(app, db)

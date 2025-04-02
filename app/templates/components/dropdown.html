@@ -1,28 +1,37 @@
-{% macro dropdown(id=None, trigger=None, main_attrs={}, trigger_attrs={}, menu_attrs={}) %}
+{% macro dropdown(
+  id=None,
+  trigger=None,
+  main_attrs={},
+  trigger_attrs={},
+  menu_attrs={})
+%}
+{% set default_x_data %}
+{
+  active: false,
+  focusedIndex: -1,
+  menuItems: [],
+  init() {
+    this.$nextTick(() => {
+      this.menuItems = Array.from(this.$refs.menu.querySelectorAll('[role=menuitem]'));
+    });
+  },
+  focusItem(index) {
+    if (index >= 0 && index < this.menuItems.length) {
+      this.focusedIndex = index;
+      this.menuItems[index].focus();
+    }
+  },
+  nextItem() {
+    this.focusItem((this.focusedIndex + 1) % this.menuItems.length);
+  },
+  prevItem() {
+    this.focusItem(this.focusedIndex <= 0 ? this.menuItems.length - 1 : this.focusedIndex - 1);
+  }
+}
+{% endset %}
 <div
   class="dropdown {{ main_attrs.pop('class', '') }}"
-  x-data="{ 
-    active: false,
-    focusedIndex: -1,
-    menuItems: [],
-    init() {
-      this.$nextTick(() => {
-        this.menuItems = Array.from(this.$refs.menu.querySelectorAll('[role=menuitem]'));
-      });
-    },
-    focusItem(index) {
-      if (index >= 0 && index < this.menuItems.length) {
-        this.focusedIndex = index;
-        this.menuItems[index].focus();
-      }
-    },
-    nextItem() {
-      this.focusItem((this.focusedIndex + 1) % this.menuItems.length);
-    },
-    prevItem() {
-      this.focusItem(this.focusedIndex <= 0 ? this.menuItems.length - 1 : this.focusedIndex - 1);
-    }
-  }"
+  x-data="{ ...{{ default_x_data }}, ...{{ main_attrs.pop('x-data', '{}') | safe }} }"
   @click.away="active = false"
   {% if id %}id="{{ id }}"{% endif %}
   {% for key, value in main_attrs.items() %}

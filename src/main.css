@@ -312,6 +312,21 @@
   .form input {
     @apply input;
   }
+  /* Webkit (Chrome, Safari, newer versions of Opera) */
+  .input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply dark:invert dark:opacity-70 hover:dark:opacity-100 transition-opacity;
+  }
+
+  /* Firefox */
+  .input[type="date"]::-moz-calendar-picker-indicator {
+    @apply dark:invert dark:opacity-70 hover:dark:opacity-100 transition-opacity;
+  }
+
+  /* Microsoft Edge and IE */
+  .input[type="date"]::-ms-clear,
+  .input[type="date"]::-ms-reveal {
+    @apply dark:invert dark:opacity-70 hover:dark:opacity-100 transition-opacity;
+  }
 }
 
 /* Typography */
