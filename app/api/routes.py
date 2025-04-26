@@ -158,12 +158,12 @@ def github_webhook():
                         project=project,
                         environment_id=matched_env['id'],
                         trigger='webhook',
-                        commit={
-                            'sha': data['after'],
+                        branch=branch,
+                        commit_sha=data['after'],
+                        commit_meta={
                             'author': data['pusher']['name'],
                             'message': data['head_commit']['message'],
-                            'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat(),
-                            'branch': branch
+                            'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat()
                         },
                     )
                     db.session.add(deployment)

@@ -86,12 +86,7 @@ class EnvVarsForm(FlaskForm):
             entry.form.parent_entries = self.env_vars.entries
 
 
-class ProdEnvironmentForm(FlaskForm):
-    color = SelectField(_l('Color'), validators=[DataRequired()], choices=[(color, color) for color in COLORS])
-    branch = SelectField(_l('Branch'), choices=[], validators=[DataRequired(), Length(min=1, max=255)])
-
-
-class CustomEnvironmentForm(FlaskForm):
+class EnvironmentForm(FlaskForm):
     environment_id = HiddenField()
     color = SelectField(_l('Color'), validators=[DataRequired()], choices=[(color, color) for color in COLORS])
     name = StringField(_l('Name'), validators=[DataRequired(), Length(min=1, max=255)])
@@ -103,20 +98,30 @@ class CustomEnvironmentForm(FlaskForm):
             message=_('Environment IDs can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen.')
         )
     ])
-    branch = StringField(_l('Branch pattern'), validators=[DataRequired(), Length(min=1, max=255)])
+    branch = StringField(_l('Branch'), validators=[DataRequired(), Length(min=1, max=255)])
 
     def __init__(self, project, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.project = project 
 
+    def validate_name(self, field):
+        if self.environment_id.data:
+            env = self.project.get_environment_by_id(self.environment_id.data)
+            if env['slug'] == 'production' and field.data != env['name']:
+                raise ValidationError(_('The production environment name cannot be modified.'))
+
     def validate_slug(self, field):
         if self.environment_id.data:
             env = self.project.get_environment_by_id(self.environment_id.data)
-            if env and field.data == env['slug']:
+            if field.data == env['slug']:
                 return
             
+            if env['slug'] == 'production':
+                raise ValidationError(_('The production environment identifier cannot be modified.'))
+
+        # New environment
         if self.project.has_active_environment_with_slug(field.data):
-            raise ValidationError(_('An environment with this identifier already exists.'))
+            raise ValidationError(_('This identifier is already in use by another environment.'))
 
 
 class DeleteEnvironmentForm(FlaskForm):

@@ -4,8 +4,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.main import bp
 from app.models import Project, Deployment
-from sqlalchemy import select, func
-from app.main.forms import ProjectForm, DeployForm, ProdEnvironmentForm, CustomEnvironmentForm, EnvVarsForm, BuildAndDeployForm, GeneralForm, DeleteEnvironmentForm, DeleteProjectForm
+from sqlalchemy import select
+from app.main.forms import ProjectForm, DeployForm, EnvironmentForm, EnvVarsForm, BuildAndDeployForm, GeneralForm, DeleteEnvironmentForm, DeleteProjectForm
 from app.tasks.deploy import deploy
 from app.helpers.github import get_installation_instance
 from app.main.decorators import load_project, load_deployment
@@ -56,15 +56,7 @@ def repo_select():
 @bp.route('/new-project', methods=['GET', 'POST'])
 @login_required
 def new_project():
-    installations = current_app.github.get_user_installations(current_user.github_token)
-    accounts = [installation['account']['login'] for installation in installations]
-    selected_account = request.args.get('account') or (accounts[0] if accounts else None)
-    
-    return render_template(
-        'projects/pages/new/repo.html',
-        accounts=accounts,
-        selected_account=selected_account
-    )
+    return render_template('projects/pages/new/repo.html')
 
 
 @bp.route('/new-project-details', methods=['GET', 'POST'])
@@ -148,7 +140,7 @@ def new_project_details():
 @load_project
 def project(project):
     page = request.args.get('page', 1, type=int)
-    per_page = 25
+    per_page = 50
 
     pagination = db.paginate(
         project.deployments.select().order_by(Deployment.created_at.desc()),
@@ -193,9 +185,9 @@ def project_deploy(project):
                 project=project,
                 environment_id=environment.get('id'),
                 trigger='user',
-                commit={
-                    'branch': branch,
-                    'sha': commit['sha'],
+                branch=branch,
+                commit_sha=commit['sha'],
+                commit_meta={
                     'author': commit['author']['login'],
                     'message': commit['commit']['message'],
                     'date': datetime.fromisoformat(commit['commit']['author']['date'].replace('Z', '+00:00')).isoformat()
@@ -214,7 +206,9 @@ def project_deploy(project):
                 return '', 200, { 'HX-Redirect': url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }
             else:
                 return redirect(url_for('main.deployment', project_name=project.name, deployment_id=deployment.id))
+            
         except Exception as e:
+            current_app.logger.error(f"Error deploying {project.name}: {str(e)}")
             flash(_('Failed to deploy: %(error)s', error=str(e)), 'error')
             if request.headers.get('HX-Request'):
                 return render_template('layouts/fragment.html') # TODO: FIX OOB
@@ -428,46 +422,26 @@ def project_settings(project, fragment=None):
             )
 
     # Environments
-    prod_environment_form = ProdEnvironmentForm(
-        color=project.environments[0].get('color'),
-        branch=project.environments[0].get('branch'),
-    )
-    custom_environment_form = CustomEnvironmentForm(project=project)
+    environment_form = EnvironmentForm(project=project)
     delete_environment_form = DeleteEnvironmentForm(project=project)
     environments_updated = False
 
-    if (request.method == 'GET' and not fragment) or fragment in ('prod_environment', 'custom_environment', 'delete_environment'):
-        branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
-        prod_environment_form.branch.choices = [(branch['name'], branch['name']) for branch in branches]
-        prod_environment_form.branch.choices = [('production', 'production')]
-
-    if (request.method == 'GET' and not fragment) or fragment == 'prod_environment':
-        if prod_environment_form.validate_on_submit():
+    if (request.method == 'GET' and not fragment) or fragment == 'environment':
+        current_app.logger.info(f"Environment form: {environment_form.data}")
+        
+        if environment_form.validate_on_submit():
             try:
-                project.update_environment('prod', 
-                    color=prod_environment_form.color.data,
-                    branch=prod_environment_form.branch.data
-                )
-                db.session.commit()
-                flash(_('Environment updated.'), 'success')
-                environments_updated = True
-            except ValueError as e:
-                flash(str(e), 'error')
-
-    if (request.method == 'GET' and not fragment) or fragment == 'custom_environment':
-        if custom_environment_form.validate_on_submit():
-            try:
-                if custom_environment_form.environment_id.data:
+                if environment_form.environment_id.data:
                     # Update existing environment using ID
-                    environment_id = custom_environment_form.environment_id.data
+                    environment_id = environment_form.environment_id.data
                     env = project.get_environment_by_id(environment_id)
                     
                     if env:
                         updates = {
-                            'color': custom_environment_form.color.data,
-                            'name': custom_environment_form.name.data,
-                            'slug': custom_environment_form.slug.data,
-                            'branch': custom_environment_form.branch.data
+                            'color': environment_form.color.data,
+                            'name': environment_form.name.data,
+                            'slug': environment_form.slug.data,
+                            'branch': environment_form.branch.data
                         }
                         
                         project.update_environment(environment_id, **updates)
@@ -479,10 +453,10 @@ def project_settings(project, fragment=None):
                 else:
                     # Create new environment
                     if env := project.create_environment(
-                        name=custom_environment_form.name.data,
-                        slug=custom_environment_form.slug.data,
-                        color=custom_environment_form.color.data,
-                        branch=custom_environment_form.branch.data
+                        name=environment_form.name.data,
+                        slug=environment_form.slug.data,
+                        color=environment_form.color.data,
+                        branch=environment_form.branch.data
                     ):
                         db.session.commit()
                         flash(_('Environment added.'), 'success')
@@ -504,12 +478,11 @@ def project_settings(project, fragment=None):
             except ValueError as e:
                 flash(str(e), 'error')
 
-    if request.headers.get('HX-Request') and fragment in ('prod_environment', 'custom_environment', 'delete_environment'):
+    if request.headers.get('HX-Request') and fragment in ('environment', 'delete_environment'):
         return render_htmx_partial(
             'projects/partials/settings/_environments.html',
             project=project,
-            prod_environment_form=prod_environment_form,
-            custom_environment_form=custom_environment_form,
+            environment_form=environment_form,
             delete_environment_form=delete_environment_form,
             colors=COLORS,
             updated=environments_updated
@@ -545,6 +518,7 @@ def project_settings(project, fragment=None):
         if request.headers.get('HX-Request'):
           return render_htmx_partial(
               'projects/partials/settings/_build_and_deploy.html',
+              project=project,
               build_and_deploy_form=build_and_deploy_form,
               frameworks=current_app.frameworks
           )
@@ -553,8 +527,7 @@ def project_settings(project, fragment=None):
         'projects/pages/settings.html',
         project=project,
         general_form=general_form,
-        prod_environment_form=prod_environment_form,
-        custom_environment_form=custom_environment_form,
+        environment_form=environment_form,
         delete_environment_form=delete_environment_form,
         build_and_deploy_form=build_and_deploy_form,
         env_vars_form=env_vars_form,
@@ -604,7 +577,7 @@ def project_deployments(project):
     
     # Filter by branch
     if branch := request.args.get('branch'):
-        query = query.where(func.json_extract(Deployment.commit, '$.branch') == branch)
+        query = query.where(Deployment.branch == branch)
 
     pagination = db.paginate(
         query,
@@ -621,9 +594,13 @@ def project_deployments(project):
             deployments=deployments,
             pagination=pagination
         )
-
-    # Retrieve branches to pass to the template
-    branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
+    
+    branches = db.session.query(
+        Deployment.branch
+    ).filter(
+        Deployment.project_id == project.id
+    ).distinct().all()
+    branches = [{'name': b.branch, 'value': b.branch} for b in branches if b.branch]
 
     return render_template(
         'projects/pages/deployments.html',

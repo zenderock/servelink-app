@@ -44,9 +44,29 @@
       hx-get="{{ url_for('main.project_deployments', project_name=project.name) }}"
       hx-target="#deployments"
       hx-indicator="next .htmx-indicator"
-      hx-trigger="change delay:10ms"
+      hx-trigger="change delay:10ms, reset delay:10ms"
       hx-push-url="true"
       hx-swap="outerHTML"
+      x-data="{
+        isDirty: false,
+        updateDirty() {
+          const params = new URLSearchParams(window.location.search);
+          for (const value of params.values()) {
+            if (value.trim() !== '') {
+              this.isDirty = true;
+              return;
+            }
+          }
+          this.isDirty = false;
+        }
+      }"
+      x-init="
+        updateDirty();
+        document.body.addEventListener('htmx:pushedIntoHistory', () => {
+          updateDirty();
+          console.log('pushedIntoHistory');
+        });
+      "
     >
       {% from "components/select.html" import select %}
       
@@ -73,7 +93,8 @@
           const params = new URLSearchParams(window.location.search);
           const value = params.get("environment") || "";
           if (value) select(value);
-        '}
+        '},
+        trigger_attrs={':class': 'selectedValue ? "bg-muted" : ""'}
       ) }}
 
       {% from "deployments/components/status.html" import status %}
@@ -110,7 +131,8 @@
           const params = new URLSearchParams(window.location.search);
           const value = params.get("status") || "";
           if (value) select(value);
-        '}
+        '},
+        trigger_attrs={':class': 'selectedValue ? "bg-muted" : ""'}
       ) }}
       
       {% from "components/dropdown.html" import dropdown %}
@@ -123,7 +145,7 @@
             {{ _('To') }} <span x-html="dateTo"></span>
           </span>
           <span x-show="dateFrom && dateTo">
-            <span x-html="dateFrom"></span> - <span x-html="dateTo"></span>
+            <span x-html="dateFrom"></span> {{ _('to') }} <span x-html="dateTo"></span>
           </span>
           <span x-show="!dateFrom && !dateTo">
             {{ _('All dates') }}
@@ -135,7 +157,10 @@
       {% endset %}
       {% call dropdown(
         trigger=date_range_trigger,
-        trigger_attrs={ 'class': 'btn-outline' },
+        trigger_attrs={
+          'class': 'btn-outline',
+          ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
+        },
         menu_attrs={
           'class': '!p-4 space-y-4',
           'data-menu-position': 'top-left'
@@ -173,8 +198,18 @@
           const params = new URLSearchParams(window.location.search);
           const value = params.get("branch") || "";
           if (value) select(value);
-        '}
+        '},
+        trigger_attrs={':class': 'selectedValue ? "bg-muted" : ""'}
       ) }}
+
+      <button
+        type="reset"
+        class="btn-ghost text-muted-foreground hover:text-foreground"
+        x-show="isDirty"
+      >
+        {% include "icons/circle-x.svg" %}
+        {{ _('Reset') }}
+      </button>
     </form>
 
     {% from "deployments/components/list.html" import list %}

@@ -50,17 +50,22 @@
           </a>
         {% endif %}
       
-        <span class="flex items-center gap-x-2 text-muted-foreground capitalize" data-tooltip="{{ _('Environment') }}">
+        <!-- Make it a link to the environment -->
+        <a
+          href="{{ url_for('main.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
+          data-tooltip="{{ _('Environment') }}"
+        >
           <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
           {{ deployment.environment.name }}
-        </span>
+        </a>
 
         <div class="flex items-center gap-x-2 text-muted-foreground whitespace-nowrap">
           {{ deployment.created_at | timeago }}
         </div>
       
         <a
-          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.commit.branch }}"
+          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.branch }}"
           target="_blank"
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
           data-tooltip="{{ _('Branch') }}"
@@ -68,19 +73,19 @@
           <span class="opacity-50 dark:opacity-60">
             {% include "icons/git-branch.svg" %}
           </span>
-          {{ deployment.commit.branch }}
+          {{ deployment.branch }}
         </a>
 
         <a
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
-          href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"
+          href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit_sha }}"
           target="_blank"
-          data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit.sha[:7]) }}"
+          data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit_sha[:7]) }}"
         >
           <span class="opacity-50 dark:opacity-60">
             {% include "icons/git-commit.svg" %}
           </span>
-          <span class="truncate">{{ deployment.commit.message }}</span>
+          <span class="truncate">{{ deployment.commit_meta.message }}</span>
         </a>
       
         <div class="flex items-center ml-auto">

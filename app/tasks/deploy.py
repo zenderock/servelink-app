@@ -45,11 +45,11 @@ def deploy(deployment_id: str):
             app.logger.info(f"config: {deployment.config}")
 
             # Step 1: Clone the repository
-            commands.append(f"echo 'Cloning {deployment.repo['full_name']} (Branch: {deployment.commit['branch']}, Commit: {deployment.commit['sha'][:7]})'")
+            commands.append(f"echo 'Cloning {deployment.repo['full_name']} (Branch: {deployment.branch}, Commit: {deployment.commit_sha[:7]})'")
             installation = get_installation_instance(deployment.project.github_installation_id)
             commands.append(
                 "git init -q && "
-                f"git fetch -q --depth 1 https://x-access-token:{installation.token}@github.com/{deployment.repo['full_name']}.git {deployment.commit['sha']} && "
+                f"git fetch -q --depth 1 https://x-access-token:{installation.token}@github.com/{deployment.repo['full_name']}.git {deployment.commit_sha} && "
                 f"git checkout -q FETCH_HEAD"
             )
             
@@ -121,7 +121,7 @@ def deploy(deployment_id: str):
                 raise Exception("Timeout waiting for application to start")
 
             # Setup branch domain
-            branch = deployment.commit['branch']
+            branch = deployment.branch
             sanitized_branch = re.sub(r'[^a-zA-Z0-9-]', '-', branch) # Won't prevent collisions, but good enough
             branch_subdomain = f"{project.slug}-branch-{sanitized_branch}"
             branch_hostname = f"{branch_subdomain}.{base_domain}"

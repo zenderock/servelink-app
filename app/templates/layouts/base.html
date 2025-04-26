@@ -57,24 +57,18 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
 
   <!-- CSS -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{url_for('static',filename='styles.css')}}">
-
-  <!-- Inter font -->
   <link rel="preconnect" href="https://rsms.me/">
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-
-  <!-- JS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{url_for('static',filename='styles.css')}}">
+
+  <!-- JS -->
+  <script src="{{ url_for('static', filename='assets/htmx.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='assets/alpine.min.js') }}"></script>
 
   <!-- Additional head content (JS, CSS, etc.) -->
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
   {% block head %}{% endblock %}
 </head>
 <body class="relative h-full">

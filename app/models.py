@@ -323,11 +323,13 @@ class Deployment(db.Model):
     project_id: Mapped[str] = mapped_column(ForeignKey(Project.id), index=True)
     project: Mapped[Project] = relationship(back_populates='deployments', foreign_keys=[project_id])
     repo: Mapped[dict] = mapped_column(JSON, nullable=False)
-    container_id: Mapped[str] = mapped_column(String(64), nullable=True)
     environment_id: Mapped[str] = mapped_column(String(8), nullable=False)
+    branch: Mapped[str] = mapped_column(String(255), index=True)
+    commit_sha: Mapped[str] = mapped_column(String(40), index=True)
+    commit_meta: Mapped[dict] = mapped_column(JSON, nullable=False)
     config: Mapped[dict] = mapped_column(JSON, nullable=False)
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
-    commit: Mapped[dict] = mapped_column(JSON, nullable=False)
+    container_id: Mapped[str] = mapped_column(String(64), nullable=True)    
     status: Mapped[str] = mapped_column(
         SQLAEnum('queued', 'in_progress', 'completed', name='deployment_status'),
         nullable=False,

@@ -45,40 +45,46 @@
     {% include 'deployments/partials/_deployment_status.html' %}
 
     <ul class="flex gap-x-6 items-start" id="deployment-details">
-      <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Environment') }}">
-        <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
-        {{ deployment.environment.name }}
+      <li>
+        <a
+          href="{{ url_for('main.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
+          class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
+          data-tooltip="{{ _('Environment') }}"
+        >
+          <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+          {{ deployment.environment.name }}
+        </a>
       </li>
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Trigger') }}">
         <span class="opacity-50 dark:opacity-60">
           {% include "icons/zap.svg" %}
         </span>
-        Commit by <a href="https://github.com/{{ deployment.commit.author }}" class="hover:text-foreground transition-colors" target="_blank">@{{ deployment.commit.author }}</a>
+        Commit by <a href="https://github.com/{{ deployment.commit_meta.author }}" class="hover:text-foreground transition-colors" target="_blank">@{{ deployment.commit_meta.author }}</a>
       </li>
       <li>
         <a
-          class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
-          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.commit.branch }}"
+          href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.branch }}"
           target="_blank"
+          class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
           data-tooltip="{{ _('Branch') }}"
         >
           <span class="opacity-50 dark:opacity-60">
             {% include "icons/git-branch.svg" %}
           </span>
-          {{ deployment.commit.branch }}
+          {{ deployment.branch }}
         </a>
       </li>
       <li>
         <a
           class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
-          href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit.sha }}"
+          href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit_sha }}"
           target="_blank"
-          data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit.sha[:7]) }}"
+          data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit_sha[:7]) }}"
         >
           <span class="opacity-50 dark:opacity-60">
             {% include "icons/git-commit.svg" %}
           </span>
-          {{ deployment.commit.message }}
+          {{ deployment.commit_meta.message }}
         </a>
       </li>
     </ul>

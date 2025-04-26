@@ -1,30 +1,24 @@
 {% from "components/dropdown.html" import dropdown %}
 {% from "components/dialog.html" import dialog %}
 
-{% macro render_environment_form(environment, index=0, update=False) %}
-{% if environment and environment['slug'] == 'production' %}
-  {% set form = prod_environment_form %}
-  {% set fragment = 'prod_environment' %}
-  {% set is_active = prod_environment_form.errors %}
+{% macro render_environment_form(environment={}, index=0, update=False) %}
+{% if environment %}
+  {% set is_active = environment_form.errors and environment_form.environment_id.data == environment['id'] %}
 {% else %}
-  {% set form = custom_environment_form %}
-  {% set fragment = 'custom_environment' %}
-  {% if environment %}
-    {% set is_active = form.errors and form.environment_id.data == environment['id'] %}
-  {% else %}
-    {% set is_active = form.errors and not form.environment_id.data %}
-  {% endif %}
+  {% set is_active = environment_form.errors and not environment_form.environment_id.data %}
 {% endif %}
 <form
   method="POST"
-  action="{{ url_for('main.project_settings', project_name=project.name, fragment=fragment) }}"
-  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment=fragment) }}"
-  x-data="{ color: '{{ form.color.data if is_active else environment.color if environment else '' }}' }"
+  action="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
+  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
   hx-target="closest section"
   hx-indicator="next .htmx-indicator"
   x-show="activeForm === {{ index }}"
+  x-data="{
+    color: '{{ environment_form.color.data if is_active else environment.color if environment else '' }}'
+  }"
   x-init="
-    {% if is_active and form.errors %}activeForm = {{ index }}{% endif %}
+    {% if is_active and environment_form.errors %}activeForm = {{ index }}{% endif %}
     if (!color) {
       colorIndex = {% if index %}{{ index }}{% else %}{{ project.active_environments|length }} + 1{% endif %};
       color = getEnvironmentColor(colorIndex);
@@ -32,15 +26,9 @@
   "
   class="flex items-start gap-x-2 border-b border-border/50 pb-2"
 >
-  {{ form.csrf_token }}
-  {% if fragment == 'custom_environment' %}
-    {% if environment %}
-      {{ form.environment_id(value=environment.id, class='hidden') }}
-    {% else %}
-      {{ form.environment_id(class='hidden') }}
-    {% endif %}
-  {% endif %}
-  {{ form.color(
+  {{ environment_form.csrf_token }}
+  {{ environment_form.environment_id(value=environment.id) }}
+  {{ environment_form.color(
     class='w-full hidden',
     **{':value': 'color'}
   ) }}
@@ -70,45 +58,39 @@
     {% endcall %}
   </div>
   <div class="field flex-1">
-    {% if environment and environment.slug == 'production' %}
-      <input type="text" class="w-full" value="{{ environment.name }}" disabled>
-    {% else %}
-      {{ form.name(
-        class='w-full',
-        value=form.name.data if is_active else environment.name if environment else '',
-        **({'aria-invalid': 'true'} if is_active and form.name.errors else {})
-      ) }}
-      {% if is_active %}
-        {% for error in form.name.errors %}
-          <p class="text-danger text-xs font-medium">{{ error }}</p>
-        {% endfor %}
-      {% endif %}
-    {% endif %}
-  </div>
-  <div class="field flex-1">
-    {% if environment and environment.slug == 'production' %}
-      <input type="text" class="w-full font-mono" value="{{ environment.slug }}" disabled>
-    {% else %}              
-      {{ form.slug(
-        class='w-full font-mono',
-        value=form.slug.data if is_active else environment.slug if environment else '',
-        **({'aria-invalid': 'true'} if is_active and form.slug.errors else {})
-      ) }}
-      {% if is_active %}
-        {% for error in form.slug.errors %}
-          <p class="text-danger text-xs font-medium">{{ error }}</p>
-        {% endfor %}
-      {% endif %}
-    {% endif %}
-  </div>
-  <div class="field flex-1">
-    {{ form.branch(
-      class='w-full font-mono',
-      value=form.branch.data if is_active else environment.branch if environment else '',
-      **({'aria-invalid': 'true'} if is_active and form.branch.errors else {})
+    {{ environment_form.name(
+      class='w-full',
+      value=environment_form.name.data if is_active else environment.name if environment else '',
+      readonly=environment.get('id') == 'prod',
+      **({'aria-invalid': 'true'} if is_active and environment_form.name.errors else {})
     ) }}
     {% if is_active %}
-      {% for error in form.branch.errors %}
+      {% for error in environment_form.name.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="field flex-1">
+    {{ environment_form.slug(
+      class='w-full font-mono',
+      value=environment_form.slug.data if is_active else environment.slug if environment else '',
+      readonly=environment.get('id') == 'prod',
+      **({'aria-invalid': 'true'} if is_active and environment_form.slug.errors else {})
+    ) }}
+    {% if is_active %}
+      {% for error in environment_form.slug.errors %}
+        <p class="text-danger text-xs font-medium">{{ error }}</p>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="field flex-1">
+    {{ environment_form.branch(
+      class='w-full font-mono',
+      value=environment_form.branch.data if is_active else environment.branch if environment else '',
+      **({'aria-invalid': 'true'} if is_active and environment_form.branch.errors else {})
+    ) }}
+    {% if is_active %}
+      {% for error in environment_form.branch.errors %}
         <p class="text-danger text-xs font-medium">{{ error }}</p>
       {% endfor %}
     {% endif %}
@@ -160,7 +142,7 @@
         <div class="shrink-0 w-10"></div>
         <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Name') }}</div>
         <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Identifier') }}</div>
-        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Branch pattern') }}</div>
+        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Branch') }}</div>
         <div class="shrink-0 w-20"></div>
       </div>
     
@@ -186,7 +168,7 @@
             >
               {% include "icons/pencil.svg" %}
             </button>
-            {% if environment and environment.slug != 'production' %}
+            {% if environment and environment.id != 'prod' %}
               {% set trigger %}
                 {% include "icons/trash.svg" %}
               {% endset %}

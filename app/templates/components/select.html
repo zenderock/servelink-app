@@ -30,20 +30,19 @@
 <div
   x-data='{ 
     selectedValue: "{{ default.value }}",
-    selectedLabel: "{{ default.label | js_escape | safe }}",
     options: {{ options | tojson | safe }},
-    get displayText() {
-      return this.selectedLabel;
+    get selectedLabel() {
+      return this.options.find(o => o.value === this.selectedValue)?.label || "";
     },
     select(value) {
       this.selectedValue = value;
-      this.selectedLabel = this.options.find(o => o.value === value).label;
+      $dispatch("change", { value });
     }
   }'
   {% if id %}id="{{ id }}"{% endif %}
 >
   {% set trigger %}
-    <div x-html="displayText" class="truncate flex-1"></div>
+    <div x-html="selectedLabel" class="truncate flex-1"></div>
     <span class="text-muted-foreground ml-auto">
       {% include "icons/chevrons-up-down.svg" %}
     </span>
@@ -59,12 +58,7 @@
       <button
         type="button"
         role="menuitem"
-        @click="
-          selectedValue = '{{ option.value }}';
-          selectedLabel = '{{ option.label | safe | js_escape }}';
-          $dispatch('select-changed', { value: selectedValue });
-          $el.closest('form')?.dispatchEvent(new Event('change'));
-        "
+        @click="select('{{ option.value }}')"
         {% if option.attrs %}
           {% for key, value in option.attrs.items() %}
             {{ key }}="{{ value }}"
@@ -81,7 +75,7 @@
     {% endfor %}
   {% endcall %}
   {% if input_name %}
-  <input type="hidden" name="{{ input_name }}" x-bind:value="selectedValue">
+  <input type="text" class="hidden" name="{{ input_name }}" x-model="selectedValue">
   {% endif %}
 </div>
 
