@@ -1,0 +1,25 @@
+{% extends "layouts/app.html" %}
+
+{% block app_content %}
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
+  <h1 class="h1 flex items-center gap-x-3">
+    <a href="{{ url_for('main.index') }}">
+      <img src="{{ current_user.avatar }}" class="w-10 h-10 rounded-lg" />
+    </a>
+    <span class="text-muted-foreground/25 font-normal">/</span>
+    {{ _('Settings') }}
+  </h1>
+
+  <div class="flex flex-row-reverse gap-x-6">
+    <nav class="sticky top-[122px] min-w-64 h-full flex flex-col gap-y-1">
+      <a href="#account" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Account') }}</a>
+      <a href="#teams" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Teams') }}</a>
+      <a href="#others" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Others') }}</a>
+      <a href="#danger" class="btn-ghost h-8 px-2.5 justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20">{{ _('Danger') }}</a>
+    </nav>
+    
+    <div class="space-y-6 w-full form">
+    </div>
+  </div>
+</div>
+{% endblock %}

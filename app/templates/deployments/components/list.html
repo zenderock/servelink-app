@@ -10,7 +10,7 @@
 {% if deployments %}
   {% from "deployments/components/status.html" import status %}
   {% from "projects/components/thumbnail.html" import thumbnail %}
-  {% from "components/dropdown.html" import dropdown %}
+  {% from "components/dropdown-menu.html" import dropdown_menu %}
   {% set status_labels = {
     'succeeded': _('Status: Succeeded'),
     'failed': _('Status: Failed'),
@@ -24,7 +24,7 @@
     {% endfor %}
   >
     {% for deployment in deployments %}
-      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
+      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
         <span
           data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
           data-tooltip-position="top-left"
@@ -98,9 +98,10 @@
           {% set trigger %}
             {% include "icons/ellipsis.svg" %}
           {% endset %}
-          {% call dropdown(
+          {% call dropdown_menu(
             trigger=trigger,
-            trigger_attrs={"class": "btn-ghost w-8 h-8 px-0"},
+            trigger_attrs={"class": "btn-sm-icon-ghost"},
+            content_attrs={"data-align": "end"}
           ) %}
             {% include "deployments/partials/_options.html" %}
           {% endcall %}
@@ -194,7 +195,7 @@
     </nav>
   {% endif %}
 {% elif display_empty and project %}
-  <section class="flex items-center justify-center min-h-60 bg-muted rounded-xl p-4">
+  <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
     <div class="max-w-sm text-center">
       <h2 class="h4">{{ _('No deployments') }}</h2>
       <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
@@ -208,7 +209,7 @@
         title="Deploy",
         id="dialog-deploy",
         trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5 mt-4"},
-        dialog_attrs={
+        content_attrs={
           "class": "max-w-screen-sm w-full"
         }
       ) %}

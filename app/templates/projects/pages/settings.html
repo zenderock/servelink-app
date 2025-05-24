@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-lg mx-auto p-8 space-y-6">
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <header class="flex justify-between items-center">
     <h1 class="h1 flex items-center gap-x-3">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
@@ -14,37 +14,37 @@
   </header>
 
   <div class="flex flex-row-reverse gap-x-6">
-    <nav class="sticky top-[122px] min-w-48 h-full flex flex-col gap-y-1">
+    <nav class="sticky top-[122px] min-w-64 h-full flex flex-col gap-y-1">
       <a href="#general" class="btn-ghost h-8 px-2.5 justify-start">{{ _('General') }}</a>
       <a href="#environment-variables" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Environment variables') }}</a>
       <a href="#environments" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Environments') }}</a>
       <a href="#build-and-deploy" class="btn-ghost h-8 px-2.5 justify-start">{{ _('Build & Deploy') }}</a>
-      <a href="#danger" class="btn-ghost h-8 px-2.5 justify-start text-danger">{{ _('Danger') }}</a>
+      <a href="#danger" class="btn-ghost h-8 px-2.5 justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">{{ _('Danger') }}</a>
     </nav>
     
     <div class="space-y-6 w-full form">
       {# GENERAL #}
-      <section class="border rounded-xl relative" id="general">
+      <section class="relative rounded-xl scroll-mt-[101px]" id="general">
         {% include "projects/partials/settings/_general.html" %}
       </section>
 
       {# ENVIRONMENT VARIABLES #}
-      <section class="border rounded-xl relative" id="environment-variables">
+      <section class="relative rounded-xl scroll-mt-[101px]" id="environment-variables">
         {% include "projects/partials/settings/_env_vars.html" %}
       </section>
 
       {# ENVIRONMENTS #}
-      <section class="border rounded-xl relative" id="environments">
+      <section class="relative rounded-xl scroll-mt-[101px]" id="environments">
         {% include "projects/partials/settings/_environments.html" %}
       </section>
 
       {# BUILD & DEPLOY #}
-      <section class="border rounded-xl relative" id="build-and-deploy">
+      <section class="relative rounded-xl scroll-mt-[101px]" id="build-and-deploy">
         {% include "projects/partials/settings/_build_and_deploy.html" %}
       </section>
 
       {# DANGER ZONE #}
-      <section class="border rounded-xl" id="danger">
+      <section class="relative rounded-xl scroll-mt-[101px]" id="danger">
         {% include "projects/partials/settings/_danger.html" %}
       </section>
     </div>

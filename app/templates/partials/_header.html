@@ -1,5 +1,5 @@
-<header class="sticky top-0 bg-background z-10 border-b">
-	<div class="flex items-center justify-between gap-x-4 px-8 py-4">
+<header class="sticky top-0 bg-background z-20 border-b px-8 flex flex-col gap-y-2">
+	<div class="flex items-center justify-between gap-x-4 py-4">
 		<nav class="flex items-center gap-x-2.5">
 			<a
 				href="{{ url_for('main.index') }}"
@@ -16,18 +16,18 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.index') }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
-						<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
+					<a href="{{ url_for('main.index') }}" class="btn-sm-ghost">
+						<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded -ml-1"/>
 						{{ current_user.username }}
 					</a>
-					{% from "components/dropdown.html" import dropdown %}
+					{% from "components/dropdown-menu.html" import dropdown_menu %}
 					{% set trigger %}
 						{% include "icons/chevrons-up-down.svg" %}
 					{% endset %}
-					{% call dropdown(
+					{% call dropdown_menu(
             trigger=trigger,
-            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
-            menu_attrs={"data-menu-position": "left"}
+            trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
+            content_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_accounts.html" %}
 					{% endcall %}
@@ -38,15 +38,15 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 
 				<div class="flex items-center">
-					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
+					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-sm-ghost">
 						{% from "projects/components/thumbnail.html" import thumbnail %}
-						{{ thumbnail(project, size="xs") }}
+						{{ thumbnail(project, size="xs", class="-ml-1") }}
 						{{ project.name }}
 					</a>
-					{% call dropdown(
+					{% call dropdown_menu(
             trigger=trigger,
-            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
-            menu_attrs={"data-menu-position": "left"}
+            trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
+            content_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_projects.html" %}
 					{% endcall %}
@@ -57,15 +57,15 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-ghost px-2.5 h-8 flex items-center gap-x-2">
+					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-sm-ghost">
 						{% from "deployments/components/status.html" import status %}
 						{{ status(conclusion=deployment.conclusion, compact=True, id='header-nav-trigger-deployment-status-' + deployment.id[:7]) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
-					{% call dropdown(
+					{% call dropdown_menu(
             trigger=trigger,
-            trigger_attrs={"class": "btn-ghost text-muted-foreground w-6 h-8 px-0"},
-            menu_attrs={"data-menu-position": "left"}
+            trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
+            content_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_deployments.html" %}
 					{% endcall %}
@@ -79,7 +79,7 @@
 				@click="$store.theme.toggle()" 
 				aria-label="Toggle theme"
 				data-tooltip="Toggle theme"
-				data-tooltip-position="bottom"
+				data-side="bottom"
 				type="button" 
 				class="btn-ghost h-8 w-8 p-0 rounded-full"
 				aria-label="Toggle theme"
@@ -93,11 +93,15 @@
 			</button>
 
 			{% if current_user.is_authenticated %}
-				{% from "components/dropdown.html" import dropdown %}
+
 				{% set trigger %}
 					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
 				{% endset %}
-				{% call dropdown(trigger=trigger, trigger_attrs={'class': 'block'}) %}
+				{% call dropdown_menu(
+          trigger=trigger,
+          trigger_attrs={'class': 'block'},
+          content_attrs={'data-align': 'end'}
+        ) %}
 					<header class="px-2.5 py-1.5">
 						<div class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</div>
 						<div class="text-muted-foreground">{{ current_user.email }}</div>

@@ -19,7 +19,7 @@
     hx-indicator="next div > .htmx-indicator"
     @submit.prevent
   >
-    {% from "components/dropdown.html" import dropdown %}
+    {% from "components/dropdown-menu.html" import dropdown_menu %}
     {% set trigger %}
       <img :src="`https://github.com/${selected_account}.png`" alt="Avatar" class="w-6 h-6 rounded">
       <span x-text="selected_account"></span>
@@ -27,10 +27,10 @@
         {% include "icons/chevrons-up-down.svg" %}
       </span>
     {% endset %}
-    {% call dropdown(
+    {% call dropdown_menu(
       trigger=trigger,
       trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
-      menu_attrs={"data-menu-position": "top-left"}
+      content_attrs={"data-side": "top", "data-align": "start"}
     ) %}
       <template x-for="account in accounts" :key="account">
         <button
@@ -82,7 +82,7 @@
   <div class="text-center">
     <h3 class="font-medium mb-1">{{ _('No accounts connected') }}</h3>
     <p class="text-muted-foreground">{{ _('Connect your GitHub accounts and start adding projects.') }}</p>
-    <a class="btn-outline mt-4" href="{{ url_for('api.github_app_install') }}">{{ _('Add account') }}</a>
+    <a class="btn-outline mt-4" href="{{ url_for('api.github_app_install') }}">{{ _('Manage account') }}</a>
   </div>
 </section>
 {% endif %}

@@ -1,33 +1,35 @@
 <div
   hx-get="{{ url_for('main.project_settings', project_name=project.name, fragment='env_vars') }}"
   hx-trigger="environments:updated from:window"
+  hx-swap="outerHTML" 
   hx-indicator=".htmx-indicator"
 >
   <form
     method="POST"
     action="{{ url_for('main.project_settings', project_name=project.name, fragment='env_vars') }}"
     hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='env_vars') }}"
+    hx-indicator="next .htmx-indicator"
+    hx-target="closest div"
+    hx-swap="outerHTML" 
     x-data="{ changed: false }"
     @input="changed = true"
     @change="changed = true"
-    hx-indicator="next .htmx-indicator"
+    class="card"
   >
     {{ env_vars_form.hidden_tag() }}
-    <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
-      <div>
-        <h2 class="font-medium">{{ _('Environment variables') }}</h2>
-        <p class="text-muted-foreground">{{ _('Variables available at build time and runtime. Changes will take effect after a new deployment.') }}</p>
-      </div>
-      <button
-        class="btn ml-auto"
-        :disabled="!changed"
-      >{{ _('Save') }}</button>
+    <header class="border-b">
+      <h2>{{ _('Environment variables') }}</h2>
+      <p>{{ _('Variables available at build time and runtime. Changes will take effect after a new deployment.') }}</p>
     </header>
     
-    <div class="p-4 space-y-6">    
+    <section class=" space-y-6">    
       {% from "projects/components/forms/env_vars.html" import render_env_vars %}
       {{ render_env_vars(env_vars_form, project.active_environments) }}
-    </div>
+    </section>
+
+    <footer>
+      <button class="btn" :disabled="!changed">{{ _('Save') }}</button>
+    </footer>
   </form>
 
   <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">

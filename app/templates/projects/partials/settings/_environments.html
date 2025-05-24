@@ -1,4 +1,5 @@
-{% from "components/dropdown.html" import dropdown %}
+{% from "components/dropdown-menu.html" import dropdown_menu %}
+{% from "components/select.html" import select %}
 {% from "components/dialog.html" import dialog %}
 
 {% macro render_environment_form(environment={}, index=0, update=False) %}
@@ -11,7 +12,8 @@
   method="POST"
   action="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
   hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
-  hx-target="closest section"
+  hx-target="closest .card"
+  hx-swap="outerHTML"
   hx-indicator="next .htmx-indicator"
   x-show="activeForm === {{ index }}"
   x-data="{
@@ -36,50 +38,56 @@
     {% set trigger %}
       <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></span>
     {% endset %}
-    {% call dropdown(
+    {% call dropdown_menu(
       trigger=trigger,
-      trigger_attrs={"class": "btn-ghost w-10 p-0"},
-      menu_attrs={"data-menu-position": "top-left"}
+      trigger_attrs={"class": "btn-icon-ghost"},
+      content_attrs={"class": "p-2", "data-align": "start"},
+      menu_attrs={"class": "grid grid-cols-6 gap-2"}
     ) %}
-      <div class="grid grid-cols-6 gap-2">
-        {% for color in colors %}
-          <button
-            class="w-8 h-8 p-0"
-            :class="color === '{{ color }}' ? 'bg-muted' : ''"
-            aria-label="{{ color }}"
-            @click="color = '{{ color }}'"
-            type="button"
-            role="menuitem"
-          >
-            <span class="inline-block rounded h-4 w-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
-          </button>
+      {% for color in colors %}
+        <button
+          class="btn-icon-ghost"
+          :class="color === '{{ color }}' ? 'bg-muted' : ''"
+          aria-label="{{ color }}"
+          @click="color = '{{ color }}'"
+          type="button"
+          role="menuitem"
+        >
+          <span class="block rounded size-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
+        </button>
       {% endfor %}
-      </div>
     {% endcall %}
   </div>
-  <div class="field flex-1">
+  
+  <div class="flex-1 space-y-2">
     {{ environment_form.name(
       class='w-full',
       value=environment_form.name.data if is_active else environment.name if environment else '',
       readonly=environment.get('id') == 'prod',
-      **({'aria-invalid': 'true'} if is_active and environment_form.name.errors else {})
+      **({
+        'aria-invalid': 'true' if is_active and environment_form.name.errors else '',
+        '@keydown.escape.prevent': 'activeForm = null'
+      })
     ) }}
     {% if is_active %}
       {% for error in environment_form.name.errors %}
-        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     {% endif %}
   </div>
-  <div class="field flex-1">
+  <div class="flex-1 space-y-2">
     {{ environment_form.slug(
       class='w-full font-mono',
       value=environment_form.slug.data if is_active else environment.slug if environment else '',
       readonly=environment.get('id') == 'prod',
-      **({'aria-invalid': 'true'} if is_active and environment_form.slug.errors else {})
+      **({
+        'aria-invalid': 'true' if is_active and environment_form.slug.errors else '',
+        '@keydown.escape.prevent': 'activeForm = null'
+      })
     ) }}
     {% if is_active %}
       {% for error in environment_form.slug.errors %}
-        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     {% endif %}
   </div>
@@ -87,17 +95,20 @@
     {{ environment_form.branch(
       class='w-full font-mono',
       value=environment_form.branch.data if is_active else environment.branch if environment else '',
-      **({'aria-invalid': 'true'} if is_active and environment_form.branch.errors else {})
+      **({
+        'aria-invalid': 'true' if is_active and environment_form.branch.errors else '',
+        '@keydown.escape.prevent': 'activeForm = null'
+      })
     ) }}
     {% if is_active %}
       {% for error in environment_form.branch.errors %}
-        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     {% endif %}
   </div>
   <div class="w-20 shrink-0 flex items-center justify-center">
     <button
-      class="btn-ghost w-10 p-0 text-success"
+      class="btn-icon-ghost"
       type="submit"
       aria-label="{{ _('Save') }}"
       data-tooltip="{{ _('Save') }}"
@@ -105,7 +116,7 @@
       {% include "icons/check.svg" %}
     </button>
     <button
-      class="btn-ghost w-10 p-0"
+      class="btn-icon-ghost"
       type="button"
       @click="activeForm = null"
       aria-label="{{ _('Cancel') }}"
@@ -117,22 +128,20 @@
 </form>
 {% endmacro %}
 
-<section>
-  <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
-    <div>
-      <h2 class="font-medium">{{ _('Environments') }}</h2>
-      <p class="text-muted-foreground">{{ _('Deployments will be associated with the first environment with a matching branch pattern.') }}</p>
-    </div>
+<div class="card">
+  <header class="border-b">
+    <h2>{{ _('Environments') }}</h2>
+    <p>{{ _('Deployments will be associated with the first environment with a matching branch pattern.') }}</p>
   </header>
   
-  <div class="p-4 space-y-6">    
+  <section class="space-y-6">    
     <div
       class="space-y-2"
       x-data='{
         activeForm: null,
         getEnvironmentColor: (index) => {
           const colors = {{ colors|tojson }};
-          const colorIndex = (4 * (index - 1)) % colors.length;
+          const colorIndex = (3 * (index - 1)) % colors.length;
           return colors[colorIndex];
         }
       }'
@@ -140,9 +149,9 @@
     >
       <div class="flex gap-x-2 border-b border-border/50 pb-2">
         <div class="shrink-0 w-10"></div>
-        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Name') }}</div>
-        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Identifier') }}</div>
-        <div class="flex-1 text-xs font-medium text-muted-foreground">{{ _('Branch') }}</div>
+        <div class="flex-1 label">{{ _('Name') }}</div>
+        <div class="flex-1 label">{{ _('Identifier') }}</div>
+        <div class="flex-1 label">{{ _('Branch') }}</div>
         <div class="shrink-0 w-20"></div>
       </div>
     
@@ -160,7 +169,7 @@
           <div class="flex items-center w-20">
             <button
               type="button"
-              class="btn-ghost w-10 p-0"
+              class="btn-icon-ghost"
               aria-label="{{ _('Edit') }}"
               data-tooltip="{{ _('Edit') }}"
               @click="activeForm = {{ loop.index }}"
@@ -176,12 +185,12 @@
                 trigger=trigger,
                 title=_('Delete "%(name)s"?', name=environment.name),
                 trigger_attrs={
-                  "class": "btn-ghost w-10 p-0 text-danger",
+                  "class": "btn-icon-ghost text-destructive",
                   "aria-label": _('Delete'),
                   "data-tooltip": _('Delete'),
                   ":disabled": "activeForm"
                 },
-                dialog_attrs={"class": "max-w-md"}
+                content_attrs={"class": "max-w-md"}
               ) %}
                 <div class="space-y-4" x-data="{ confirm: '' }">
                   <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
@@ -190,7 +199,8 @@
                     method="POST"
                     action="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
                     hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
-                    hx-target="closest section"
+                    hx-swap="outerHTML"
+                    hx-target="closest .card"
                     hx-indicator="next .htmx-indicator"
                     @submit.prevent="!confirm"
                   >
@@ -202,8 +212,8 @@
                       **{'x-model': 'confirm'}
                     ) }}
                     <footer class="flex justify-end gap-x-2 pt-4">
-                      <button type="button" class="btn-ghost" @click="active = false">Cancel</button>
-                      {{ delete_environment_form.submit(class_="btn-danger", **{':disabled': "confirm !== '" + environment.slug + "'"}) }}
+                      <button type="button" class="btn-ghost" @click="open = false">{{ _('Cancel') }}</button>
+                      {{ delete_environment_form.submit(class_="btn-destructive", **{':disabled': "confirm !== '" + environment.slug + "'"}) }}
                     </footer>
                   </form>
                 </div>
@@ -228,8 +238,8 @@
         {{ _('Add environment') }}
       </button>
     </div>
-  </div>
-</section>
+  </section>
+</div>
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground">

@@ -2,12 +2,12 @@
   {% set status_id = 'id="' + id + '"' if id else '' %}
   {% if conclusion %}
     {% if conclusion == 'succeeded' %}
-      <span class="text-success flex items-center gap-x-2"{{ status_id }}>
+      <span class="text-green-600 dark:text-green-500 [&>svg]:text-green-600 dark:[&>svg]:text-green-500 flex items-center gap-x-2"{{ status_id }}>
         {% include "icons/circle-check.svg" %}
         {% if not compact %}{{ _('Succeeded') }}{% endif %}
       </span>
     {% elif conclusion == 'failed' %}
-      <span class="text-danger flex items-center gap-x-2"{{ status_id }}>
+      <span class="text-destructive [&>svg]:text-destructive flex items-center gap-x-2"{{ status_id }}>
         {% include "icons/circle-x.svg" %}
         {% if not compact %}{{ _('Failed') }}{% endif %}
       </span>

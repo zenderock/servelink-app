@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-lg mx-auto p-8 space-y-6">
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <h1 class="h1 flex items-center gap-x-3">
     {% from "projects/components/thumbnail.html" import thumbnail %}
     {{ thumbnail(project, size='md') }}
@@ -20,16 +20,16 @@
       </a>
     </header>
 
-    <ul class="grid grid-cols-3 gap-4">
+    <ul class="grid grid-cols-4 gap-4">
       {% for environment in project.active_environments %}
-        <li class="border border-border rounded-xl p-4">
-          <header class="flex items-center gap-x-2 mb-4  truncate">
+        <li class="bg-card text-card-foreground rounded-xl border shadow-sm p-4">
+          <header class="flex items-center gap-x-2 mb-4 truncate">
             <a
               href="{{ url_for('main.project_deployments', project_name=project.name, environment=environment.slug) }}"
               class="flex items-center gap-x-2 mr-auto h-4 truncate"
             >
               <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
-              <span class=" flex-1 truncate">{{ environment.name }}</span>
+              <span class=" flex-1 truncate font-medium">{{ environment.name }}</span>
             </a>
           </header>
           <ul class="space-y-1">
@@ -77,7 +77,7 @@
           title="Deploy",
           id="dialog-deploy",
           trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5"},
-          dialog_attrs={"class": "w-full max-w-xl"}
+          content_attrs={"class": "w-full max-w-xl"}
         ) %}
           <div
             hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"

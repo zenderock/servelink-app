@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-lg mx-auto p-8 space-y-6">
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <header class="flex items-center gap-x-4 justify-between">
     <h1 class="h1 flex items-center gap-x-3">
       <a href="{{ url_for('main.project', project_name=project.name) }}">
@@ -17,27 +17,33 @@
     </h1>
 
     <div class="flex items-center gap-x-2 ml-auto">
-      {% set trigger %}
-        {% include "icons/ellipsis.svg" %}
-      {% endset %}
-      {% from "components/dropdown.html" import dropdown %}
-      {% call dropdown(
-        trigger=trigger,
-        trigger_attrs={"class": "btn-ghost w-10 p-0"}
-      ) %}
-        {% include "deployments/partials/_options.html" %}
-      {% endcall %}
-
       {% if deployment.conclusion %}
         <a
           href="{{ deployment.featured_url }}"
           class="btn-outline gap-x-2"
           target="_blank"
+          disabled
         >
           {% include "icons/link.svg" %}
           {{ _('Visit') }}
         </a>
+      {% else %}
+        <button type="button" class="btn-outline gap-x-2" disabled>
+          {% include "icons/link.svg" %}
+          {{ _('Visit') }}
+        </button>
       {% endif %}
+      {% set trigger %}
+        {% include "icons/ellipsis.svg" %}
+      {% endset %}
+      {% from "components/dropdown-menu.html" import dropdown_menu %}
+      {% call dropdown_menu(
+        trigger=trigger,
+        trigger_attrs={"class": "btn-icon-outline"},
+        content_attrs={"data-align": "end"}
+      ) %}
+        {% include "deployments/partials/_options.html" %}
+      {% endcall %}
     </div>
   </header>
 
@@ -90,10 +96,13 @@
     </ul>
   </div>
 
-  <details open>
-    <summary>{{ _('Build logs') }}</summary>
+  <details open class="w-full rounded-lg border group">
+    <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+      {% include "icons/chevron-right.svg" %}
+      {{ _('Build logs') }}
+    </summary>
     <div
-      class="overflow-y-auto h-[500px] relative"
+      class="overflow-y-auto h-[500px] relative p-4 border-t scrollbar-thin scrollbar"
       x-init="$el.scrollTop = $el.scrollHeight"
       {% if not deployment.conclusion %}
         hx-get=""

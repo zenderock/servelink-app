@@ -1,7 +1,7 @@
 {% if repos %}
 <ul>
   {% for repo in repos %}
-    <li class="flex gap-x-2 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted transition-colors">
+    <li class="flex gap-x-2 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
       <a
         href="{{ repo.html_url }}"
         target="_blank"

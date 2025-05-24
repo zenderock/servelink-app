@@ -1,22 +1,17 @@
 <a href="#" role="menuitem" class="flex items-center gap-x-2">
-  <span class="text-muted-foreground">
-    {% include "icons/undo.svg" %}
-  </span>
+  {% include "icons/undo.svg" %}
   {{ _('Rollback') }}
 </a>
-<a href="#" role="menuitem" class="flex items-center gap-x-2">
-  <span class="text-muted-foreground">
-    {% include "icons/chevrons-up.svg" %}
-  </span>
+<a href="#" role="menuitem">
+  {% include "icons/chevrons-up.svg" %}
   {{ _('Promote') }}
 </a>
-<a href="#" role="menuitem" class="flex items-center gap-x-2">
-  <span class="text-muted-foreground">
-    {% include "icons/redo.svg" %}
-  </span>
+<a href="#" role="menuitem">
+  {% include "icons/redo.svg" %}
   {{ _('Redeploy') }}
 </a>
 <hr role="separator"/>
-<a href="#" role="menuitem" class="flex items-center gap-x-2 text-danger">
+<a href="#" role="menuitem" class="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive [&_svg]:!text-destructive">
+  {% include "icons/trash.svg" %}
   {{ _('Delete') }}
 </a>

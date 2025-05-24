@@ -1,21 +1,12 @@
-<span role="menuitem" class="flex items-center gap-x-2">
+<a href="{{ url_for('main.index') }}" role="menuitem">
   <img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded bg-muted"/>
   {{ current_user.username }}
   <span class="h-4 w-4 ml-auto text-muted-foreground">
     {% include "icons/check.svg" %}
   </span>
-</span>
-<a href="{{ url_for('main.index') }}" role="menuitem">
-  <img src="https://github.com/github.png" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
-  GitHub
-  <span class="h-4 w-4 ml-auto"></span>
-</a>
-<a href="{{ url_for('main.index') }}" role="menuitem">
-  <img src="https://github.com/stripe.png" alt="{{ current_user.email }}" class="block w-5 h-5 rounded"/>
-  Stripe
-  <span class="h-4 w-4 ml-auto"></span>
 </a>
 <hr role="separator"/>
-<a href="{{ url_for('main.index') }}" role="menuitem">
+<button role="menuitem" disabled>
   {{ _('Create a team') }}
+  <span class="badge h-5 px-1.5">{{ _('Soon') }}</span>
 </a>

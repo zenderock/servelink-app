@@ -1,4 +1,4 @@
-{% macro thumbnail(project, size=None, ignore_avatar=False) %}
+{% macro thumbnail(project, size=None, ignore_avatar=False, class=None) %}
   {% if project.avatar_updated_at and not ignore_avatar %}
     <img 
       src="{{ url_for('static', filename='uploads/avatars/project_' + project.id|string + '.webp') }}?v={{ project.avatar_updated_at.timestamp()|int }}" 
@@ -11,6 +11,7 @@
         {% elif size == 'lg' %}w-14 h-14 rounded-xl
         {% else %}w-8 h-8 rounded-lg
         {% endif %}
+        {% if class %}{{ class }}{% endif %}
       "
     />
   {% else %}
@@ -27,6 +28,7 @@
       dark:from-{{ project.color }}-950/50 dark:to-{{ project.color }}-950
       dark:border-{{ project.color }}-900
       text-{{ project.color }}-500
+      {% if class %}{{ class }}{% endif %}
     ">
       {{ project.name[0] }}
     </div>

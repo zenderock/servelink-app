@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SubmitField, FieldList, FormField, Form, BooleanField, FileField, HiddenField
+from wtforms import StringField, IntegerField, SelectField, SubmitField, FieldList, FormField, Form, BooleanField, FileField, HiddenField, TextAreaField
 from flask_wtf.file import FileAllowed
-from wtforms.validators import ValidationError, DataRequired, Length, Regexp
+from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Optional
 from sqlalchemy import select
 from flask_babel import _, lazy_gettext as _l
 from app import db
@@ -27,11 +27,14 @@ def validate_root_directory(form, field):
 
 
 def process_env_vars(form, formdata):
-    """Clean empty env_vars entries before validation runs"""
-    if formdata and hasattr(form, 'env_vars'):
+    """
+    Clean empty env_vars entries and entries marked for deletion 
+    before validation runs.
+    """
+    if hasattr(form, 'env_vars'):
         form.env_vars.entries = [
             entry for entry in form.env_vars.entries
-            if entry.data.get('key', '').strip() or entry.data.get('value', '').strip()
+            if not entry.delete.data and (entry.key.data.strip() or entry.value.data.strip())
         ]
 
 
@@ -57,33 +60,43 @@ class EnvVarForm(Form):
             message=_("Keys can only contain letters, numbers and underscores. They can not start with a number.")
         )
     ])
-    value = StringField(_l('Value'), validators=[DataRequired(), Length(min=1, max=1000)])
+    value = TextAreaField(_l('Value'), validators=[Optional()]) 
     environment = SelectField(_l('Environment'), default='')
-
-    def __init__(self, *args, parent_entries=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.parent_entries = parent_entries or []
-        # Add a unique identifier to each form instance
-        self._form_id = id(self)
-
-    def validate_key(self, field):
-        current_pair = (field.data.strip(), self.environment.data.strip())
-        for entry in self.parent_entries:
-            # Compare using the unique identifier
-            if entry._form_id != self._form_id and (entry.key.data.strip(), entry.environment.data.strip()) == current_pair:
-                raise ValidationError(_('Duplicate key "{}" for environment "{}"').format(
-                    field.data, self.environment.data or _('All environments')
-                ))
+    delete = BooleanField(_l('Delete'), default=False)
 
 
 class EnvVarsForm(FlaskForm):
-    env_vars = FieldList(FormField(EnvVarForm))
+    env_vars = FieldList(FormField(EnvVarForm), min_entries=0)
+
+    def validate_env_vars(self, field):
+        processed_pairs = set()
+        duplicates_found = False
+        
+        for entry_form in field.entries:
+            key_data = entry_form.key.data 
+            env_data = entry_form.environment.data
+
+            if key_data is None: 
+                continue
+
+            current_pair = (key_data.strip(), env_data.strip())
+
+            if current_pair in processed_pairs:
+                duplicates_found = True
+                entry_form.key.errors.append(
+                    _('Duplicate key "{}" for environment "{}".').format(
+                       key_data, env_data or _('All environments')
+                    )
+                )
+            else:
+                processed_pairs.add(current_pair)
+
+        if duplicates_found:
+             raise ValidationError(_('Duplicate environment variable keys found.'))
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
         super().process(formdata, obj, data, **kwargs)
         process_env_vars(self, formdata)
-        for entry in self.env_vars.entries:
-            entry.form.parent_entries = self.env_vars.entries
 
 
 class EnvironmentForm(FlaskForm):

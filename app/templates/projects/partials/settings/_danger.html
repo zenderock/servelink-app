@@ -1,45 +1,46 @@
-<header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center rounded-t-xl">
-  <div>
-    <h2 class="font-medium">{{ _('Danger zone') }}</h2>
-    <p class="text-muted-foreground">{{ _('Permanently delete the project and all of its configuration, environments and deployments.') }}</p>
-  </div>
-</header>
+<div class="card">
+  <header class="border-b">
+    <h2>{{ _('Danger zone') }}</h2>
+    <p>{{ _('Permanently delete the project and all of its configuration, environments and deployments.') }}</p>
+  </header>
 
-<div class="p-4 space-y-6">
-  <div class="field">
-    {% from "components/dialog.html" import dialog %}
-    {% set trigger %}
-      {% include "icons/trash.svg" %}
-      {{ _('Delete project') }}
-    {% endset %}
-    {% call dialog(
-      trigger=trigger,
-      title=_('Delete "%(name)s"?', name=project.name),
-      trigger_attrs={"class": "btn-outline text-danger"},
-      dialog_attrs={"class": "max-w-md"}
-    ) %}
-      <div class="space-y-4" x-data="{ confirm: '' }">
-        <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>
-        <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
-        <form method="POST" action="{{ url_for('main.project_settings', project_name=project.name, _anchor='danger') }}">
-          {{ delete_project_form.hidden_tag() }}
-          {{ delete_project_form.confirm(
-            class_="w-full",
-            placeholder=_('Type the project name to confirm'),
-            **{'x-model': 'confirm'}
-          ) }}
-          <footer class="flex justify-end gap-x-2 mt-4">
-            <button type="button" class="btn-ghost" @click="active = false">{{ _('Cancel') }}</button>
-            {{ delete_project_form.submit(
-              class_="btn-outline text-danger",
-              **{
-                ':disabled': "confirm !== '" + project.name + "'",
-                'data-icon': 'trash'
-              }
+  <section class="space-y-6">
+    <div class="field">
+      {% from "components/dialog.html" import dialog %}
+      {% set trigger %}
+        {% include "icons/trash.svg" %}
+        {{ _('Delete project') }}
+      {% endset %}
+      {% call dialog(
+        trigger=trigger,
+        title=_('Delete "%(name)s"?', name=project.name),
+        
+        trigger_attrs={"class": "btn-destructive"},
+        content_attrs={"class": "max-w-md"}
+      ) %}
+        <div class="space-y-4" x-data="{ confirm: '' }">
+          <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>
+          <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
+          <form method="POST" action="{{ url_for('main.project_settings', project_name=project.name, _anchor='danger') }}">
+            {{ delete_project_form.hidden_tag() }}
+            {{ delete_project_form.confirm(
+              class_="w-full",
+              placeholder=_('Type the project name to confirm'),
+              **{'x-model': 'confirm'}
             ) }}
-          </footer>
-        </form>
-      </div>
-    {% endcall %}
-  </div>
+            <footer class="flex justify-end gap-x-2 mt-4">
+              <button type="button" class="btn-ghost" @click="open = false">{{ _('Cancel') }}</button>
+              {{ delete_project_form.submit(
+                class_="btn-destructive",
+                **{
+                  ':disabled': "confirm !== '" + project.name + "'",
+                  'data-icon': 'trash'
+                }
+              ) }}
+            </footer>
+          </form>
+        </div>
+      {% endcall %}
+    </div>
+  </section>
 </div>

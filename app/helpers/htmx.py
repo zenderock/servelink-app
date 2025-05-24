@@ -5,7 +5,7 @@ def render_htmx_partial(template, **context):
     if request.headers.get('HX-Request'):
         return render_template(
             'layouts/fragment.html',
-            fragment_content=render_template(template, **context)
+            fragment_content=render_template(template, is_fragment=True, **context)
         )
     
     return render_template(template, **context)

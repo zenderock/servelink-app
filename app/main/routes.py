@@ -135,6 +135,42 @@ def new_project_details():
     )
 
 
+@bp.route('/settings')
+@login_required
+def settings():
+    return render_template(
+        'pages/settings.html'
+    )
+
+
+@bp.route('/projects')
+@login_required
+def projects():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    # Start with base query
+    # project.deployments.select().order_by(Deployment.created_at.desc())
+    query = select(Project).where(
+        Project.user_id == current_user.id,
+        Project.status != 'deleted'
+    ).order_by(Project.updated_at.desc())
+
+    pagination = db.paginate(
+        query,
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    projects = pagination.items
+
+    return render_template(
+        'pages/projects.html',
+        projects=projects,
+        pagination=pagination,
+    )
+
+
 @bp.route('/projects/<string:project_name>', methods=['GET', 'POST'])
 @login_required
 @load_project
@@ -683,24 +719,3 @@ def inject_latest_deployments():
         return query.order_by(Deployment.created_at.desc()).limit(5).all()
 
     return dict(get_latest_deployments=get_latest_deployments)
-
-
-# TO REMOVE
-
-@bp.route('/kitchen-sink')
-def kitchen_sink():
-    flash('This is a simple text message.')
-    flash('This is a simple text success message.', 'success')
-    flash('This is a simple text warning message.', 'warning')
-    flash('This is a simple text error message.', 'error')
-    flash('This is a simple text error message.', 'info')
-    flash({
-        'title': 'Structured error',
-        'description': 'This is a structured error message with a title, description and action.',
-        'action': {
-            'label': 'This is a simple text action',
-            'url': 'https://google.com',
-            'click': 'console.log("Clicked!")'
-        }
-    }, 'error')
-    return render_template('kitchen-sink.html')

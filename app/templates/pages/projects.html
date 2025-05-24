@@ -3,8 +3,11 @@
 {% block app_content %}
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <h1 class="h1 flex items-center gap-x-3">
-    <img src="{{ current_user.avatar }}" class="w-10 h-10 rounded-lg" />
-    {{ current_user.username }}
+    <a href="{{ url_for('main.index') }}">
+      <img src="{{ current_user.avatar }}" class="w-10 h-10 rounded-lg" />
+    </a>
+    <span class="text-muted-foreground/25 font-normal">/</span>
+    {{ _('Projects') }}
   </h1>
   
   {% if projects %}

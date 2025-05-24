@@ -1,96 +1,123 @@
+{#
+  Renders a dialog component with optional trigger, header, body, and footer.
+
+  @param id {string} - Unique identifier for the dialog component.
+  @param trigger {string} [optional] - Text or HTML for the button that triggers the dialog.
+  @param title {string} [optional] - Title text displayed in the dialog header.
+  @param description {string} [optional] - Description text displayed below the title.
+  @param footer {string} [optional] - HTML content for the dialog footer.
+  @param main_attrs {object} [optional] - Additional HTML attributes for the main container div.
+  @param trigger_attrs {object} [optional] - Additional HTML attributes for the trigger button.
+  @param content_attrs {object} [optional] - Additional HTML attributes for the dialog content article.
+  @param content_header_attrs {object} [optional] - Additional HTML attributes for the dialog header.
+  @param content_body_attrs {object} [optional] - Additional HTML attributes for the dialog body section.
+  @param content_footer_attrs {object} [optional] - Additional HTML attributes for the dialog footer.
+  @param open {boolean} [optional] [default=false] - Whether the dialog should be open initially.
+  @param close_button {boolean} [optional] [default=true] - Whether to include a close button.
+  @param close_on_overlay_click {boolean} [optional] [default=true] - Whether clicking the overlay closes the dialog.
+  @param include_html {boolean} [optional] [default=true] - Whether to render the HTML structure.
+  @param include_script {boolean} [optional] [default=true] - Whether to include the Alpine.js component script.
+  @param register_on {array} [optional] [default=["alpine:init"]] - Alpine.js events to register the component on.
+#}
 {% macro dialog(
-  id=None,
+  id,
   trigger=None,
   title=None,
+  description=None,
+  footer=None,
+  main_attrs={},
   trigger_attrs={},
-  dialog_attrs={},
-  active=False,
-  modal=True
+  content_attrs={},
+  content_header_attrs={},
+  content_body_attrs={},
+  content_footer_attrs={},
+  open=false,
+  close_button=true,
+  close_on_overlay_click=true,
+  include_html=true,
+  include_script=false,
+  register_on=["alpine:init"]
 ) %}
+{% if include_script %}
+  {% include "components/dialog-script.html" %}
+{% endif %}
+
+{% if include_html %}
 <div
-  x-data="{
-    active: {{ 'true' if active else 'false' }},
-    open() {
-      if (!this.active) {
-        this.active = true;
-        this.$nextTick(() => this.$el.dispatchEvent(new CustomEvent('dialog:opened', { bubbles: true })));
-      }
-    },
-    close() {
-      if (this.active) {
-        this.active = false;
-        this.$el.dispatchEvent(new CustomEvent('dialog:closed', { bubbles: true }));
-      }
-    },
-    toggle() {
-      this.active ? this.close() : this.open();
-    }
-  }"
-  {% if id %}
   id="{{ id }}"
-  x-init="
-    if (!$store.dialogInitialized) {
-      Alpine.magic('dialog', () => (id, action = 'open') => {
-        const dialog = Alpine.$data(document.querySelector('#' + id));
-        if (action === 'open') dialog.open();
-        else if (action === 'close') dialog.close();
-        else if (action === 'toggle') dialog.toggle();
-        return dialog.active;
-      });
-      $store.dialogInitialized = true;
-    }
-  "
-  {% endif %}
+  x-data="dialog({{ 'true' if open else 'false' }}, {{ 'true' if close_on_overlay_click else 'false' }})"
+  x-bind="$main"
+  class="dialog"
+  {% for key, value in main_attrs.items() %}
+    {{ key }}="{{ value }}"
+  {% endfor %}
 >
   {% if trigger %}
   <button
-    @click="open()"
-    {% if id %}aria-controls="{{ id }}-dialog"{% endif %}
+    type="button"
     aria-expanded="false"
-    :aria-expanded="active"
+    aria-controls="{{ id }}-dialog"
+    x-bind="$trigger"
     {% for key, value in trigger_attrs.items() %}
-    {{ key }}="{{ value }}"
+      {{ key }}="{{ value }}"
     {% endfor %}
   >
-    {{ trigger }}
+    {{ trigger }} 
   </button>
   {% endif %}
-
   <div
-    @click="$event.target === $el && close()"
-    @keydown.escape.window="active && close()"
-    x-cloak
     role="dialog"
-    inert
-    :inert="!active"
-    aria-modal="true"
-    {% if id %}
     id="{{ id }}-dialog"
+    x-ref="dialog"
+    tabindex="-1"
+    aria-modal="true"
     aria-labelledby="{{ id }}-title"
-    {% endif %}
+    inert
+    x-bind="$content"
   >
     <article
-      {% for key, value in dialog_attrs.items() %}
-      {{ key }}="{{ value }}"
+      {% for key, value in content_attrs.items() %}
+        {{ key }}="{{ value }}"
       {% endfor %}
     >
-      <header>
-        <h2
-          {% if id %}
-          id="{{ id }}-title"
-          {% endif %}
+      {% if title or description %}
+        <header
+          {% for key, value in content_header_attrs.items() %}
+            {{ key }}="{{ value }}"
+          {% endfor %}
         >
-          {{ title | safe }}
-        </h2>
+          {% if title %}<h2 id="{{ id }}-title">{{ title | safe }}</h2>{% endif %}
+          {% if description %}<p>{{ description | safe }}</p>{% endif %}
+        </header>
+      {% endif %}
+      {% if caller %}
+        <section
+          {% for key, value in content_body_attrs.items() %}
+            {{ key }}="{{ value }}"
+          {% endfor %}
+        >
+          {% if caller %}{{ caller() }}{% endif %}
+        </section>
+      {% endif %}
+      {% if footer %}
+        <footer
+          {% for key, value in content_footer_attrs.items() %}
+            {{ key }}="{{ value }}"
+          {% endfor %}
+        >
+          {{ footer | safe }}
+        </footer>
+      {% endif %}
+      {% if close_button %}
         <button
-          @click="close()"
+          @click="hide()"
           aria-label="Close dialog"
         >
-          {% include "icons/x.svg" %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-      </header>
-      {{ caller() }}
+      {% endif %}
     </article>
   </div>
 </div>
+{% endif %}
 {% endmacro %}

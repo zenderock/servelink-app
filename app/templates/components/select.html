@@ -1,83 +1,103 @@
 {% macro select(
-  options=[],
   id=None,
-  default_value=None,
-  input_name=None,
+  name=None,
+  selected=None,
   main_attrs={},
   trigger_attrs={},
-  menu_attrs={}
+  content_attrs={},
+  listbox_attrs={},
+  input_attrs={},
+  search_placeholder="Search entries...",
+  is_combobox=False,
+  include_html=True,
+  include_script=False,
+  register_on=["alpine:init"]
 ) %}
-{% from "components/dropdown.html" import dropdown %}
-
-{% if options %}
-
-{% set default = namespace() %}
-{% set default.value = options[0].value %}
-{% set default.label = options[0].label %}
-
-{% if default_value %}
-  {% for option in options %}
-    {% if option.value == default_value %}
-      {% set default.value = option.value %}
-      {% set default.label = option.label %}
-    {% endif %}
-  {% endfor %}
+{% if include_script %}
+  {% include "components/select-script.html" %}
 {% endif %}
 
-{% set trigger_attrs = dict(trigger_attrs, **{'class': 'btn-outline truncate font-normal px-3 flex items-center gap-x-2 w-full'} if 'class' not in trigger_attrs else {}) %}
-{% set menu_attrs = dict(menu_attrs, **{'data-menu-position': 'top-left'} if 'data-menu-position' not in menu_attrs else {}) %}
-
+{% if include_html %}
 <div
-  x-data='{ 
-    selectedValue: "{{ default.value }}",
-    options: {{ options | tojson | safe }},
-    get selectedLabel() {
-      return this.options.find(o => o.value === this.selectedValue)?.label || "";
-    },
-    select(value) {
-      this.selectedValue = value;
-      $dispatch("change", { value });
-    }
-  }'
+  class="popover {{ main_attrs.class }}"
+  x-data="select('{{ name }}', '{{ selected or '' }}')"
+  @click.away="open = false"
   {% if id %}id="{{ id }}"{% endif %}
+  {% for key, value in main_attrs.items() %}
+    {% if key != 'class' %}{{ key }}="{{ value }}"{% endif %}
+  {% endfor %}
 >
-  {% set trigger %}
-    <div x-html="selectedLabel" class="truncate flex-1"></div>
-    <span class="text-muted-foreground ml-auto">
-      {% include "icons/chevrons-up-down.svg" %}
-    </span>
-  {% endset %}
-
-  {% call dropdown(
-    trigger=trigger,
-    main_attrs=main_attrs,
-    trigger_attrs=trigger_attrs,
-    menu_attrs=menu_attrs
-  ) %}
-    {% for option in options %}
-      <button
-        type="button"
-        role="menuitem"
-        @click="select('{{ option.value }}')"
-        {% if option.attrs %}
-          {% for key, value in option.attrs.items() %}
-            {{ key }}="{{ value }}"
-          {% endfor %}
-        {% endif %}
-      >
-        <div>{{ option.label | safe }}</div>
-        <span class="h-4 w-4 ml-auto text-muted-foreground">
-          <span x-show="selectedValue === '{{ option.value }}'">
-            {% include "icons/check.svg" %}
-          </span>
-        </span>
-      </button>
+  <button
+    type="button"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    x-bind="$trigger"
+    {% if id %}
+    id="{{ id }}-trigger"
+    aria-controls="{{ id }}-content"
+    {% endif %}
+    class="btn-outline justify-between font-normal {{ trigger_attrs.class }}"
+    {% for key, value in trigger_attrs.items() %}
+      {% if key != 'class' %}{{ key }}="{{ value }}"{% endif %}
     {% endfor %}
-  {% endcall %}
-  {% if input_name %}
-  <input type="text" class="hidden" name="{{ input_name }}" x-model="selectedValue">
+  >
+    <div x-html="selectedLabel" class="flex items-center gap-x-2"
+    ></div>
+    {% if is_combobox %}
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-up-down-icon lucide-chevrons-up-down text-muted-foreground opacity-50 shrink-0"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+    {% else %}
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down text-muted-foreground opacity-50 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+    {% endif %}
+  </button>
+  <div
+    data-popover
+    aria-hidden="true"
+    x-bind="$content"
+    {% if id %}id="{{ id }}-content"{% endif %}
+    {% for key, value in content_attrs.items() %}
+      {{ key }}="{{ value }}"
+    {% endfor %}
+  >
+    {% if is_combobox %}
+    <header>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input
+        type="text"
+        value=""
+        placeholder="{{ search_placeholder }}"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-autocomplete="list"
+        role="combobox"
+        aria-expanded="true"
+        aria-controls="{{ id }}-content"
+        aria-labelledby="{{ id }}-trigger"
+        x-model="query"
+        x-bind="$filter"
+      >
+    </header>
+    {% endif %}
+    <div
+      role="listbox"
+      aria-orientation="vertical"
+      {% for key, value in listbox_attrs.items() %}
+        {{ key }}="{{ value }}"
+      {% endfor %}
+    >
+      {% if caller %}{{ caller() }}{% endif %}
+    </div>
+  </div>
+  {% if name is defined %}
+    <input
+      type="hidden"
+      name="{{ name }}"
+      x-model="selectedValue"
+      {% for key, value in input_attrs.items() %}
+        {% if key != 'name' %}{{ key }}="{{ value }}"{% endif %}
+      {% endfor %}
+    >
   {% endif %}
 </div>
-
 {% endif %}
 {% endmacro %}

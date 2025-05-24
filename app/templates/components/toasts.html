@@ -45,11 +45,11 @@
     </section>
     {% if category in ('error', 'success') %}
       {% if category == 'error' %}
-        <div class="text-danger py-0.5">
+        <div class="text-destructive py-0.5">
           {% include "icons/circle-x.svg" %}
         </div>
       {% elif category == 'success' %}
-        <div class="text-success py-0.5">
+        <div class="text-green-500 py-0.5">
           {% include "icons/circle-check.svg" %}
         </div>
       {% endif %}

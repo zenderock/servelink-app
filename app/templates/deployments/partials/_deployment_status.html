@@ -28,17 +28,17 @@
         {{ deployment.hostname }}
       </a>
       {% if deployment.aliases %}
-        {% from "components/dropdown.html" import dropdown %}
+        {% from "components/dropdown-menu.html" import dropdown_menu %}
         {% set trigger %}+{{ deployment.aliases|length }}{% endset %}
-        {% call dropdown(
+        {% call dropdown_menu(
           trigger=trigger,
-          trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"}
+          trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"},
+          content_attrs={"data-align": "end"}
         ) %}
           {% for alias in deployment.aliases %}
             <a
               role="menuitem"
               href="{{ alias.url }}"
-              class="flex items-center gap-x-2 justify-end"
               target="_blank"
             >
               {{ alias.hostname }}

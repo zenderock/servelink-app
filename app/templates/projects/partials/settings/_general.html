@@ -1,12 +1,13 @@
+{% if not is_fragment %}
 {% from "components/dialog.html" import dialog %}
 {% call dialog(
-  trigger=trigger,
   id="dialog-repo-select",
   title="Select Git repository",
+  main_attrs={"x-ref": "dialogRepoSelect"},
   trigger_attrs={"class": "btn-outline font-normal px-3"},
-  dialog_attrs={
+  content_attrs={
     "class": "max-w-screen-sm w-full",
-    "@repo-selected": "close()"
+    "@repo-selected": "hide()"
   }
 ) %}
   <div
@@ -21,12 +22,15 @@
     </span>
   </div>
 {% endcall %}
+{% endif %}
 
 <form
   method="POST"
+  enctype="multipart/form-data"
   action="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
   hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
-  enctype="multipart/form-data"
+  hx-indicator="next .htmx-indicator"
+  hx-swap="outerHTML"
   x-data="{
     changed: false,
     repoId: {{ project.repo_id }},
@@ -42,30 +46,24 @@
   "
   @input="changed = true"
   @change="changed = true"
-  hx-indicator="next .htmx-indicator"
+  class="card"
 >
   {{ general_form.hidden_tag() }}
-  <header class="space-y-1 p-4 border-b bg-muted flex justify-between items-center gap-x-4 rounded-t-xl">
-    <div>
-      <h2 class="font-medium">{{ _('General') }}</h2>
-      <p class="text-muted-foreground">{{ _('General settings for the project including the Git repository.') }}</p>
-    </div>
-    <button
-      class="btn ml-auto"
-      :disabled="!changed"
-    >{{ _('Save') }}</button>
+  <header class="border-b">
+    <h2>{{ _('General') }}</h2>
+    <p>{{ _('General settings for the project including the Git repository.') }}</p>
   </header>
   
-  <div class="p-4 space-y-6">    
-    <div class="field">
+  <section class="space-y-6">
+    <div class="space-y-3">
       {{ general_form.name.label() }}
       {{ general_form.name(class="input w-full") }}
       {% for error in general_form.name.errors %}
-        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     </div>
   
-    <div class="field">
+    <div class="space-y-3">
       <label for="name">{{ _('Avatar') }}</label>
       {% from "components/image_upload.html" import image_upload %}
       {% from "projects/components/thumbnail.html" import thumbnail %}
@@ -84,13 +82,17 @@
       ) }}
     </div>
   
-    <div class="field">
+    <div class="space-y-3">
       <label for="name">{{ _('Git repository') }}</label>
+      {{ general_form.repo_id(
+        class_="hidden",
+        **{':value': 'repoId'}
+      ) }}
       <div class="flex items-center gap-x-2">
         <button
           type="button"
           class="btn-outline font-normal px-3 flex items-center gap-x-2"
-          @click="$dialog('dialog-repo-select', 'open')"
+          @click="$dispatch('dialog:open', { id: 'dialog-repo-select' })"
         >
           <img :src="`https://github.com/${repoOwner}.png`" :alt="`${repoOwner}'s avatar`" class="w-6 h-6 rounded">
           <span x-text="repoFullName"></span>
@@ -99,15 +101,15 @@
           </span>
         </button>
       </div>
-      {{ general_form.repo_id(
-        class_="hidden",
-        **{':value': 'repoId'}
-      ) }}
       {% for error in general_form.repo_id.errors %}
-        <p class="text-danger text-xs font-medium">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     </div>
-  </div>
+  </section>
+
+  <footer>
+    <button class="btn" :disabled="!changed">{{ _('Save') }}</button>
+  </footer>
 </form>
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">

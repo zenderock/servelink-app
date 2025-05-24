@@ -57,21 +57,20 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
 
   <!-- CSS -->
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{url_for('static',filename='styles.css')}}">
 
   <!-- JS -->
   <script src="{{ url_for('static', filename='assets/htmx.min.js') }}"></script>
   <script defer src="{{ url_for('static', filename='assets/alpine.min.js') }}"></script>
+  {% include "components/dialog-script.html" %}
+  {% include "components/dropdown-menu-script.html" %}
+  {% include "components/select-script.html" %}
+  {% include "components/popover-script.html" %}
 
   <!-- Additional head content (JS, CSS, etc.) -->
   {% block head %}{% endblock %}
 </head>
-<body class="relative h-full">
+<body class="relative h-full text-sm">
   {% block base_content %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

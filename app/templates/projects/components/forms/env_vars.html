@@ -1,161 +1,158 @@
 {% macro render_env_vars(form, environments) %}
+{% from "components/select.html" import select %}
 <div
   class="space-y-2"
-  x-data='{
-    environments: {{ environments | tojson | safe }},
-    getEnvironmentValues(slug) {
-      if (!slug) return;
-      const environment = this.environments.find(env => env.slug === slug);
-      if (!environment) return;
-      return environment;
-    },
-    env_vars: [
-      {% if form.env_vars.data %}
-        {% for env_var in form.env_vars.data %}
-          {
-            key: "{{ env_var.key }}",
-            value: "{{ env_var.value }}",
-            environment: "{{ env_var.environment }}"
-          }{{ "," if not loop.last }}
-        {% endfor %}
-      {% else %}
-        { key: "", value: "", environment: "" }
-      {% endif %}
-    ],
-    env_vars_errors: [
-      {% if form.env_vars.errors %}
-        {% for error in form.env_vars.errors %}
-          {
-            key: {{ error.key | default([]) }},
-            value: {{ error.value | default([]) }},
-            environment: {{ error.environment | default([]) }}
-          }{{ "," if not loop.last }}
-        {% endfor %}
-      {% endif %}
-    ],
-    env_vars_list_key: 0
-  }'
+  x-data="{
+    newEnvVars: [],
+    envVarsLength: {{ form.env_vars | length }}
+  }"
+  x-init="if (envVarsLength === 0) newEnvVars.push({ key: '', value: '' })"
 >
   <div class="flex gap-x-2 border-b border-border/50 pb-2">
-    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Key') }}</div>
-    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Value') }}</div>
-    <div class="w-full text-xs font-medium text-muted-foreground">{{ _('Environment') }}</div>
-    <div class="shrink-0 w-10"></div>
+    <div class="w-full label">{{ _('Key') }}</div>
+    <div class="w-full label">{{ _('Value') }}</div>
+    <div class="w-full label">{{ _('Environment') }}</div>
+    <div class="shrink-0 w-9"></div>
   </div>
-  <template x-for="(env_var, env_var_index) in env_vars" :key="`${env_vars_list_key}-${env_var_index}`">
-    <div class="flex gap-x-2 items-start">
-      <div class="field flex-1">
-        <input
-          class="w-full font-mono"
-          type="text"
-          :name="'env_vars-' + env_var_index + '-key'"
-          x-model="env_var.key"
-          :aria-invalid="env_vars_errors[env_var_index]?.key.length > 0"
-          pattern="[A-Za-z_][A-Za-z0-9_]*"
-          placeholder="{{ _('e.g. MY_VAR') }}"
-        >
-        <template x-for="(error, error_index) in env_vars_errors[env_var_index]?.key" :key="error_index">
-          <p class="text-danger text-xs font-medium" x-text="error"></p>
-        </template>
+  {% for env_var in form.env_vars %}
+    <div class="flex gap-x-2 items-start" x-data="{ remove: false }">
+      <div class="flex-1 space-y-2">
+        {{ env_var.key(
+          class="input w-full font-mono",
+          placeholder="e.g. MY_VAR",
+          pattern="[A-Za-z_][A-Za-z0-9_]*",
+          **{
+            "aria-invalid": "true" if env_var.key.errors,
+            ":disabled": "remove"
+          }
+        ) }}
+        {% for error in env_var.key.errors %}
+          <p class="text-sm text-destructive">{{ error }}</p>
+        {% endfor %}
       </div>
-      <div class="field flex-1">
-        <div
-          contenteditable="plaintext-only"
-          class="input font-mono !py-2.5"
-          @input="env_var.value = $event.target.textContent"
-          x-init="$el.textContent = env_var.value"
-          :aria-invalid="env_vars_errors[env_var_index]?.value.length > 0"
-        ></div>
-        <textarea
-          :name="'env_vars-' + env_var_index + '-value'"
-          x-model="env_var.value"
-          hidden
-        ></textarea>
-        <template x-for="(error, error_index) in env_vars_errors[env_var_index]?.value" :key="error_index">
-          <p class="text-danger text-xs font-medium" x-text="error"></p>
-        </template>
+      <div class="flex-1 space-y-2">
+        {{ env_var.value(
+          class="textarea w-full font-mono min-h-9 py-[7px] break-all",
+          pattern="[A-Za-z_][A-Za-z0-9_]*",
+          **{
+            "aria-invalid": "true" if env_var.value.errors,
+            ":disabled": "remove"
+          }
+        ) }}
+        {% for error in env_var.value.errors %}
+          <p class="text-sm text-destructive">{{ error }}</p>
+        {% endfor %}
       </div>
-      <div class="field flex-1 min-w-0">
-        {% from "components/dropdown.html" import dropdown %}
-        {% set trigger %}
-          <template x-if="getEnvironmentValues(env_var.environment)">
-            <span class="w-4 h-4 flex items-center justify-center">
-              <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${getEnvironmentValues(env_var.environment).color}-400 dark:bg-${getEnvironmentValues(env_var.environment).color}-600`"></span>
-            </span>
-          </template>
-          <span class="truncate" x-text="getEnvironmentValues(env_var.environment)?.name || '{{ _('All environments') }}'"></span>
-          <span class="text-muted-foreground ml-auto">
-            {% include "icons/chevrons-up-down.svg" %}
-          </span>
-        {% endset %}
-        {% call dropdown(
-          trigger=trigger,
-          main_attrs={"class": "max-w-full w-full"},
-          trigger_attrs={"class": "btn-outline truncate font-normal px-3 flex items-center gap-x-2 w-full"},
-          menu_attrs={"data-menu-position": "top-left"}
+      <div class="flex-1 space-y-2 min-w-0">
+        {% call select(
+          name='env_vars-' ~ loop.index0 ~ '-environment',
+          selected=env_var.environment.data,
+          main_attrs={"class": "w-full"},
+          trigger_attrs={
+            "class": "w-full",
+            ":disabled": "remove"
+          }
         ) %}
-          <button
-            type="button"
-            role="menuitem"
-            @click="
-              env_var.environment = '';
-              $el.closest('form').dispatchEvent(new Event('change'));
-            "
-          >
+          <div role="option" data-value="">
             {{ _('All environments') }}
-            <span class="h-4 w-4 ml-auto text-muted-foreground">
-              <template x-if="env_var.environment === ''">
-                {% include "icons/check.svg" %}
-              </template>
-            </span>
-          </button>
-          <template x-for="environment in environments" :key="environment.slug">
-            <button
-              type="button"
-              role="menuitem"
-              @click="
-                env_var.environment = environment.slug;
-                $el.closest('form').dispatchEvent(new Event('change'));
-              "
-            >
-              <span class="w-4 h-4 flex items-center justify-center">
-                <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${getEnvironmentValues(environment.slug).color}-400 dark:bg-${getEnvironmentValues(environment.slug).color}-600`"></span>
-              </span>
-              <span x-text="getEnvironmentValues(environment.slug).name"></span>
-              <span class="h-4 w-4 ml-auto text-muted-foreground">
-                <template x-if="env_var.environment === environment.slug">
-                  {% include "icons/check.svg" %}
-                </template>
-              </span>
-            </button>
-          </template>
+          </div>
+          {% for environment in environments %}
+          <div role="option" data-value="{{ environment.slug }}">
+            <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
+            {{ environment.name }}
+          </div>
+          {% endfor %}
         {% endcall %}
-        <input
-          type="hidden"
-          :name="'env_vars-' + env_var_index + '-environment'"
-          :value="env_var.environment"
-        >
-        <template x-for="(error, error_index) in env_vars_errors[env_var_index]?.environment" :key="error_index">
-          <p class="text-danger text-xs font-medium" x-text="error"></p>
-        </template>
+        {% for error in env_var.environment.errors %}
+          <p class="text-sm text-destructive">{{ error }}</p>
+        {% endfor %}
       </div>
       <div class="shrink-0">
+        {{ env_var.delete(
+          class="hidden",
+          **{'x-model': 'remove'}
+        ) }}
         <button
-          class="btn-ghost w-10 p-0"
           type="button"
-          @click="env_vars.splice(env_var_index, 1); env_vars_errors.splice(env_var_index, 1); env_vars_list_key++"
+          class="btn-icon-ghost"
+          @click="remove = !remove; $dispatch('change');"
+          :aria-label="!remove ? 'Remove' : 'Undo'"
+          :data-tooltip="!remove ? 'Remove' : 'Undo'"
+        >
+          <span x-show="!remove" class="text-destructive">{% include "icons/trash.svg" %}</span>
+          <span x-show="remove">{% include "icons/undo.svg" %}</span>
+        </button>
+      </div>
+    </div>
+  {% endfor %}
+  <template x-for="(item, index) in newEnvVars" :key="index">
+    <div
+      class="flex gap-x-2 items-start"
+      x-data="{
+        actualIndex: envVarsLength + index,
+        remove: false
+      }">
+      <div class="flex-1">
+        <input
+          type="text"
+          :name="'env_vars-' + actualIndex + '-key'"
+          :disabled="remove"
+          class="input w-full font-mono"
+          placeholder="e.g. MY_VAR"
+          pattern="[A-Za-z_][A-Za-z0-9_]*"
+        />
+      </div>
+      <div class="flex-1">
+        <textarea
+          :name="'env_vars-' + actualIndex + '-value'"
+          :disabled="remove"
+          class="textarea w-full font-mono min-h-9 py-[7px] break-all"
+          pattern="[A-Za-z_][A-Za-z0-9_]*"
+        ></textarea>
+      </div>
+      <div class="field flex-1 min-w-0">
+        {% call select(
+          name='',
+          main_attrs={"class": "w-full"},
+          trigger_attrs={
+            "class": "w-full",
+            ":disabled": "remove"
+          },
+          input_attrs={
+            ':name': "'env_vars-' + actualIndex + '-environment'",
+            ':disabled': "remove"
+          }
+        ) %}
+          <div role="option" data-value="">
+            {{ _('All environments') }}
+          </div>
+          {% for environment in environments %}
+          <div role="option" data-value="{{ environment.slug }}">
+            <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
+            {{ environment.name }}
+          </div>
+          {% endfor %}
+        {% endcall %}
+      </div>
+      <div class="shrink-0">
+        <input type="checkbox" x-model="remove" class="hidden">
+        <button
+          class="btn-icon-ghost"
+          type="button"
+          @click="remove = !remove; $dispatch('change');"
           aria-label="Remove"
           data-tooltip="Remove"
         >
-          {% include "icons/x.svg" %}
+          <span x-show="!remove" class="text-destructive">{% include "icons/trash.svg" %}</span>
+          <span x-show="remove">{% include "icons/undo.svg" %}</span>
         </button>
       </div>
     </div>
   </template>
   <button
-    class="btn-outline h-8 px-2.5 gap-x-2"
     type="button"
-    @click="env_vars.push({ key: '', value: '' })"
+    class="btn-sm-outline"
+    @click="newEnvVars.push({ key: '', value: '' })"
   >
     {% include "icons/plus.svg" %}
     {{ _('Add variable') }}

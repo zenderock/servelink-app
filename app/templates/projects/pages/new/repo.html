@@ -2,7 +2,7 @@
 
 {% block app_content %}
 <div
-  class="container max-w-screen-sm mx-auto p-8 space-y-6"
+  class="container max-w-screen-md mx-auto p-8 space-y-6"
   x-init
   @repo-selected="
     const url = new URL('{{ url_for('main.new_project_details', _external=True) }}');
@@ -16,21 +16,21 @@
   
   <ol class="flex items-center justify-between gap-x-2.5 mb-8">
     <li class="flex items-center gap-x-2.5">
-      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
+      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
       <h2 class="font-semibold">{{ _('Select repository') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border"/>
     </li>
     <li class="flex items-center gap-x-2.5 opacity-50">
-      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">2</div>
+      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">2</div>
       <h2 class="font-semibold">{{ _('Configure') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border"/>
     </li>
     <li class="flex items-center gap-x-2.5 opacity-50">
-      <div class="shrink-0 rounded-lg h-6 w-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">3</div>
+      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">3</div>
       <h2 class="font-semibold">{{ _('Deploy') }}</h2>
     </li>
   </ol>

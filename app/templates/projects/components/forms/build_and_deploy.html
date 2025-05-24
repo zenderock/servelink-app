@@ -21,8 +21,8 @@
       placeholder: '',
       locked: {{ 'true' if not form.use_custom_start_command.data else 'false' }}
     },
-    setPreset() {
-      if (!this.selectedFramework) this.selectedFramework = this.frameworks[0].slug;
+    setPreset(framework) {
+      this.selectedFramework = framework || this.frameworks[0].slug;
       
       const preset = this.frameworks.find(f => f.slug === this.selectedFramework);
       
@@ -33,65 +33,40 @@
       this.startCommand.placeholder = preset.start_command || '';
     }
   }"
-  x-init="
-    setPreset();
-    $watch('selectedFramework', function() { setPreset(); });
-  "
+  x-init="setPreset()"
+  @select:change="(e) => setPreset(e.detail.value)"
 >
   {# FRAMEWORK PRESET #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.framework.label() }}
-    {% from "components/dropdown.html" import dropdown %}
-    {% set trigger %}
-      <span x-html="selectedFrameworkObject?.logo"></span>
-      <span x-text="selectedFrameworkObject?.name"></span>
-      <span class="ml-auto text-muted-foreground">{% include "icons/chevrons-up-down.svg" %}</span>
-    {% endset %}
-    {% call dropdown(
-      trigger=trigger,
-      trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
-      menu_attrs={"data-menu-position": "top-left"}
+    {% from "components/select.html" import select %}
+    {% call select(
+      name="framework",
+      selected=form.framework.data
     ) %}
-      <template x-for="framework in frameworks" :key="framework.slug">
-        <button
-          type="button"
-          role="menuitem"
-          @click="
-            selectedFramework = framework.slug;
-            $el.closest('form').dispatchEvent(new Event('change'));
-          "
-        >
-          <span x-html="framework.logo"></span>
-          <span x-text="framework.name"></span>
-          <span class="h-4 w-4 ml-auto text-muted-foreground">
-            <template x-if="framework.slug === selectedFramework">
-              {% include "icons/check.svg" %}
-            </template>
-          </span>
-        </button>
-      </template>
+      {% for framework in frameworks %}
+        <div role="option" data-value="{{ framework.slug }}">
+          {{ framework.logo | safe }}
+          {{ framework.name | safe }}
+        </div>
+      {% endfor %}
     {% endcall %}
     {% for error in form.framework.errors %}
-      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
-
-    {{ form.framework(
-      class="hidden",
-      **{':value': 'selectedFramework'}
-    ) }}
   </div>
 
   {# RUNTIME #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.runtime.label() }}
     {{ form.runtime(class="font-mono") }}
     {% for error in form.runtime.errors %}
-      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
 
   {# ROOT DIRECTORY #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.root_directory.label() }}
     <div class="relative">
       {{ form.root_directory(
@@ -133,15 +108,15 @@
         **{':value': '!rootDirectoryLocked'}
     ) }}
     {% for error in form.root_directory.errors %}
-    <p class="text-danger text-xs font-medium">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground">
       {{ _('Commands will run from this directory.') }}
     </p>
   </div>
   
   {# BUILD COMMAND #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.build_command.label() }}
     <div class="relative">
       {{ form.build_command(
@@ -177,19 +152,19 @@
       </button>
       {{ form.use_custom_build_command(
           class="hidden",
-          **{':value': '!buildCommand.locked'}
+          **{':value': '!buildCommand.locked', 'aria-invalid': 'true'}
       ) }}
     </div>
     {% for error in form.build_command.errors %}
-      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground">
       {{ _('Install dependencies and build the project.') }}
     </p>
   </div>
 
   {# PRE-DEPLOY COMMAND #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.pre_deploy_command.label() }}
     <div class="relative">
       {{ form.pre_deploy_command(
@@ -229,15 +204,15 @@
       ) }}
     </div>
     {% for error in form.pre_deploy_command.errors %}
-      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground">
       {{ _('Run commands before we start the app (e.g. migrate database).') }}
     </p>
   </div>
 
   {# START COMMAND #}
-  <div class="field">
+  <div class="space-y-2">
     {{ form.start_command.label() }}
     <div class="relative">
       {{ form.start_command(
@@ -275,9 +250,9 @@
       ) }}
     </div>
     {% for error in form.start_command.errors %}
-      <p class="text-danger text-xs font-medium">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground">
       {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') }}
     </p>
   </div>

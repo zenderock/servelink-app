@@ -70,9 +70,9 @@
     </button>
     
   </div>
-  <p x-show="error" class="text-danger text-xs font-medium" x-text="error"></p>
+  <p x-show="error" class="text-destructive text-xs font-medium" x-text="error"></p>
   {% for error in field.errors %}
-    <p class="text-danger text-xs font-medium">{{ error }}</p>
+    <p class="text-destructive text-xs font-medium">{{ error }}</p>
   {% endfor %}
   {{ delete_field(
     class='hidden',
