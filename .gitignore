@@ -21,7 +21,7 @@ supervisord.log
 supervisord.pid
 
 # Traefik
-traefik
+traefik_dynamic_configs
 
 # SQLite
 *.sqlite3

@@ -17,7 +17,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - DOCKER_HOST=tcp://docker-proxy:2375
     volumes:
-      - ./traefik:/traefik_configs:rw
+      - ./traefik_dynamic_configs:/traefik_configs:rw
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
@@ -64,7 +64,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./traefik:/etc/traefik/dynamic_conf:rw
+      - ./traefik_dynamic_configs:/etc/traefik/dynamic_conf:rw
     networks:
       - default
       - internal

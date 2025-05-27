@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy the project files and install requirements
-COPY . .
+COPY ./web/ .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set correct permissions
