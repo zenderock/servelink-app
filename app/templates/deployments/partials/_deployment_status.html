@@ -8,7 +8,7 @@
     {{ status(conclusion=deployment.conclusion) }}
   </li>
   <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Duration') }}">
-    <span class="opacity-50 dark:opacity-60">
+    <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
       {% include "icons/timer.svg" %}
     </span>
     {% from "deployments/components/duration.html" import duration %}
@@ -22,8 +22,8 @@
         data-tooltip="{{ _('Link') }}"
         target="_blank"
       >
-        <span class="opacity-50 dark:opacity-60">
-          {% include "icons/link.svg" %}
+        <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
+          {% include "icons/link-2.svg" %}
         </span>
         {{ deployment.hostname }}
       </a>

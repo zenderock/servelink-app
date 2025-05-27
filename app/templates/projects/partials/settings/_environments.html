@@ -34,15 +34,14 @@
     class='w-full hidden',
     **{':value': 'color'}
   ) }}
-  <div class="w-10">
+  <div class="size-9">
     {% set trigger %}
-      <span class="inline-block rounded h-2.5 w-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></span>
+      <div class="inline-block rounded size-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></div>
     {% endset %}
     {% call dropdown_menu(
       trigger=trigger,
       trigger_attrs={"class": "btn-icon-ghost"},
-      content_attrs={"class": "p-2", "data-align": "start"},
-      menu_attrs={"class": "grid grid-cols-6 gap-2"}
+      content_attrs={"class": "[&>nav]:grid [&>nav]:grid-cols-6 [&>nav]:gap-2 "}
     ) %}
       {% for color in colors %}
         <button
@@ -53,7 +52,7 @@
           type="button"
           role="menuitem"
         >
-          <span class="block rounded size-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></span>
+          <div class="block rounded size-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></div>
         </button>
       {% endfor %}
     {% endcall %}
@@ -160,8 +159,8 @@
           x-show="activeForm !== {{ loop.index }}"
           class="flex items-center gap-x-2 border-b border-border/50 pb-2"
         >
-          <div class="flex items-center justify-center w-10">
-            <span class="inline-block rounded h-2.5 w-2.5 shrink-0 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600"></span>
+          <div class="flex items-center justify-center size-9">
+            <span class="inline-block rounded size-2.5 shrink-0 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600"></span>
           </div>
           <div class="flex-1 font-medium">{{ environment.name }}</div>
           <div class="flex-1 font-mono text-muted-foreground">{{ environment.slug }}</div>
@@ -179,7 +178,7 @@
             </button>
             {% if environment and environment.id != 'prod' %}
               {% set trigger %}
-                {% include "icons/trash.svg" %}
+                {% include "icons/trash-2.svg" %}
               {% endset %}
               {% call dialog(
                 trigger=trigger,
@@ -242,7 +241,7 @@
 </div>
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
-  <div class="flex items-center gap-x-2 text-muted-foreground">
+  <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
     {% include "icons/loader.svg" %}
     {{ _('Saving') }}
   </div>

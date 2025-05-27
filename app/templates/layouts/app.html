@@ -7,6 +7,6 @@
 
 {% include 'partials/_footer.html' %}
 
-{% from 'components/toasts.html' import toasts %}
-{{ toasts() }}
+{% from 'components/toast.html' import toaster %}
+{{ toaster(toasts=get_flashed_toasts()) }}
 {% endblock %}

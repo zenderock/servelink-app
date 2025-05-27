@@ -40,7 +40,7 @@
           <label>{{ _('Repository') }}</label>
           <div class="relative">
             <input class="w-full !px-9" type="text" name="repo_full_name" value="{{ repo.full_name }}" disabled>
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
               {% include "icons/github.svg" %}
             </span>
           </div>
@@ -49,7 +49,7 @@
           <label for="production_branch">{{ _('Production branch') }}</label>
           <div class="relative">
             {{ form.production_branch(class_="!pl-9 w-full") }}
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
               {% include "icons/git-branch.svg" %}
             </span>
           </div>
@@ -71,7 +71,7 @@
       </div>
 
       <details open class="w-full rounded-lg border group">
-        <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+        <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none [&>svg]:size-4">
           {% include "icons/chevron-right.svg" %}
           {{ _('Build & Deploy') }}
         </summary>
@@ -87,7 +87,7 @@
         {% endif %}
         class="w-full rounded-lg border group"
       >
-        <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+        <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none [&>svg]:size-4">
           {% include "icons/chevron-right.svg" %}
           {{ _('Environment variables') }}
         </summary>

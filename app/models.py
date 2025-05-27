@@ -3,7 +3,7 @@ from flask import current_app
 from cryptography.fernet import Fernet
 from flask_login import UserMixin
 from app import db, login
-from sqlalchemy import BigInteger, JSON, String, Text, ForeignKey, Enum as SQLAEnum, event, select, update
+from sqlalchemy import BigInteger, JSON, String, Text, ForeignKey, Enum as SQLAEnum, event, select, update, Integer
 from sqlalchemy.orm import Mapped, mapped_column, WriteOnlyMapped, relationship
 from datetime import datetime, timezone
 import json
@@ -330,6 +330,10 @@ class Deployment(db.Model):
     config: Mapped[dict] = mapped_column(JSON, nullable=False)
     _env_vars: Mapped[str] = mapped_column('env_vars', Text, nullable=False)
     container_id: Mapped[str] = mapped_column(String(64), nullable=True)    
+    container_status: Mapped[str] = mapped_column(
+        SQLAEnum('running', 'stopped', 'removed', name='deployment_container_status'),
+        nullable=True
+    )
     status: Mapped[str] = mapped_column(
         SQLAEnum('queued', 'in_progress', 'completed', name='deployment_status'),
         nullable=False,
@@ -455,11 +459,14 @@ class Alias(db.Model):
     subdomain: Mapped[str] = mapped_column(String(63), nullable=False, unique=True)
     deployment_id: Mapped[str] = mapped_column(ForeignKey(Deployment.id), index=True)
     deployment: Mapped[Deployment] = relationship(back_populates='aliases', foreign_keys=[deployment_id])
+    previous_deployment_id: Mapped[str] = mapped_column(ForeignKey(Deployment.id), index=True, nullable=True)
+    previous_deployment: Mapped['Deployment'] = relationship(foreign_keys=[previous_deployment_id])
     type: Mapped[str] = mapped_column(
         SQLAEnum('branch', 'environment', name='alias_type'),
-        nullable=True
+        nullable=False
     )
     value: Mapped[str] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     @property
     def hostname(self) -> str:
@@ -471,10 +478,14 @@ class Alias(db.Model):
     
     @classmethod
     def update_or_create(cls, subdomain: str, deployment_id: str, type: str, value: str = None):
-        alias = cls.query.filter_by(subdomain=subdomain).first()
+        alias = db.session.execute(
+            select(cls).filter_by(subdomain=subdomain)
+        ).scalar_one_or_none()
         if alias:
+            if alias.deployment_id == deployment_id:
+                return alias
+            alias.previous_deployment_id = alias.deployment_id
             alias.deployment_id = deployment_id
-            alias.value = value
         else:
             alias = cls(
                 subdomain=subdomain,

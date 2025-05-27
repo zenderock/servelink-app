@@ -1,7 +1,8 @@
 import logging
-from flask import Flask, request, current_app
+from flask import Flask, request, current_app, get_flashed_messages
 from flask_babel import Babel, lazy_gettext as _l
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import MetaData
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
@@ -18,7 +19,15 @@ def get_locale():
     return request.accept_languages.best_match(current_app.config['LANGUAGES'])
 
 
-db = SQLAlchemy()
+naming_convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+metadata = MetaData(naming_convention=naming_convention)
+db = SQLAlchemy(metadata=metadata)
 migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
@@ -82,8 +91,15 @@ def create_app(config_class=Config):
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
 
-    from app.cli import register_commands
-    register_commands(app)
+    # from app.cli import register_commands
+    # register_commands(app)
+
+    @app.template_global()
+    def get_flashed_toasts():
+        return [
+            {"category": c, "title": m}
+            for c, m in get_flashed_messages(with_categories=True)
+        ]
 
     return app
 

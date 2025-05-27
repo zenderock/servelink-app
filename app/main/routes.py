@@ -19,6 +19,12 @@ from app.helpers.environments import group_branches_by_environment
 @bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
+    # flash(_('You must select a repository first.'))
+    # flash(_('You must select a repository first.'), 'success')
+    # flash(_('You must select a repository first.'), 'info')
+    # flash(_('You must select a repository first.'), 'warning')
+    # flash(_('You must select a repository first.'), 'error')
+    
     projects = db.session.scalars(
         select(Project)
         .where(

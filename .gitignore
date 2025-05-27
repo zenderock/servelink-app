@@ -20,6 +20,9 @@ docker-compose.override.yml
 supervisord.log
 supervisord.pid
 
+# Traefik
+traefik
+
 # SQLite
 *.sqlite3
 *.sqlite

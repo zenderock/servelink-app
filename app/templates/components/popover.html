@@ -1,18 +1,19 @@
+{#
+  Renders a generic popover component, often used internally by other components like dropdowns or selects.
+
+  @param id {string} [optional] - Unique identifier for the popover component.
+  @param trigger {string} [optional] - HTML content for the element that triggers the popover.
+  @param main_attrs {object} [optional] - Additional HTML attributes for the main container div.
+  @param trigger_attrs {object} [optional] - Additional HTML attributes for the trigger element.
+  @param content_attrs {object} [optional] - Additional HTML attributes for the popover content div.
+#}
 {% macro popover(
   id=None,
   trigger=None,
   main_attrs={},
   trigger_attrs={},
-  content_attrs={},
-  include_html=True,
-  include_script=False,
-  register_on=["alpine:init"]
+  content_attrs={}
 ) %}
-{% if include_script %}
-  {% include "components/popover-script.html" %}
-{% endif %}
-
-{% if include_html %}
 <div
   class="popover {{ main_attrs.class }}"
   x-data="popover"
@@ -48,8 +49,7 @@
       {{ key }}="{{ value }}"
     {% endfor %}
   >
-    {% if caller %}{{ caller() }}{% endif %}
+    {{ caller() if caller }}
   </div>
 </div>
-{% endif %}
 {% endmacro %}

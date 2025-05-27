@@ -24,12 +24,12 @@
           target="_blank"
           disabled
         >
-          {% include "icons/link.svg" %}
+          {% include "icons/link-2.svg" %}
           {{ _('Visit') }}
         </a>
       {% else %}
         <button type="button" class="btn-outline gap-x-2" disabled>
-          {% include "icons/link.svg" %}
+          {% include "icons/link-2.svg" %}
           {{ _('Visit') }}
         </button>
       {% endif %}
@@ -62,7 +62,7 @@
         </a>
       </li>
       <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Trigger') }}">
-        <span class="opacity-50 dark:opacity-60">
+        <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
           {% include "icons/zap.svg" %}
         </span>
         Commit by <a href="https://github.com/{{ deployment.commit_meta.author }}" class="hover:text-foreground transition-colors" target="_blank">@{{ deployment.commit_meta.author }}</a>
@@ -74,7 +74,7 @@
           class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
           data-tooltip="{{ _('Branch') }}"
         >
-          <span class="opacity-50 dark:opacity-60">
+          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
             {% include "icons/git-branch.svg" %}
           </span>
           {{ deployment.branch }}
@@ -87,8 +87,8 @@
           target="_blank"
           data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit_sha[:7]) }}"
         >
-          <span class="opacity-50 dark:opacity-60">
-            {% include "icons/git-commit.svg" %}
+          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
+            {% include "icons/git-commit-horizontal.svg" %}
           </span>
           {{ deployment.commit_meta.message }}
         </a>
@@ -97,7 +97,7 @@
   </div>
 
   <details open class="w-full rounded-lg border group">
-    <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+    <summary class="px-4 py-3 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
       {% include "icons/chevron-right.svg" %}
       {{ _('Build logs') }}
     </summary>
@@ -114,7 +114,7 @@
     >
       {% if not deployment.conclusion %}
         <div class="absolute inset-0 flex items-center justify-center text-muted-foreground">
-          <div class="flex items-center gap-x-2">
+          <div class="flex items-center gap-x-2 [&>svg]:size-4">
             {% include "icons/loader.svg" %}
             {{ _('Waiting for logs') }}
           </div>

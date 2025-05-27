@@ -35,15 +35,15 @@
           <ul class="space-y-1">
             <li>
               <a
-                href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
+                href="http://{{ project.slug }}-env-{{ environment.slug }}.{{ base_domain }}"
                 class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors"
                 target="_blank"
                 data-tooltip="{{ _('Visit') }}"
               >
-                <span class="opacity-50 dark:opacity-60">
-                  {% include "icons/link.svg" %}
+                <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
+                  {% include "icons/link-2.svg" %}
                 </span>
-                <span class="truncate">{{ project.slug }}-{{ environment.slug }}.{{ base_domain }}</span>
+                <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ base_domain }}</span>
               </a>
             </li>
             <li>
@@ -51,7 +51,7 @@
                 class="text-muted-foreground flex items-center gap-x-2 mr-auto"
                 data-tooltip="{{ _('Branch') }}"
               >
-                <span class="opacity-50 dark:opacity-60">
+                <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
                   {% include "icons/git-branch.svg" %}
                 </span>
                 <span class="font-mono truncate">{{ environment.branch }}</span>
@@ -85,7 +85,7 @@
             hx-swap="outerHTML"
             class="flex items-center justify-center"
           >
-            <span class="text-muted-foreground flex items-center gap-x-2">
+            <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
               {% include "icons/loader.svg" %}
               {{ _('Loading') }}
             </span>

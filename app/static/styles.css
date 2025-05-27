@@ -1,12 +1,12 @@
 /*! tailwindcss v4.1.4 | MIT License | https://tailwindcss.com */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap");
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
-    --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-      "Courier New", monospace;
+    --font-sans: 'Geist';
+    --font-mono: 'Geist Mono';
     --color-red-100: oklch(93.6% 0.032 17.717);
     --color-red-200: oklch(88.5% 0.062 18.334);
     --color-red-400: oklch(70.4% 0.191 22.216);
@@ -464,6 +464,10 @@
   .table {
     display: table;
   }
+  .size-2\.5 {
+    width: calc(var(--spacing) * 2.5);
+    height: calc(var(--spacing) * 2.5);
+  }
   .size-4 {
     width: calc(var(--spacing) * 4);
     height: calc(var(--spacing) * 4);
@@ -471,6 +475,10 @@
   .size-6 {
     width: calc(var(--spacing) * 6);
     height: calc(var(--spacing) * 6);
+  }
+  .size-9 {
+    width: calc(var(--spacing) * 9);
+    height: calc(var(--spacing) * 9);
   }
   .h-2\.5 {
     height: calc(var(--spacing) * 2.5);
@@ -626,9 +634,6 @@
   .grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .grid-cols-6 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
   .flex-col {
     flex-direction: column;
   }
@@ -653,8 +658,11 @@
   .justify-start {
     justify-content: flex-start;
   }
-  .gap-2 {
-    gap: calc(var(--spacing) * 2);
+  .gap-0\.5 {
+    gap: calc(var(--spacing) * 0.5);
+  }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
   }
   .gap-4 {
     gap: calc(var(--spacing) * 4);
@@ -728,6 +736,9 @@
   .gap-y-6 {
     row-gap: calc(var(--spacing) * 6);
   }
+  .self-start {
+    align-self: flex-start;
+  }
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -747,6 +758,9 @@
   }
   .rounded-md {
     border-radius: var(--radius-md);
+  }
+  .rounded-sm {
+    border-radius: var(--radius-sm);
   }
   .rounded-xl {
     border-radius: var(--radius-xl);
@@ -1234,9 +1248,6 @@
   .p-0 {
     padding: calc(var(--spacing) * 0);
   }
-  .p-2 {
-    padding: calc(var(--spacing) * 2);
-  }
   .p-4 {
     padding: calc(var(--spacing) * 4);
   }
@@ -1266,9 +1277,6 @@
   }
   .px-8 {
     padding-inline: calc(var(--spacing) * 8);
-  }
-  .py-0\.5 {
-    padding-block: calc(var(--spacing) * 0.5);
   }
   .py-1\.5 {
     padding-block: calc(var(--spacing) * 1.5);
@@ -1305,9 +1313,6 @@
   }
   .text-center {
     text-align: center;
-  }
-  .text-left {
-    text-align: left;
   }
   .font-mono {
     font-family: var(--font-mono);
@@ -1483,10 +1488,22 @@
       border-top-right-radius: var(--radius-lg);
     }
   }
+  .first\:rounded-t-xl {
+    &:first-child {
+      border-top-left-radius: var(--radius-xl);
+      border-top-right-radius: var(--radius-xl);
+    }
+  }
   .last\:rounded-b-lg {
     &:last-child {
       border-bottom-right-radius: var(--radius-lg);
       border-bottom-left-radius: var(--radius-lg);
+    }
+  }
+  .last\:rounded-b-xl {
+    &:last-child {
+      border-bottom-right-radius: var(--radius-xl);
+      border-bottom-left-radius: var(--radius-xl);
     }
   }
   .last\:border-b {
@@ -1944,6 +1961,49 @@
   .\[\&_svg\]\:\!text-destructive {
     & svg {
       color: var(--color-destructive) !important;
+    }
+  }
+  .\[\&\>\[role\=img\]\]\:size-4 {
+    &>[role=img] {
+      width: calc(var(--spacing) * 4);
+      height: calc(var(--spacing) * 4);
+    }
+  }
+  .\[\&\>\[role\=img\]\]\:shrink-0 {
+    &>[role=img] {
+      flex-shrink: 0;
+    }
+  }
+  .\[\&\>\[role\=img\]\>svg\]\:size-4 {
+    &>[role=img]>svg {
+      width: calc(var(--spacing) * 4);
+      height: calc(var(--spacing) * 4);
+    }
+  }
+  .\[\&\>nav\]\:grid {
+    &>nav {
+      display: grid;
+    }
+  }
+  .\[\&\>nav\]\:grid-cols-6 {
+    &>nav {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+  .\[\&\>nav\]\:gap-2 {
+    &>nav {
+      gap: calc(var(--spacing) * 2);
+    }
+  }
+  .\[\&\>svg\]\:size-4 {
+    &>svg {
+      width: calc(var(--spacing) * 4);
+      height: calc(var(--spacing) * 4);
+    }
+  }
+  .\[\&\>svg\]\:shrink-0 {
+    &>svg {
+      flex-shrink: 0;
     }
   }
   .\[\&\>svg\]\:text-destructive {

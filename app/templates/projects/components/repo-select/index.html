@@ -30,7 +30,7 @@
     {% call dropdown_menu(
       trigger=trigger,
       trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
-      content_attrs={"data-side": "top", "data-align": "start"}
+      content_attrs={"data-align": "start"}
     ) %}
       <template x-for="account in accounts" :key="account">
         <button
@@ -59,7 +59,7 @@
 
     <div class="relative flex-1">
       <input name="query" type="search" class="w-full !pl-9" x-model="query" placeholder="{{ _('Search by name') }}">
-      <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
+      <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
         {% include "icons/search.svg" %}
       </span>
     </div>
@@ -67,7 +67,7 @@
 
   <div class="relative">
     <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
-      <div class="flex items-center gap-x-2 text-muted-foreground">
+      <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
         {% include "icons/loader.svg" %}
         <span>Loading repositories</span>
       </div>

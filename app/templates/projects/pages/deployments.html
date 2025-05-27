@@ -30,7 +30,7 @@
         hx-swap="outerHTML"
         class="flex items-center justify-center"
       >
-        <span class="text-muted-foreground flex items-center gap-x-2">
+        <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
           {% include "icons/loader.svg" %}
           {{ _('Loading') }}
         </span>
@@ -200,7 +200,7 @@
 
     <div class="relative">
       <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
-        <div class="flex items-center gap-x-2 text-muted-foreground">
+        <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
           {% include "icons/loader.svg" %}
           <span>Searching</span>
         </div>

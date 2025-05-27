@@ -14,6 +14,7 @@ humanize
 Pillow
 pyjwt
 python-dotenv
+PyYAML
 redis
 requests
 resend

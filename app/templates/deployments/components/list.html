@@ -24,7 +24,7 @@
     {% endfor %}
   >
     {% for deployment in deployments %}
-      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-lg last:rounded-b-lg px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
+      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
         <span
           data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
           data-tooltip-position="top-left"
@@ -56,7 +56,7 @@
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
           data-tooltip="{{ _('Environment') }}"
         >
-          <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
+          <span class="size-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ deployment.environment.color }}-400 dark:bg-{{ deployment.environment.color }}-600 shrink-0"></span></span>
           {{ deployment.environment.name }}
         </a>
 
@@ -70,7 +70,7 @@
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
           data-tooltip="{{ _('Branch') }}"
         >
-          <span class="opacity-50 dark:opacity-60">
+          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
             {% include "icons/git-branch.svg" %}
           </span>
           {{ deployment.branch }}
@@ -82,8 +82,8 @@
           target="_blank"
           data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit_sha[:7]) }}"
         >
-          <span class="opacity-50 dark:opacity-60">
-            {% include "icons/git-commit.svg" %}
+          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
+            {% include "icons/git-commit-horizontal.svg" %}
           </span>
           <span class="truncate">{{ deployment.commit_meta.message }}</span>
         </a>
@@ -91,7 +91,7 @@
         <div class="flex items-center ml-auto">
           {% if deployment.conclusion %}
             <a href="{{ deployment.featured_url }}" class="btn-ghost w-8 h-8 px-0" target="_blank" data-tooltip="{{ _('Visit') }}">
-              {% include "icons/link.svg" %}
+              {% include "icons/link-2.svg" %}
             </a>
           {% endif %}
       
@@ -113,7 +113,7 @@
   {% set route_params = request.view_args.copy() %}
   {% if pagination and pagination.pages > 1 %}
     <nav
-      class="flex items-center justify-end gap-x-2"
+      class="flex items-center justify-end gap-x-2 mt-4"
       aria-label="Pagination"
     >
       {% if pagination.page == 1 %}
@@ -219,7 +219,7 @@
           hx-swap="outerHTML"
           class="flex items-center justify-center"
         >
-          <span class="text-muted-foreground flex items-center gap-x-2">
+          <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
             {% include "icons/loader.svg" %}
             {{ _('Loading') }}
           </span>

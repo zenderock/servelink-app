@@ -1,23 +1,31 @@
+{#
+  Renders a select or combobox component.
+
+  @param id {string} [optional] - Unique identifier for the select component.
+  @param selected {string} [optional] - The initially selected value.
+  @param name {string} [optional] - The name attribute for the hidden input storing the selected value.
+  @param items {array} [optional] - An array of items (objects with type, label, value, attrs, and items) to render.
+  @param main_attrs {object} [optional] - Additional HTML attributes for the main container div.
+  @param trigger_attrs {object} [optional] - Additional HTML attributes for the trigger button.
+  @param content_attrs {object} [optional] - Additional HTML attributes for the popover content div.
+  @param listbox_attrs {object} [optional] - Additional HTML attributes for the listbox div.
+  @param input_attrs {object} [optional] - Additional HTML attributes for the hidden input.
+  @param search_placeholder {string} [optional] [default="Search entries..."] - Placeholder text for the search input (combobox only).
+  @param is_combobox {boolean} [optional] [default=False] - Renders a combobox with search functionality if True.
+#}
 {% macro select(
   id=None,
-  name=None,
   selected=None,
+  name=None,
+  items=None,
   main_attrs={},
   trigger_attrs={},
   content_attrs={},
   listbox_attrs={},
   input_attrs={},
   search_placeholder="Search entries...",
-  is_combobox=False,
-  include_html=True,
-  include_script=False,
-  register_on=["alpine:init"]
+  is_combobox=False
 ) %}
-{% if include_script %}
-  {% include "components/select-script.html" %}
-{% endif %}
-
-{% if include_html %}
 <div
   class="popover {{ main_attrs.class }}"
   x-data="select('{{ name }}', '{{ selected or '' }}')"
@@ -85,7 +93,11 @@
         {{ key }}="{{ value }}"
       {% endfor %}
     >
-      {% if caller %}{{ caller() }}{% endif %}
+      {% if items %}
+        {{ render_select_items(items, id ~ "-items" if id else "items") }}
+      {% else %}
+        {{ caller() if caller }}
+      {% endif %}
     </div>
   </div>
   {% if name is defined %}
@@ -99,5 +111,42 @@
     >
   {% endif %}
 </div>
-{% endif %}
+{% endmacro %}
+
+{# 
+  Renders a list of items for the select component.
+
+  @param items {array} - The array of items to render.
+  @param parent_id_prefix {string} [optional] - The prefix for the item id.
+#}
+{% macro render_select_items(items, parent_id_prefix="items") %}
+  {% for item in items.items() %}
+    {% set item_id = parent_id_prefix ~ "-" ~ loop.index %}
+
+    {% if item.type == "group" %}
+      {% set group_label_id = item.id if item.id else "group-label-" + item_id %}
+      <div
+        role="group"
+        aria-labelledby="{{ group_label_id }}"
+        {% for key, value in item.attrs.items() %}
+          {{ key }}="{{ value }}"
+        {% endfor %}
+      >
+        <div role="heading" id="{{ group_label_id }}">{{ item.label }}</div>
+        {{ render_select_items(item.items, item_id) if item.items }}
+      </div>
+    {% elif item.type == "separator" %}
+      <hr role="separator" />
+    {% elif item.type == "item" or not item.type %}
+      <div
+        role="option"
+        data-value="{{ item.value }}"
+        {% for key, value in item.attrs.items() %}
+           {{ key }}="{{ value }}"
+        {% endfor %}
+      >
+        {{ item.label | safe }}
+      </div>
+    {% endif %}
+  {% endfor %}
 {% endmacro %}

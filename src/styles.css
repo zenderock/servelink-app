@@ -1,5 +1,5 @@
-/* @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap"); */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap");
 
 @import "tailwindcss";
 @source './app/templates/**/*.html';
@@ -12,9 +12,10 @@
 @source inline("bg-muted");
 
 @import "basecoat-css";
-@import "./custom.css"
 
-/* @theme {
+@theme {
   --font-sans: 'Geist';
   --font-mono: 'Geist Mono';
-} */
+}
+
+@import "./custom.css"

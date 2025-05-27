@@ -12,15 +12,15 @@
 <ul class="space-y-1">
   <li>
     <a class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors" href="{{ project.url }}" target="_blank">
-      <span class="opacity-50 dark:opacity-60">
-        {% include "icons/link.svg" %}
+      <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
+        {% include "icons/link-2.svg" %}
       </span>
       <span class="truncate">{{ project.hostname }}</span>
     </a>
   </li>
   <li>
     <a class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors" href="https://github.com/{{ project.repo_full_name }}" target="_blank">
-      <span class="opacity-50 dark:opacity-60">
+      <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
         {% include "icons/github.svg" %}
       </span>
       <span class="truncate">{{ project.repo_full_name }}</span>
