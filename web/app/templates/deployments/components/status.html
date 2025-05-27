@@ -24,7 +24,7 @@
       </span>
     {% endif %}
   {% else %}
-    <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4"{{ status_id }}>
+    <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin"{{ status_id }}>
       {% include "icons/loader.svg" %}
       {% if not compact %}{{ _('In progress') }}{% endif %}
     </span>

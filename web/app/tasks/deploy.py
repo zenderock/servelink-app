@@ -119,12 +119,6 @@ def deploy(deployment_id: str):
             
             while (time.time() - start_time) < timeout:
                 container.reload()
-                container_ip = container.attrs['NetworkSettings']['Networks']['app_default']['IPAddress']
-                
-                if (not container_ip):
-                    app.logger.info(f"Container {container.id} not yet assigned an IP address")
-                    time.sleep(0.5)
-                    continue
                 
                 if container.status == 'exited':
                     raise Exception("Container failed to start")
@@ -137,6 +131,13 @@ def deploy(deployment_id: str):
                 db.session.commit()
                 
                 # Check if the app is ready (i.e. listens on port 8000)
+                container_ip = container.attrs['NetworkSettings']['Networks']['app_default']['IPAddress']
+                
+                if (not container_ip):
+                    app.logger.info(f"Container {container.id} not yet assigned an IP address")
+                    time.sleep(0.5)
+                    continue
+
                 if http_probe(container_ip, 8000):
                     deployment.conclusion = 'succeeded'
                     break

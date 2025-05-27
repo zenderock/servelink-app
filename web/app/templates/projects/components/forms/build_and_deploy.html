@@ -75,7 +75,7 @@
           placeholder="./",
           **{
             'aria-invalid': 'true' if form.root_directory.errors,
-            ':disabled': 'rootDirectoryLocked',
+            ':readonly': 'rootDirectoryLocked',
             'x-ref': 'rootDirectoryInput'
           }
       ) }}
@@ -122,7 +122,7 @@
       {{ form.build_command(
           class="w-full font-mono !pr-9",
           **{
-            ':disabled': 'buildCommand.locked',
+            ':readonly': 'buildCommand.locked',
             ':placeholder': 'buildCommand.placeholder',
             'x-ref': 'buildCommandInput'
           }
@@ -170,7 +170,7 @@
       {{ form.pre_deploy_command(
           class="w-full font-mono !pr-9",
           **{
-            ':disabled': 'preDeployCommand.locked',
+            ':readonly': 'preDeployCommand.locked',
             ':placeholder': 'preDeployCommand.placeholder',
             'x-ref': 'preDeployCommandInput'
           }
@@ -218,7 +218,7 @@
       {{ form.start_command(
           class="w-full font-mono !pr-9",
           **{
-            ':disabled': 'startCommand.locked',
+            ':readonly': 'startCommand.locked',
             ':placeholder': 'startCommand.placeholder',
             'x-ref': 'startCommandInput'
           }

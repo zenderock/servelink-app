@@ -12,7 +12,7 @@ class Config(object):
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'app/static/uploads')
     LANGUAGES = ['en']
     SECRET_KEY = os.environ.get('SECRET_KEY', 'random-unique-secret-key')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(os.path.dirname(basedir), 'local.sqlite3'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SENDER_NAME = os.environ.get('MAIL_SENDER_NAME', APP_NAME)
     MAIL_SENDER_EMAIL = os.environ.get('MAIL_SENDER_EMAIL', 'noreply@example.com')

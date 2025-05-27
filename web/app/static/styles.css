@@ -1982,6 +1982,11 @@
       flex-shrink: 0;
     }
   }
+  .\[\&\>svg\]\:animate-spin {
+    &>svg {
+      animation: var(--animate-spin);
+    }
+  }
   .\[\&\>svg\]\:text-destructive {
     &>svg {
       color: var(--color-destructive);
