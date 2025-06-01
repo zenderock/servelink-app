@@ -434,19 +434,13 @@ class Deployment(db.Model):
         if not self.build_logs:
             return []
         
-        logs = []
-        for line in self.build_logs.splitlines():
-            try:
-                timestamp, message = line.split(' ', 1)
-                timestamp = datetime.fromisoformat(timestamp.rstrip('Z')).timestamp()
-            except (ValueError, IndexError):
-                timestamp = None
-                message = line
-            
-            logs.append({
-                'timestamp': timestamp,
-                'message': message
-            })
+        logs = [
+            {
+                'timestamp': timestamp if separator else None,
+                'message': message if separator else timestamp
+            }
+            for timestamp, separator, message in (line.partition(' ') for line in self.build_logs.splitlines())
+        ]
         return logs
 
     @property

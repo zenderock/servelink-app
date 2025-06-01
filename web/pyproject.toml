@@ -1,0 +1,29 @@
+[project]
+name = "devpush-web"
+version = "0.1.0"
+description = "Web app for devpush"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncio>=3.4.3",
+    "coolname>=2.2.0",
+    "cryptography>=45.0.3",
+    "docker>=7.1.0",
+    "email-validator>=2.2.0",
+    "flask>=3.1.1",
+    "flask-babel>=4.0.0",
+    "flask-login>=0.6.3",
+    "flask-migrate>=4.1.0",
+    "flask-sqlalchemy>=3.1.1",
+    "flask-wtf>=1.2.2",
+    "gunicorn>=23.0.0",
+    "humanize>=4.12.3",
+    "jinja2>=3.1.6",
+    "pillow>=11.2.1",
+    "pyjwt>=2.10.1",
+    "python-dotenv>=1.1.0",
+    "pyyaml>=6.0.2",
+    "redis>=6.1.0",
+    "requests>=2.32.3",
+    "resend>=2.10.0",
+    "rq>=2.3.3",
+]

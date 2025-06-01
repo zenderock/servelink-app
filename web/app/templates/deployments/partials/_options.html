@@ -1,17 +1,12 @@
-<a href="#" role="menuitem" class="flex items-center gap-x-2">
+<button role="menuitem" disabled>
   {% include "icons/undo-2.svg" %}
-  {{ _('Rollback') }}
-</a>
-<a href="#" role="menuitem">
+  {{ _('Instant rollback') }}
+</button>
+<button role="menuitem" disabled>
   {% include "icons/chevrons-up.svg" %}
-  {{ _('Promote') }}
-</a>
+  {{ _('Promote to production') }}
+</button>
 <a href="#" role="menuitem">
   {% include "icons/redo-2.svg" %}
   {{ _('Redeploy') }}
-</a>
-<hr role="separator"/>
-<a href="#" role="menuitem" class="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive [&_svg]:!text-destructive">
-  {% include "icons/trash-2.svg" %}
-  {{ _('Delete') }}
 </a>

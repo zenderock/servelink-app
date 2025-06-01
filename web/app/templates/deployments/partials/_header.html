@@ -4,7 +4,7 @@
   id="build-info"
 >
   <li class="flex items-center gap-x-2" data-tooltip="{{ _('Status') }}">
-    {% from "deployments/components/status.html" import status %}
+    {% from "components/status.html" import status %} {# From /shared #}
     {{ status(conclusion=deployment.conclusion) }}
   </li>
   <li class="flex items-center gap-x-2 text-muted-foreground" data-tooltip="{{ _('Duration') }}">

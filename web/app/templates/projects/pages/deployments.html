@@ -30,7 +30,7 @@
         hx-swap="outerHTML"
         class="flex items-center justify-center"
       >
-        <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
+        <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
           {% include "icons/loader.svg" %}
           {{ _('Loading') }}
         </span>
@@ -51,8 +51,8 @@
         isDirty: false,
         updateDirty() {
           const params = new URLSearchParams(window.location.search);
-          for (const value of params.values()) {
-            if (value.trim() !== '') {
+          for (const [key, value] of params) {
+            if (['environment', 'status', 'branch', 'date-from', 'date-to'].includes(key) && value.trim() !== '') {
               this.isDirty = true;
               return;
             }
@@ -90,7 +90,7 @@
       {% endfor %}
       {% endcall %}
 
-      {% from "deployments/components/status.html" import status %}
+      {% from "components/status.html" import status %} {# From /shared #}
       {% call select(
         name="status",
         selected=request.args.get("status"),
@@ -102,6 +102,7 @@
         {% for conclusion in ['succeeded', 'failed', 'skipped', 'canceled', 'in_progress'] %}
           <div role="option" data-value="{{ conclusion }}">
             {{ status(conclusion=conclusion if conclusion != 'in_progress' else None) | safe }}
+            
           </div>
         {% endfor %}
       {% endcall %}

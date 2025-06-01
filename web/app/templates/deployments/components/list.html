@@ -8,7 +8,7 @@
 ) %}
 
 {% if deployments %}
-  {% from "deployments/components/status.html" import status %}
+  {% from "components/status.html" import status %} {# From /shared #}
   {% from "projects/components/thumbnail.html" import thumbnail %}
   {% from "components/dropdown-menu.html" import dropdown_menu %}
   {% set status_labels = {
@@ -22,6 +22,9 @@
     {% for key, value in main_attrs.items() %}
     {{ key }}="{{ value }}"
     {% endfor %}
+    hx-ext="sse"
+    sse-connect="{{ config.API_BASE_URL }}/projects/{{ deployments[0].project.id }}/events"
+    sse-swap="deployment_status_update"
   >
     {% for deployment in deployments %}
       <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
@@ -90,7 +93,7 @@
       
         <div class="flex items-center ml-auto">
           {% if deployment.conclusion %}
-            <a href="{{ deployment.featured_url }}" class="btn-ghost w-8 h-8 px-0" target="_blank" data-tooltip="{{ _('Visit') }}">
+            <a href="{{ deployment.featured_url }}" class="btn-sm-icon-ghost" target="_blank" data-tooltip="{{ _('Visit') }}">
               {% include "icons/link-2.svg" %}
             </a>
           {% endif %}
@@ -118,7 +121,7 @@
     >
       {% if pagination.page == 1 %}
         <button
-          class="btn-outline h-8 w-8 p-0 disabled"
+          class="btn-sm-icon-outline"
           type="button"
           aria-label="{{ _('Newest deployments') }}"
           disabled
@@ -128,7 +131,7 @@
       {% else %}
         <a
           href="{{ url_for(request.endpoint, page=1, **route_params) }}"
-          class="btn-outline h-8 w-8 p-0"
+          class="btn-sm-icon-outline"
           aria-label="{{ _('Newest deployments') }}"
         >
           {% include "icons/chevrons-left.svg" %}
@@ -137,14 +140,14 @@
 
       {% if pagination.has_prev %}
         <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **route_params) }}" 
-          class="btn-outline h-8 w-8 p-0"
+          class="btn-sm-icon-outline"
           aria-label="{{ _('Newer deployments') }}"
         >
           {% include "icons/chevron-left.svg" %}
         </a>
       {% else %}
         <button
-          class="btn-outline h-8 w-8 p-0 disabled"
+          class="btn-sm-icon-outline"
           type="button"
           aria-label="{{ _('Newer deployments') }}"
           disabled
@@ -156,7 +159,7 @@
       {% if pagination.has_next %}
         <a
           href="{{ url_for(request.endpoint, page=pagination.next_num, **route_params) }}"
-          class="btn-outline h-8 w-8 p-0"
+          class="btn-sm-icon-outline"
           aria-label="{{ _('Older deployments') }}"
           disabled
         >
@@ -164,7 +167,7 @@
         </a>
       {% else %}
         <button
-          class="btn-outline h-8 w-8 p-0 disabled"
+          class="btn-sm-icon-outline"
           type="button"
           aria-label="{{ _('Older deployments') }}"
           disabled
@@ -176,7 +179,7 @@
       <!-- If we're on the last page we don't display the next button -->
       {% if pagination.page == pagination.pages %}
         <button
-          class="btn-outline h-8 w-8 p-0 disabled"
+          class="btn-sm-icon-outline"
           type="button"
           aria-label="{{ _('Oldest deployments') }}"
           disabled
@@ -186,7 +189,7 @@
       {% else %}
         <a
           href="{{ url_for(request.endpoint, page=pagination.pages, **route_params) }}"
-          class="btn-outline h-8 w-8 p-0"
+          class="btn-sm-icon-outline"
           aria-label="{{ _('Oldest deployments') }}"
         >
           {% include "icons/chevrons-right.svg" %}
@@ -208,7 +211,7 @@
         trigger=trigger,
         title="Deploy",
         id="dialog-deploy",
-        trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5 mt-4"},
+        trigger_attrs={"class": "btn-sm mt-4"},
         content_attrs={
           "class": "max-w-screen-sm w-full"
         }

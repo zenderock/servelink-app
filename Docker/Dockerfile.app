@@ -3,29 +3,31 @@ FROM python:3.13-slim
 # Create non-root user
 RUN addgroup --system appgroup && adduser --system --group appuser
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
         sqlite3 \
         supervisor \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
-# Copy the project files and install requirements
+# Copy project
 COPY ./web/ .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Set correct permissions
+# Set permissions
 RUN chown -R appuser:appgroup /app
+
+# Create data directory with proper permissions
+RUN mkdir -p /data && chown -R appuser:appgroup /data
 
 # Switch to non-root user
 USER appuser
 
-# Expose Flask port
 EXPOSE 8000
 
-# Copy Supervisor configuration
+# Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-
-# Start the Supervisor process manager
-CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+ENTRYPOINT ["sh", "-c", "uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf"]

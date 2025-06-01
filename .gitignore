@@ -10,9 +10,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
-venv/
-
 # Docker
 docker-compose.override.yml
 
@@ -20,8 +17,8 @@ docker-compose.override.yml
 supervisord.log
 supervisord.pid
 
-# Traefik
-traefik_dynamic_configs
+# Data (DB and Traefik)
+/data/
 
 # SQLite
 *.sqlite3
@@ -30,6 +27,3 @@ traefik_dynamic_configs
 # Node
 node_modules/
 package-lock.json
-
-# Static assets and uploads
-static/uploads/

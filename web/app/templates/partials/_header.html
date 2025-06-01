@@ -58,7 +58,7 @@
 				
 				<div class="flex items-center">
 					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-sm-ghost">
-						{% from "deployments/components/status.html" import status %}
+						{% from "components/status.html" import status %} {# From /shared #}
 						{{ status(conclusion=deployment.conclusion, compact=True, id='header-nav-trigger-deployment-status-' + deployment.id[:7]) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
@@ -81,7 +81,7 @@
 				data-tooltip="Toggle theme"
 				data-side="bottom"
 				type="button" 
-				class="btn-ghost h-8 w-8 p-0 rounded-full"
+				class="btn-sm-icon-ghost rounded-full"
 				aria-label="Toggle theme"
 			>
 				<span x-show="$store.theme.isDark">
@@ -95,7 +95,7 @@
 			{% if current_user.is_authenticated %}
 
 				{% set trigger %}
-					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-8 h-8 rounded-full"/>
+					<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block size-8 rounded-full shrink-0"/>
 				{% endset %}
 				{% call dropdown_menu(
           trigger=trigger,

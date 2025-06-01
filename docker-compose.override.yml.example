@@ -3,9 +3,19 @@ services:
     build:
       dockerfile: Docker/Dockerfile.app.dev
     volumes:
-      - .:/app
+      - ./web:/app
+      - ./local.sqlite3:/local.sqlite3
+      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./data/traefik}:/traefik_configs:rw
     environment:
       - FLASK_DEBUG=1
+
+  api:
+    build:
+      dockerfile: Docker/Dockerfile.api.dev
+    volumes:
+      - ./api:/app
+    environment:
+      - FASTAPI_DEBUG=1
 
   traefik:
     command:
@@ -13,13 +23,16 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=tcp://docker-proxy:2375"
       - "--providers.docker.watch=true"
+      - "--providers.file.directory=/etc/traefik/dynamic_conf"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--api.insecure=true"
     ports:
-      - "8080:8080"
+      - "80:80"
+    volumes:
+      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./data/traefik}:/etc/traefik/dynamic_conf:rw
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${BASE_DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
-      

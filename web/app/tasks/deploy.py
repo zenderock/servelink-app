@@ -1,15 +1,42 @@
-import docker
-from app.models import Deployment, Alias, Project
-from app import create_app, db
-import socket
-from contextlib import closing
-from datetime import datetime, timezone
-import time
-import requests, socket
-from app.helpers.github import get_installation_instance
 import re
-import yaml
 import os
+import time
+from datetime import datetime, timezone
+import docker
+import requests
+import yaml
+from app import create_app, db
+from app.models import Deployment, Alias
+from app.helpers.github import get_installation_instance
+
+
+def publish_docker_logs(container, offset, redis_client, stream_key):
+    updated_logs = container.logs(
+        stdout=True,
+        stderr=True,
+        timestamps=True
+    ).decode('utf-8')
+    new_logs = updated_logs[offset:]
+
+    parsed_new_logs = [
+        {
+            'timestamp': timestamp if separator else None,
+            'message': message if separator else timestamp
+        }
+        for timestamp, separator, message in (line.partition(' ') for line in new_logs.splitlines())
+    ]
+
+    for log in parsed_new_logs:
+        redis_client.xadd(
+            stream_key,
+            {
+                "event_type": "deployment_log",
+                "timestamp": log.get('timestamp', datetime.now(timezone.utc).isoformat()),
+                "message": log.get('message', ''),
+                "source": "build"
+            }
+        )
+    return updated_logs
 
 
 def http_probe(ip, port, path="/", timeout=2):
@@ -28,10 +55,12 @@ def deploy(deployment_id: str):
 
     with app.app_context():
         container = None
+        container_logs = ""
         deployment = db.session.get(Deployment, deployment_id)
         project = deployment.project
         base_domain = app.config['BASE_DOMAIN']
 
+        # TODO: REVIEW THIS ENTIRE SECTION (SKIPPING/CANCELING )
         if project.status != 'active':
             app.logger.warning(
                 f"Deployment {deployment_id} for project {project.id} ({project.name}) "
@@ -48,6 +77,21 @@ def deploy(deployment_id: str):
             # Mark deployment as in-progress
             deployment.status = 'in_progress'
             db.session.commit()
+            fields = {
+                "event_type": "deployment_status_update",
+                "project_id": project.id,
+                "deployment_id": deployment.id,
+                "status": "in_progress",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            app.redis_client.xadd(
+                f"stream:project:{project.id}:updates",
+                fields
+            )
+            app.redis_client.xadd(
+                f"stream:project:{project.id}:deployment:{deployment.id}:status",
+                fields
+            )
 
             # Transform list of env var objects into dict
             env_vars_dict = {
@@ -95,18 +139,18 @@ def deploy(deployment_id: str):
                 environment=env_vars_dict,
                 working_dir="/app",
                 detach=True,
-                network="app_default",
+                network="devpush_default",
                 labels={
                     "traefik.enable": "true",
                     f"traefik.http.routers.deployment-{deployment.id}.rule": f"Host(`{deployment.slug}.{base_domain}`)",
                     f"traefik.http.routers.deployment-{deployment.id}.service": f"deployment-{deployment.id}@docker",
                     f"traefik.http.services.deployment-{deployment.id}.loadbalancer.server.port": "8000",
-                    "traefik.docker.network": "app_default",
+                    "traefik.docker.network": "devpush_default",
                     "app.deployment_id": deployment.id,
                     "app.project_id": project.id
                 }
             )
-            docker_client.networks.get("app_internal").connect(container.id)
+            docker_client.networks.get("devpush_internal").connect(container.id)
 
             # Save the container ID
             deployment.container_id = container.id
@@ -123,15 +167,11 @@ def deploy(deployment_id: str):
                 if container.status == 'exited':
                     raise Exception("Container failed to start")
                 
-                deployment.build_logs = container.logs(
-                    stdout=True,
-                    stderr=True,
-                    timestamps=True
-                ).decode('utf-8')
-                db.session.commit()
+                # Publish new logs
+                container_logs = publish_docker_logs(container, len(container_logs), app.redis_client, f"stream:project:{project.id}:deployment:{deployment.id}:logs")
                 
                 # Check if the app is ready (i.e. listens on port 8000)
-                container_ip = container.attrs['NetworkSettings']['Networks']['app_default']['IPAddress']
+                container_ip = container.attrs['NetworkSettings']['Networks']['devpush_default']['IPAddress']
                 
                 if (not container_ip):
                     app.logger.info(f"Container {container.id} not yet assigned an IP address")
@@ -191,7 +231,7 @@ def deploy(deployment_id: str):
             db.session.commit()
             
             # Update Traefik config
-            project_config_file_path = os.path.join('/traefik_configs', f"project_{project.id}.yml")
+            project_config_file_path = os.path.join(app.config['TRAEFIK_CONFIG_DIR'], f"project_{project.id}.yml")
             write_config = False
             traefik_config = None
             
@@ -218,7 +258,7 @@ def deploy(deployment_id: str):
             # 3. Write or delete Traefik config file
             try:
                 if write_config and traefik_config:
-                    os.makedirs('/traefik_configs', exist_ok=True)
+                    os.makedirs(app.config['TRAEFIK_CONFIG_DIR'], exist_ok=True)
                     with open(project_config_file_path, 'w') as f:
                         yaml.dump(traefik_config, f, sort_keys=False, indent=2)
                     app.logger.info(f"Traefik dynamic config updated for project {project.id} at {project_config_file_path}")
@@ -242,6 +282,10 @@ def deploy(deployment_id: str):
             except Exception as e_enqueue:
                 app.logger.error(f"Failed to enqueue cleanup_inactive_deployments for project {project.id}: {e_enqueue}")
 
+            # Success message
+            success_message = f"Deployment succeeded. Visit {deployment.url}"
+            container.exec_run(f"sh -c \"echo '{success_message}' >> /proc/1/fd/1\"")
+
         except Exception as e:
             db.session.rollback()
             deployment.conclusion = 'failed'
@@ -250,35 +294,47 @@ def deploy(deployment_id: str):
             app.logger.error(f"Deployment {deployment_id} failed: {e}", exc_info=True)
             
         finally:
-            # If the deployment succeeded, log a final message
-            if deployment.conclusion == 'succeeded':
-                container.exec_run(f"sh -c \"echo 'Deployment succeeded. Visit {deployment.url}' >> /proc/1/fd/1\"")
-            
             # Update the deployment & project in the DB
             project.updated_at = datetime.now(timezone.utc)
             deployment.status = 'completed'
             deployment.concluded_at = datetime.now(timezone.utc)
+            
             if container:
-                deployment.build_logs = container.logs(
-                    stdout=True,
-                    stderr=True,
-                    timestamps=True,
-                ).decode('utf-8')
-
-                # If deployment failed and container exists, try to stop and remove it
-                if deployment.conclusion == 'failed':
-                    try:
-                        app.logger.info(f"Attempting to stop and remove failed container {container.id} for deployment {deployment.id}")
-                        container.stop()
-                        container.remove()
-                        deployment.container_status = 'removed'
-                        app.logger.info(f"Successfully stopped and removed failed container {container.id}")
-                    except docker.errors.NotFound:
-                        app.logger.warning(f"Failed container {container.id} for deployment {deployment.id} not found during cleanup.")
-                    except Exception as e_clean:
-                        app.logger.error(f"Error cleaning up failed container {container.id} for deployment {deployment.id}: {e_clean}", exc_info=True)
-
+                container_logs = publish_docker_logs(container, len(container_logs), app.redis_client, f"stream:project:{project.id}:deployment:{deployment.id}:logs")
+            
+            deployment.build_logs = container_logs
             db.session.commit()
+                
+            fields = {
+                "event_type": "deployment_status_update",
+                "project_id": project.id,
+                "deployment_id": deployment.id,
+                "status": deployment.conclusion,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+            app.redis_client.xadd(
+                f"stream:project:{project.id}:deployment:{deployment.id}:status",
+                fields
+            )
+            app.redis_client.xadd(
+                f"stream:project:{project.id}:updates",
+                fields
+            )
+
+            # Cleanup zombie container (unlikely)
+            if container and deployment.conclusion == 'failed':
+                try:
+                    app.logger.info(f"Attempting to stop and remove failed container {container.id} for deployment {deployment.id}")
+                    container.stop()
+                    container.remove()
+                    deployment.container_status = 'removed'
+                    db.session.commit()
+                    app.logger.info(f"Successfully stopped and removed failed container {container.id}")
+                except docker.errors.NotFound:
+                    app.logger.warning(f"Failed container {container.id} for deployment {deployment.id} not found during cleanup.")
+                except Exception as e_clean:
+                    app.logger.error(f"Error cleaning up failed container {container.id} for deployment {deployment.id}: {e_clean}", exc_info=True)
 
             app.logger.info(f'Deployment {deployment.id} completed with conclusion: {deployment.conclusion}')
             docker_client.close()

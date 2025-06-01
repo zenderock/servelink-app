@@ -16,14 +16,44 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DOCKER_HOST=tcp://docker-proxy:2375
+      - DATABASE_URL=sqlite:////data/db/local.sqlite3
+      - TRAEFIK_CONFIG_DIR=/data/traefik
+      - UPLOAD_DIR=/app/app/static/upload
     volumes:
-      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./traefik_dynamic_configs}:/traefik_configs:rw
+      - devpush-db:/data/db
+      - devpush-traefik:/data/traefik
+      - devpush-upload:/app/app/static/upload
+      - ./shared:/app/shared
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
-      - "traefik.docker.network=app_default"
+      - "traefik.docker.network=devpush_default"
+
+  api:
+    container_name: api
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.api
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - default
+      - internal
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./shared:/app/shared
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.api.service=api@docker"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=devpush_default"
 
   redis:
     container_name: redis
@@ -64,7 +94,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./traefik_dynamic_configs}:/etc/traefik/dynamic_conf:rw
+      - devpush-traefik:/etc/traefik/dynamic_conf
     networks:
       - default
       - internal
@@ -85,11 +115,13 @@ services:
       - 8.8.4.4
 
 volumes:
-  app-runtime:
+  devpush-db:
+  devpush-traefik:
+  devpush-upload:
 
 networks:
   default:
-    name: app_default
+    name: devpush_default
   internal:
-    name: app_internal
+    name: devpush_internal
     internal: true

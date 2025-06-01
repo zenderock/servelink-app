@@ -53,7 +53,7 @@
           '@change': 'validateAndPreview($event)'
         }
       ) }}
-      <div class="btn-outline h-8 px-2.5 cursor-pointer">
+      <div class="btn-sm-outline cursor-pointer">
         {% include "icons/arrow-up-from-line.svg" %}
         {{ _('Upload image') }}
       </div>
@@ -61,7 +61,7 @@
     
     <button
       type="button"
-      class="btn-outline h-8 w-8 p-0 text-muted-foreground"
+      class="btn-sm-icon-outline text-muted-foreground hover:text-foreground"
       @click="removeImage()"
       x-show="!remove"
       data-tooltip="{{ _('Delete image') }}"

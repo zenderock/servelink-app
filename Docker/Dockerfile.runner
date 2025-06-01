@@ -11,7 +11,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Set correct permissions
+# Set permissions
 RUN chown -R appuser:appgroup /app && \
     mkdir -p /home/appuser/.local && \
     chown -R appuser:appgroup /home/appuser

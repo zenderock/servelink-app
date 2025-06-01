@@ -19,13 +19,13 @@ flask_app = create_app()
 flask_app.app_context().push()
 
 # Connect to Redis
-redis_conn = Redis.from_url(flask_app.config['REDIS_URL'])
+redis_client = Redis.from_url(flask_app.config['REDIS_URL'])
 
 def handle_exception(job, *exc_info):
     logger.exception('Job %s failed', job.id)
     return False
 
 # Start the worker
-worker = Worker(['deployments'], connection=redis_conn, exception_handlers=[handle_exception])
+worker = Worker(['deployments'], connection=redis_client, exception_handlers=[handle_exception])
 logger.info('Worker starting')
 worker.work()

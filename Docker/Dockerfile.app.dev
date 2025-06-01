@@ -1,17 +1,30 @@
 FROM python:3.13-slim
 
-# Install system dependencies
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --group appuser
+
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
         sqlite3 \
         supervisor \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
+
+# Set UV cache directory to writable location
+ENV UV_CACHE_DIR=/app/.cache/uv
+
+# Create data directory for DB and Traefik with proper permissions
+RUN mkdir -p /data && chown -R appuser:appgroup /data
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8000
 
-# Copy dev Supervisor configuration
+# Supervisor process manager
 COPY Docker/supervisord.app.dev.conf /etc/supervisord.conf
-
-# This runs on EVERY container start
-ENTRYPOINT ["sh", "-c", "pip install -r requirements.txt && supervisord -c /etc/supervisord.conf"]
+ENTRYPOINT ["sh", "-c", "uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf"]

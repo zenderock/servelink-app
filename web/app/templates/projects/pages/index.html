@@ -13,7 +13,7 @@
       <h2 class="h4">{{ _('Environments') }}</h2>
       <a
         href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
-        class="btn inline-flex items-center gap-x-2 h-8 px-2.5"
+        class="btn-sm"
       >
         {% include "icons/settings.svg" %}
         {{ _('Manage environments') }}
@@ -76,7 +76,7 @@
           trigger=trigger,
           title="Deploy",
           id="dialog-deploy",
-          trigger_attrs={"class": "btn inline-flex items-center gap-x-2 h-8 px-2.5"},
+          trigger_attrs={"class": "btn-sm"},
           content_attrs={"class": "w-full max-w-xl"}
         ) %}
           <div
@@ -93,8 +93,20 @@
         {% endcall %}
       {% endif %}
     </header>
-    {% from "deployments/components/list.html" import list %}
-    {{ list(deployments=deployments, project=project) }}
+    <div class="space-y-4">
+      {% from "deployments/components/list.html" import list %}
+      {{ list(deployments=deployments, project=project) }}
+      <footer class="flex justify-end">
+        <a
+          href="{{ url_for('main.project_deployments', project_name=project.name) }}"
+          class="btn-sm-outline"
+          aria-label="{{ _('Older deployments') }}"
+        >
+          {{ _('All deployments') }}
+          {% include "icons/chevron-right.svg" %}
+        </a>
+      </footer>
+    </div>
   </section>
 </div>
 {% endblock %}

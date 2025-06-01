@@ -19,12 +19,6 @@ from app.helpers.environments import group_branches_by_environment
 @bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
-    # flash(_('You must select a repository first.'))
-    # flash(_('You must select a repository first.'), 'success')
-    # flash(_('You must select a repository first.'), 'info')
-    # flash(_('You must select a repository first.'), 'warning')
-    # flash(_('You must select a repository first.'), 'error')
-    
     projects = db.session.scalars(
         select(Project)
         .where(
@@ -40,6 +34,7 @@ def index():
         .join(Project)
         .where(Project.user_id == current_user.id)
         .order_by(Deployment.created_at.desc())
+        .limit(10)
     ).all()
     
     return render_template('pages/index.html', projects=projects, deployments=deployments)
@@ -48,9 +43,15 @@ def index():
 @bp.route('/repo-select')
 @login_required
 def repo_select():
-    installations = current_app.github.get_user_installations(current_user.github_token)
-    accounts = [installation['account']['login'] for installation in installations]
-    selected_account = request.args.get('account') or (accounts[0] if accounts else None)
+    accounts = []
+    selected_account = None
+    try:
+        installations = current_app.github.get_user_installations(current_user.github_token)
+        accounts = [installation['account']['login'] for installation in installations]
+        selected_account = request.args.get('account') or (accounts[0] if accounts else None)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching installations: {str(e)}")
+        flash(_('Error fetching installations from GitHub.'), 'error')
     
     return render_template(
         'projects/partials/_repo-select.html',
@@ -181,22 +182,17 @@ def projects():
 @login_required
 @load_project
 def project(project):
-    page = request.args.get('page', 1, type=int)
-    per_page = 50
-
-    pagination = db.paginate(
-        project.deployments.select().order_by(Deployment.created_at.desc()),
-        page=page,
-        per_page=per_page,
-        error_out=False
-    )
-    deployments = pagination.items
+    deployments = db.session.scalars(
+        project.deployments
+        .select()
+        .order_by(Deployment.created_at.desc())
+        .limit(10)
+    ).all()
 
     return render_template(
         'projects/pages/index.html',
         project=project,
         deployments=deployments,
-        pagination=pagination,
         base_domain=current_app.config['BASE_DOMAIN']
     )
 
@@ -243,6 +239,16 @@ def project_deploy(project):
                 f'Deployment {deployment.id} created and queued for '
                 f'project {project.name} ({project.id}) to environment {environment.get('slug')}'
             )
+            
+            current_app.redis_client.xadd(
+                f"stream:project:{project.id}:updates",
+                fields = {
+                   "event_type": "deployment_created",
+                    "project_id": project.id,
+                    "deployment_id": deployment.id,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            )
 
             if request.headers.get('HX-Request'):
                 return '', 200, { 'HX-Redirect': url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }
@@ -276,8 +282,13 @@ def project_environment_commits(project, environment_slug):
             branches = current_app.github.get_repository_branches(current_user.github_token, project.repo_id)
             branch_names = [branch['name'] for branch in branches]
         except Exception as e:
-            flash(_('Error fetching branches: {}').format(str(e)), 'error')
-            return redirect(url_for('main.project', project_name=project.name))
+            current_app.logger.error(f"Error fetching branches: {str(e)}")
+            flash(_('Error fetching branches from GitHub.'), 'error')
+            return render_htmx_partial(
+                'projects/partials/_environment_commits.html',
+                project=project,
+                commits=[]
+            )
         
         # Find branches that match this environment
         branches_by_environment = group_branches_by_environment(project.active_environments, branch_names)
@@ -371,7 +382,7 @@ def project_settings(project, fragment=None):
                 try:
                     from PIL import Image
                     
-                    avatar_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
+                    avatar_dir = os.path.join(current_app.config['UPLOAD_DIR'], 'avatars')
                     os.makedirs(avatar_dir, exist_ok=True)
                     
                     target_filename = f"project_{project.id}.webp"
@@ -394,7 +405,7 @@ def project_settings(project, fragment=None):
             
             # Avatar deletion
             if general_form.delete_avatar.data:
-                avatar_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars')
+                avatar_dir = os.path.join(current_app.config['UPLOAD_DIR'], 'avatars')
                 filename = f"project_{project.id}.webp"
                 filepath = os.path.join(avatar_dir, filename)
                 
@@ -584,9 +595,8 @@ def project_settings(project, fragment=None):
 @load_project
 def project_deployments(project):
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 25
     
-    # Start with base query
     query = project.deployments.select().order_by(Deployment.created_at.desc())
     
     # Filter by environment
@@ -652,32 +662,16 @@ def project_deployments(project):
         branches=branches
     )
 
-@bp.route('/projects/<string:project_name>/deployments/<string:deployment_id>/teaser')
-@login_required
-@load_project
-@load_deployment
-def deployment_teaser(project, deployment):
-    return render_template('deployments/partials/_teaser.html', deployment=deployment, project=deployment.project)
-
 
 @bp.route('/projects/<string:project_name>/deployments/<string:deployment_id>')
 @login_required
 @load_project
 @load_deployment
 def deployment(project, deployment):
-    if request.headers.get('HX-Request'):
-        content = render_template('deployments/partials/_logs.html', logs=deployment.parsed_logs)
-
-        if deployment.conclusion:
-            content += render_template('deployments/partials/_deployment_status.html', deployment=deployment, oob=True)
-
-        return content
-
     return render_template(
         'deployments/pages/index.html', 
-        project=deployment.project, 
-        deployment=deployment,
-        logs=deployment.parsed_logs
+        project=project,
+        deployment=deployment
     )
 
 
