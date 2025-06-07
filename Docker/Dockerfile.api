@@ -8,11 +8,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Copy project
+# Copy project and shared folder
 COPY ./api/ .
+COPY ./shared/ /shared/
 
 # Set permissions
-RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app /shared
 
 # Switch to non-root user
 USER appuser

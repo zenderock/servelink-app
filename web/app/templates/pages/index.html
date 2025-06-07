@@ -16,7 +16,7 @@
             href="{{ url_for('main.new_project') }}"
             class="btn-sm"
           >
-            {% include "icons/plus.svg" %}
+            {% include "shared/icons/plus.svg" %}
             {{ _('New project') }}
           </a>
         {% endif %}
@@ -39,7 +39,7 @@
           class="btn-sm mt-4"
           href="{{ url_for('main.new_project') }}"
         >
-          {% include "icons/plus.svg" %}
+          {% include "shared/icons/plus.svg" %}
           {{ _('New project') }}
         </a>
       </div>
@@ -49,8 +49,10 @@
   {% if deployments %}
     <section class="space-y-4">
       <h2 class="h4">{{ _('Latest deployments') }}</h2>
-      {% from "deployments/components/list.html" import list %}
-      {{ list(deployments=deployments, display_project=True) }}
+      <div id="deployments">
+        {% from "deployments/components/list.html" import list %}
+        {{ list(deployments=deployments, display_project=True) }}
+      </div>
     </section>
   {% endif %}
 </div>

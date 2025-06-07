@@ -79,8 +79,8 @@
           :aria-label="!remove ? 'Remove' : 'Undo'"
           :data-tooltip="!remove ? 'Remove' : 'Undo'"
         >
-          <span x-show="!remove" class="text-destructive">{% include "icons/trash-2.svg" %}</span>
-          <span x-show="remove">{% include "icons/undo-2.svg" %}</span>
+          <span x-show="!remove" class="text-destructive">{% include "shared/icons/trash-2.svg" %}</span>
+          <span x-show="remove">{% include "shared/icons/undo-2.svg" %}</span>
         </button>
       </div>
     </div>
@@ -143,8 +143,8 @@
           aria-label="Remove"
           data-tooltip="Remove"
         >
-          <span x-show="!remove" class="text-destructive">{% include "icons/trash-2.svg" %}</span>
-          <span x-show="remove">{% include "icons/undo-2.svg" %}</span>
+          <span x-show="!remove" class="text-destructive">{% include "shared/icons/trash-2.svg" %}</span>
+          <span x-show="remove">{% include "shared/icons/undo-2.svg" %}</span>
         </button>
       </div>
     </div>
@@ -154,7 +154,7 @@
     class="btn-sm-outline"
     @click="newEnvVars.push({ key: '', value: '' })"
   >
-    {% include "icons/plus.svg" %}
+    {% include "shared/icons/plus.svg" %}
     {{ _('Add variable') }}
   </button>
 </div>

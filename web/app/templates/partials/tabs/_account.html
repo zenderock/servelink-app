@@ -8,23 +8,23 @@
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
       >{{ _('Overview') }}</a>
     </li>
-    <li role="presentation" class="pb-1.5 border-b-2 {{ 'border-transparent' if request.path.startswith(url_for('main.index')) else 'border-transparent' }}">
+    <li role="presentation" class="pb-1.5 border-b-2 {{ 'border-primary' if request.path == url_for('main.projects') else 'border-transparent' }}">
       <a
         href="{{ url_for('main.projects') }}"
         role="tab"
-        aria-selected="{{ 'false' if request.path.startswith(url_for('main.index')) else 'false' }}"
+        aria-selected="{{ 'true' if request.path == url_for('main.projects') else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
       >{{ _('Projects') }}</a>
     </li>
-    <li role="presentation" class="pb-1.5 border-b-2 {{ 'border-transparent' if request.path.startswith(url_for('main.index')) else 'border-transparent' }}">
+    <li role="presentation" class="pb-1.5 border-b-2 {{ 'border-primary' if request.path == url_for('main.settings') else 'border-transparent' }}">
       <button
         role="tab"
-        aria-selected="{{ 'false' if request.path.startswith(url_for('main.index')) else 'false' }}"
+        aria-selected="{{ 'true' if request.path == url_for('main.settings') else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
         disabled
       >
         {{ _('Settings') }}
-        <span class="badge h-4 px-1">{{ _('Soon') }}</span>
+        <span class="badge-secondary text-muted-foreground h-4 px-1">{{ _('Soon') }}</span>
       </button>
     </li>
   </ul>

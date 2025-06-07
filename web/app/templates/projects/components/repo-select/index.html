@@ -24,7 +24,7 @@
       <img :src="`https://github.com/${selected_account}.png`" alt="Avatar" class="w-6 h-6 rounded">
       <span x-text="selected_account"></span>
       <span class="text-muted-foreground">
-        {% include "icons/chevrons-up-down.svg" %}
+        {% include "shared/icons/chevrons-up-down.svg" %}
       </span>
     {% endset %}
     {% call dropdown_menu(
@@ -46,7 +46,7 @@
           <span x-text="account"></span>
           <span class="h-4 w-4 ml-auto text-muted-foreground">
             <template x-if="account === selected_account">
-              {% include "icons/check.svg" %}
+              {% include "shared/icons/check.svg" %}
             </template>
           </span>
         </button>
@@ -60,15 +60,15 @@
     <div class="relative flex-1">
       <input name="query" type="search" class="w-full !pl-9" x-model="query" placeholder="{{ _('Search by name') }}">
       <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
-        {% include "icons/search.svg" %}
+        {% include "shared/icons/search.svg" %}
       </span>
     </div>
   </form>
 
   <div class="relative">
     <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
-      <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
-        {% include "icons/loader.svg" %}
+      <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
+        {% include "shared/icons/loader.svg" %}
         <span>Loading repositories</span>
       </div>
     </div>

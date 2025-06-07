@@ -15,7 +15,7 @@
         href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
         class="btn-sm"
       >
-        {% include "icons/settings.svg" %}
+        {% include "shared/icons/settings.svg" %}
         {{ _('Manage environments') }}
       </a>
     </header>
@@ -41,7 +41,7 @@
                 data-tooltip="{{ _('Visit') }}"
               >
                 <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-                  {% include "icons/link-2.svg" %}
+                  {% include "shared/icons/link-2.svg" %}
                 </span>
                 <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ base_domain }}</span>
               </a>
@@ -52,7 +52,7 @@
                 data-tooltip="{{ _('Branch') }}"
               >
                 <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-                  {% include "icons/git-branch.svg" %}
+                  {% include "shared/icons/git-branch.svg" %}
                 </span>
                 <span class="font-mono truncate">{{ environment.branch }}</span>
               </span>
@@ -69,7 +69,7 @@
       {% if deployments %}
         {% from "components/dialog.html" import dialog %}
         {% set trigger %}
-          {% include "icons/cloud-upload.svg" %}
+          {% include "shared/icons/cloud-upload.svg" %}
           {{ _('Deploy') }}
         {% endset %}
         {% call dialog(
@@ -86,7 +86,7 @@
             class="flex items-center justify-center"
           >
             <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
-              {% include "icons/loader.svg" %}
+              {% include "shared/icons/loader.svg" %}
               {{ _('Loading') }}
             </span>
           </div>
@@ -94,18 +94,24 @@
       {% endif %}
     </header>
     <div class="space-y-4">
-      {% from "deployments/components/list.html" import list %}
-      {{ list(deployments=deployments, project=project) }}
-      <footer class="flex justify-end">
-        <a
-          href="{{ url_for('main.project_deployments', project_name=project.name) }}"
-          class="btn-sm-outline"
-          aria-label="{{ _('Older deployments') }}"
-        >
-          {{ _('All deployments') }}
-          {% include "icons/chevron-right.svg" %}
-        </a>
-      </footer>
+      {% include "projects/partials/_index_sse.html" %}
+
+      <div id="deployments">
+        {% include "projects/partials/_index_deployments.html" %}
+      </div>
+
+      {% if deployments %}
+        <footer class="flex justify-end">
+          <a
+            href="{{ url_for('main.project_deployments', project_name=project.name) }}"
+            class="btn-sm-outline"
+            aria-label="{{ _('All deployments') }}"
+          >
+            {{ _('All deployments') }}
+            {% include "shared/icons/chevron-right.svg" %}
+          </a>
+        </footer>
+      {% endif %}
     </div>
   </section>
 </div>

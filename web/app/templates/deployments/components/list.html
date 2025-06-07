@@ -2,39 +2,35 @@
   deployments=[],
   project=None,
   pagination=None,
+  page=None,
   display_project=False,
   display_empty=True,
+  env_aliases=None,
   main_attrs={}
 ) %}
 
 {% if deployments %}
-  {% from "components/status.html" import status %} {# From /shared #}
+  {% from "shared/deployment/components/status.html" import status %}
+  {% from "shared/deployment/components/options.html" import options %}
   {% from "projects/components/thumbnail.html" import thumbnail %}
   {% from "components/dropdown-menu.html" import dropdown_menu %}
-  {% set status_labels = {
-    'succeeded': _('Status: Succeeded'),
-    'failed': _('Status: Failed'),
-    'canceled': _('Status: Canceled'),
-    'skipped': _('Status: Skipped')
-  } %}
 
   <ul
     {% for key, value in main_attrs.items() %}
     {{ key }}="{{ value }}"
     {% endfor %}
-    hx-ext="sse"
-    sse-connect="{{ config.API_BASE_URL }}/projects/{{ deployments[0].project.id }}/events"
-    sse-swap="deployment_status_update"
   >
     {% for deployment in deployments %}
-      <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
-        <span
-          data-tooltip="{{ status_labels[deployment.conclusion] if deployment.conclusion else _('Status: In progress') }}"
-          data-tooltip-position="top-left"
-        >
-          {{ status(conclusion=deployment.conclusion, compact=True) }}
-        </span>
-      
+      <li
+        class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors"
+      >
+        {{ status(
+          conclusion=deployment.conclusion,
+          compact=True,
+          tooltip=True,
+          attrs={ 'data-deployment-status': deployment.id }
+        ) }}
+        
         <a
           href="{{ url_for('main.deployment', project_name=deployment.project.name, deployment_id=deployment.id) }}"
           data-tooltip="{{ _('Deployment ID') }}"
@@ -52,8 +48,7 @@
             {{ deployment.project.name }}
           </a>
         {% endif %}
-      
-        <!-- Make it a link to the environment -->
+        
         <a
           href="{{ url_for('main.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
@@ -70,44 +65,46 @@
         <a
           href="https://github.com/{{ deployment.repo.full_name }}/tree/{{ deployment.branch }}"
           target="_blank"
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
           data-tooltip="{{ _('Branch') }}"
         >
-          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-            {% include "icons/git-branch.svg" %}
-          </span>
+          {% include "shared/icons/git-branch.svg" %}
           {{ deployment.branch }}
         </a>
 
         <a
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 flex-1"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
           href="https://github.com/{{ deployment.repo.full_name }}/commit/{{ deployment.commit_sha }}"
           target="_blank"
           data-tooltip="{{ _('Commit (%(sha)s)', sha=deployment.commit_sha[:7]) }}"
         >
-          <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-            {% include "icons/git-commit-horizontal.svg" %}
-          </span>
+          {% include "shared/icons/git-commit-horizontal.svg" %}
           <span class="truncate">{{ deployment.commit_meta.message }}</span>
         </a>
       
         <div class="flex items-center ml-auto">
-          {% if deployment.conclusion %}
+          {% if deployment.conclusion == 'succeeded' %}
             <a href="{{ deployment.featured_url }}" class="btn-sm-icon-ghost" target="_blank" data-tooltip="{{ _('Visit') }}">
-              {% include "icons/link-2.svg" %}
+              {% include "shared/icons/link-2.svg" %}
             </a>
+          {% else %}
+            <button class="btn-sm-icon-ghost" type="button" disabled>
+              {% include "shared/icons/link-2.svg" %}
+            </button>
           {% endif %}
       
-          {% set trigger %}
-            {% include "icons/ellipsis.svg" %}
-          {% endset %}
-          {% call dropdown_menu(
-            trigger=trigger,
-            trigger_attrs={"class": "btn-sm-icon-ghost"},
-            content_attrs={"data-align": "end"}
-          ) %}
-            {% include "deployments/partials/_options.html" %}
-          {% endcall %}
+          {% if env_aliases %}
+            {% set trigger %}
+              {% include "shared/icons/ellipsis.svg" %}
+            {% endset %}
+            {% call dropdown_menu(
+              trigger=trigger,
+              trigger_attrs={"class": "btn-sm-icon-ghost"},
+              content_attrs={"data-align": "end"}
+            ) %}
+              {{ options(deployment, env_aliases) }}
+            {% endcall %}
+          {% endif %}
         </div>
       </li>
     {% endfor %}
@@ -126,7 +123,7 @@
           aria-label="{{ _('Newest deployments') }}"
           disabled
         >
-          {% include "icons/chevrons-left.svg" %}
+          {% include "shared/icons/chevrons-left.svg" %}
         </button>
       {% else %}
         <a
@@ -134,7 +131,7 @@
           class="btn-sm-icon-outline"
           aria-label="{{ _('Newest deployments') }}"
         >
-          {% include "icons/chevrons-left.svg" %}
+          {% include "shared/icons/chevrons-left.svg" %}
         </a>
       {% endif %}
 
@@ -143,7 +140,7 @@
           class="btn-sm-icon-outline"
           aria-label="{{ _('Newer deployments') }}"
         >
-          {% include "icons/chevron-left.svg" %}
+          {% include "shared/icons/chevron-left.svg" %}
         </a>
       {% else %}
         <button
@@ -152,7 +149,7 @@
           aria-label="{{ _('Newer deployments') }}"
           disabled
         >
-          {% include "icons/chevron-left.svg" %}
+          {% include "shared/icons/chevron-left.svg" %}
         </button>
       {% endif %}
 
@@ -163,7 +160,7 @@
           aria-label="{{ _('Older deployments') }}"
           disabled
         >
-          {% include "icons/chevron-right.svg" %}
+          {% include "shared/icons/chevron-right.svg" %}
         </a>
       {% else %}
         <button
@@ -172,7 +169,7 @@
           aria-label="{{ _('Older deployments') }}"
           disabled
         >
-          {% include "icons/chevron-right.svg" %}
+          {% include "shared/icons/chevron-right.svg" %}
         </button>
       {% endif %}
 
@@ -184,7 +181,7 @@
           aria-label="{{ _('Oldest deployments') }}"
           disabled
         >
-          {% include "icons/chevrons-right.svg" %}
+          {% include "shared/icons/chevrons-right.svg" %}
         </button>
       {% else %}
         <a
@@ -192,7 +189,7 @@
           class="btn-sm-icon-outline"
           aria-label="{{ _('Oldest deployments') }}"
         >
-          {% include "icons/chevrons-right.svg" %}
+          {% include "shared/icons/chevrons-right.svg" %}
         </a>
       {% endif %}
     </nav>
@@ -204,7 +201,7 @@
       <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
       {% from "components/dialog.html" import dialog %}
       {% set trigger %}
-        {% include "icons/cloud-upload.svg" %}
+        {% include "shared/icons/cloud-upload.svg" %}
         {{ _('Deploy') }}
       {% endset %}
       {% call dialog(
@@ -223,7 +220,7 @@
           class="flex items-center justify-center"
         >
           <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
-            {% include "icons/loader.svg" %}
+            {% include "shared/icons/loader.svg" %}
             {{ _('Loading') }}
           </span>
         </div>

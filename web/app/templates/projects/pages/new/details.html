@@ -39,9 +39,9 @@
         <div class="flex-1 space-y-2">
           <label>{{ _('Repository') }}</label>
           <div class="relative">
-            <input class="w-full !px-9" type="text" name="repo_full_name" value="{{ repo.full_name }}" disabled>
+            <input class="w-full !px-9" type="text" name="repo_full_name" value="{{ repo_full_name }}" disabled>
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
-              {% include "icons/github.svg" %}
+              {% include "shared/icons/github.svg" %}
             </span>
           </div>
         </div>
@@ -50,7 +50,7 @@
           <div class="relative">
             {{ form.production_branch(class_="!pl-9 w-full") }}
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50 [&>svg]:size-4">
-              {% include "icons/git-branch.svg" %}
+              {% include "shared/icons/git-branch.svg" %}
             </span>
           </div>
         </div>
@@ -72,7 +72,7 @@
 
       <details open class="w-full rounded-lg border group">
         <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none [&>svg]:size-4">
-          {% include "icons/chevron-right.svg" %}
+          {% include "shared/icons/chevron-right.svg" %}
           {{ _('Build & Deploy') }}
         </summary>
         <div class="p-4 border-t">
@@ -88,7 +88,7 @@
         class="w-full rounded-lg border group"
       >
         <summary class="px-4 py-3 w-full flex items-center gap-x-2 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none [&>svg]:size-4">
-          {% include "icons/chevron-right.svg" %}
+          {% include "shared/icons/chevron-right.svg" %}
           {{ _('Environment variables') }}
         </summary>
         <div class="p-4 border-t">
@@ -100,7 +100,7 @@
 
     <footer class="flex justify-between gap-x-2">
       <a href="{{ url_for('main.new_project') }}" class="btn-ghost flex-1">
-        {% include "icons/arrow-left.svg" %}
+        {% include "shared/icons/arrow-left.svg" %}
         {{ _('Back') }}
       </a>
       {{ form.submit(class="btn flex-1", value="Create project") }}

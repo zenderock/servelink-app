@@ -16,12 +16,16 @@ WORKDIR /app
 
 # Copy project
 COPY ./web/ .
+COPY ./shared/ /shared/
 
 # Set permissions
-RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app /shared
 
-# Create data directory with proper permissions
+# Make sure data directory exists and set permissions
 RUN mkdir -p /data && chown -R appuser:appgroup /data
+
+# Make sure upload directory exists
+RUN mkdir -p /app/app/static/upload/
 
 # Switch to non-root user
 USER appuser

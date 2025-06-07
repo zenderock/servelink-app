@@ -14,11 +14,13 @@ from app.helpers.htmx import render_htmx_partial
 import os
 from datetime import datetime, timezone
 from app.helpers.environments import group_branches_by_environment
+from app.utils.token import generate_token
 
 
 @bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
+
     projects = db.session.scalars(
         select(Project)
         .where(
@@ -37,7 +39,11 @@ def index():
         .limit(10)
     ).all()
     
-    return render_template('pages/index.html', projects=projects, deployments=deployments)
+    return render_template(
+        'pages/index.html',
+        projects=projects,
+        deployments=deployments
+    )
 
 
 @bp.route('/repo-select')
@@ -66,34 +72,35 @@ def new_project():
     return render_template('projects/pages/new/repo.html')
 
 
-@bp.route('/new-project-details', methods=['GET', 'POST'])
+@bp.route('/new-project/details', methods=['GET', 'POST'])
 @login_required
 def new_project_details():
     repo_id = request.args.get('repo_id')
-    if not repo_id:
-        flash(_('You must select a repository first.'))
-        return redirect(url_for('main.new_project'))
+    repo_owner = request.args.get('repo_owner')
+    repo_name = request.args.get('repo_name')
+    repo_default_branch = request.args.get('repo_default_branch')
     
-    # Make sure the repo suggested is accessible to the user
-    try:
-        repo = current_app.github.get_repository(current_user.github_token, repo_id)
-    except Exception as e:
-        flash("You do not have access to this repository.")
+    if not repo_id or not repo_owner or not repo_name or not repo_default_branch:
+        flash(_('Missing repository details.'), 'error')
         return redirect(url_for('main.new_project'))
     
     defaults = {
-        'repo_id': repo.get('id'),
-        'name': repo.get('name'),
-        'production_branch': repo.get('default_branch')
+        'repo_id': repo_id,
+        'name': repo_name,
+        'production_branch': repo_default_branch
     }
     form = ProjectForm(request.form or None, **defaults)
     
-    branches = current_app.github.get_repository_branches(current_user.github_token, repo_id)
-    form.production_branch.choices = [(branch['name'], branch['name']) for branch in branches]
-    
     if form.validate_on_submit():
-        installation = current_app.github.get_repo_installation(repo.get('full_name'))
-        # We get the installation instance as this force create/update the token
+        # Make sure the repo suggested is accessible to the user
+        try:
+            repo = current_app.github.get_repository(current_user.github_token, repo_id)
+        except Exception as e:
+            flash("You do not have access to this repository.")
+            return redirect(url_for('main.new_project'))
+
+        installation = current_app.github.get_repository_installation(repo.get('full_name'))
+        # Get the installation instance as this force create/update the token
         github_installation = get_installation_instance(installation.get('id'))
         env_vars = [
             {'key': entry.key.data, 'value': entry.value.data}
@@ -127,12 +134,12 @@ def new_project_details():
         db.session.add(project)
         db.session.commit()
         flash(_('Project added.'), 'success')
-        return redirect(url_for('main.index'))
+        return redirect(url_for('main.project', project_name=project.name))
 
     return render_template(
         'projects/pages/new/details.html',
-        repo=repo,
         form=form,
+        repo_full_name=f"{repo_owner}/{repo_name}",
         frameworks=current_app.frameworks,
         environments=[{
             'color': 'blue',
@@ -156,8 +163,6 @@ def projects():
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
-    # Start with base query
-    # project.deployments.select().order_by(Deployment.created_at.desc())
     query = select(Project).where(
         Project.user_id == current_user.id,
         Project.status != 'deleted'
@@ -178,22 +183,51 @@ def projects():
     )
 
 
-@bp.route('/projects/<string:project_name>', methods=['GET', 'POST'])
+@bp.route('/projects/<string:project_name>')
 @login_required
 @load_project
 def project(project):
+    fragment = request.args.get('fragment')
+
+    bearer_token = generate_token(
+        secret_key=current_app.config['SECRET_KEY'],
+        payload={
+            'pid': project.id,
+            'uid': current_user.id
+        }
+    )
+
+    if request.headers.get('HX-Request') and fragment == 'sse':
+        return render_htmx_partial(
+            'projects/partials/_index_sse.html',
+            project=project,
+            bearer_token=bearer_token
+        )
+
     deployments = db.session.scalars(
         project.deployments
         .select()
         .order_by(Deployment.created_at.desc())
         .limit(10)
     ).all()
+    
+    env_aliases = project.get_environment_aliases()
+
+    if request.headers.get('HX-Request') and fragment == 'deployments':
+        return render_htmx_partial(
+            'projects/partials/_index_deployments.html',
+            project=project,
+            deployments=deployments,
+            env_aliases=env_aliases
+        )
 
     return render_template(
         'projects/pages/index.html',
         project=project,
         deployments=deployments,
-        base_domain=current_app.config['BASE_DOMAIN']
+        base_domain=current_app.config['BASE_DOMAIN'],
+        env_aliases=env_aliases,
+        bearer_token=bearer_token
     )
 
 
@@ -233,13 +267,7 @@ def project_deploy(project):
             )
             db.session.add(deployment)
             db.session.commit()
-            
-            current_app.deployment_queue.enqueue(deploy, deployment.id)
-            current_app.logger.info(
-                f'Deployment {deployment.id} created and queued for '
-                f'project {project.name} ({project.id}) to environment {environment.get('slug')}'
-            )
-            
+
             current_app.redis_client.xadd(
                 f"stream:project:{project.id}:updates",
                 fields = {
@@ -248,6 +276,12 @@ def project_deploy(project):
                     "deployment_id": deployment.id,
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
+            )
+            
+            current_app.deployment_queue.enqueue(deploy, deployment.id)
+            current_app.logger.info(
+                f'Deployment {deployment.id} created and queued for '
+                f'project {project.name} ({project.id}) to environment {environment.get('slug')}'
             )
 
             if request.headers.get('HX-Request'):
@@ -594,6 +628,25 @@ def project_settings(project, fragment=None):
 @login_required
 @load_project
 def project_deployments(project):
+    fragment = request.args.get('fragment')
+
+    bearer_token = generate_token(
+        secret_key=current_app.config['SECRET_KEY'],
+        payload={
+            'pid': project.id,
+            'uid': current_user.id
+        }
+    )
+
+    if request.headers.get('HX-Request') and fragment == 'sse':
+        return render_template(
+            'projects/partials/_deployments_sse.html',
+            project=project,
+            bearer_token=bearer_token
+        )
+
+    env_aliases = project.get_environment_aliases()
+    
     page = request.args.get('page', 1, type=int)
     per_page = 25
     
@@ -639,12 +692,13 @@ def project_deployments(project):
     )
     deployments = pagination.items
 
-    if request.headers.get('HX-Request'):
+    if request.headers.get('HX-Request') and fragment == 'deployments':
         return render_htmx_partial(
             'projects/partials/_deployments.html',
             project=project,
             deployments=deployments,
-            pagination=pagination
+            pagination=pagination,
+            env_aliases=env_aliases
         )
     
     branches = db.session.query(
@@ -659,7 +713,9 @@ def project_deployments(project):
         project=project,
         deployments=deployments,
         pagination=pagination,
-        branches=branches
+        branches=branches,
+        env_aliases=env_aliases,
+        bearer_token=bearer_token
     )
 
 
@@ -668,10 +724,48 @@ def project_deployments(project):
 @load_project
 @load_deployment
 def deployment(project, deployment):
+    fragment = request.args.get('fragment')
+
+    bearer_token = None
+    if not deployment.conclusion:
+        bearer_token = generate_token(current_app.config['SECRET_KEY'], {
+            'did': deployment.id,
+            'pid': project.id,
+            'uid': current_user.id
+        })
+
+    if request.headers.get('HX-Request') and fragment == 'status-sse':
+        return render_htmx_partial(
+            'deployments/partials/_status-sse.html',
+            project=project,
+            deployment=deployment,
+            bearer_token=bearer_token
+        )
+    
+    if request.headers.get('HX-Request') and fragment == 'logs-sse':
+        return render_htmx_partial(
+            'deployments/partials/_logs-sse.html',
+            project=project,
+            deployment=deployment,
+            bearer_token=bearer_token
+        )
+    
+    env_aliases = project.get_environment_aliases()
+
+    if request.headers.get('HX-Request') and fragment == 'header':
+        return render_htmx_partial(
+            'deployments/partials/_header.html',
+            project=project,
+            deployment=deployment,
+            env_aliases=env_aliases
+        )
+
     return render_template(
         'deployments/pages/index.html', 
         project=project,
-        deployment=deployment
+        deployment=deployment,
+        env_aliases=env_aliases,
+        bearer_token=bearer_token
     )
 
 
@@ -716,6 +810,6 @@ def inject_latest_deployments():
         if current_deployment:
             query = query.filter(Deployment.id != current_deployment.id)            
             
-        return query.order_by(Deployment.created_at.desc()).limit(5).all()
+        return query.order_by(Deployment.created_at.desc()).limit(4).all()
 
     return dict(get_latest_deployments=get_latest_deployments)

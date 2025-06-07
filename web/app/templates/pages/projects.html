@@ -1,34 +1,68 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
+{% from "projects/components/thumbnail.html" import thumbnail %}
+
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
-  <h1 class="h1 flex items-center gap-x-3">
-    <a href="{{ url_for('main.index') }}">
-      <img src="{{ current_user.avatar }}" class="w-10 h-10 rounded-lg" />
-    </a>
-    <span class="text-muted-foreground/25 font-normal">/</span>
-    {{ _('Projects') }}
-  </h1>
+  <header class="flex justify-between items-center">
+    <h1 class="h1 flex items-center gap-x-3">
+      <a href="{{ url_for('main.index') }}">
+        <img src="{{ current_user.avatar }}" class="w-10 h-10 rounded-lg" />
+      </a>
+      <span class="text-muted-foreground/25 font-normal">/</span>
+      {{ _('Projects') }}
+    </h1>
+
+    {% if projects %}
+      <a
+        href="{{ url_for('main.new_project') }}"
+        class="btn"
+      >
+        {% include "shared/icons/plus.svg" %}
+        {{ _('New project') }}
+      </a>
+    {% endif %}
+  </header>
   
   {% if projects %}
     <section class="space-y-4">
-      <header class="flex justify-between items-center gap-x-4">
-        <h2 class="h4">{{ _('Recent projects') }}</h2>
-        {% if projects %}
-          <a
-            href="{{ url_for('main.new_project') }}"
-            class="btn-sm"
-          >
-            {% include "icons/plus.svg" %}
-            {{ _('New project') }}
-          </a>
-        {% endif %}
-      </header>
-      {% from "projects/components/teaser.html" import teaser %}
-      <ul class="grid grid-cols-3 gap-4">
+      <ul>
         {% for project in projects %}
-          <li class="bg-card text-card-foreground rounded-xl border shadow-sm p-4">
-            {{ teaser(project) }}
+          <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
+            <a
+              href="{{ url_for('main.project', project_name=project.name) }}"
+              class="flex items-center gap-x-2 font-medium"
+              data-tooltip="{{ _('Name') }}"
+            >
+              {{ thumbnail(project, size='xs') }}
+              {{ project.name }}
+            </a>
+
+            <a
+              href="{{ project.url }}"
+              target="_blank"
+              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
+              data-tooltip="{{ _('URL') }}"
+            >
+              {% include "shared/icons/link-2.svg" %}
+              {{ project.hostname }}
+            </a>
+
+            <a
+              href="https://github.com/{{ project.repo_full_name }}"
+              target="_blank"
+              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
+              data-tooltip="{{ _('GitHub') }}"
+            >
+              {% include "shared/icons/github.svg" %}
+              {{ project.repo_full_name }}
+            </a>
+
+            <div class="flex items-center ml-auto">
+              <a href="{{ url_for('main.project_settings', project_name=project.name) }}" class="btn-sm-icon-ghost" data-tooltip="{{ _('Settings') }}">
+                {% include "shared/icons/settings.svg" %}
+              </a>
+            </div>
           </li>
         {% endfor %}
       </ul>
@@ -42,18 +76,10 @@
           class="btn-sm mt-4"
           href="{{ url_for('main.new_project') }}"
         >
-          {% include "icons/plus.svg" %}
+          {% include "shared/icons/plus.svg" %}
           {{ _('New project') }}
         </a>
       </div>
-    </section>
-  {% endif %}
-
-  {% if deployments %}
-    <section class="space-y-4">
-      <h2 class="h4">{{ _('Latest deployments') }}</h2>
-      {% from "deployments/components/list.html" import list %}
-      {{ list(deployments=deployments, display_project=True) }}
     </section>
   {% endif %}
 </div>

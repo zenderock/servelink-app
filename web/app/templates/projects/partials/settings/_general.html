@@ -17,7 +17,7 @@
     class="flex items-center justify-center h-[296px]"
   >
     <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-      {% include "icons/loader.svg" %}
+      {% include "shared/icons/loader.svg" %}
       {{ _('Loading accounts') }}
     </span>
   </div>
@@ -68,10 +68,10 @@
       {% from "components/image_upload.html" import image_upload %}
       {% from "projects/components/thumbnail.html" import thumbnail %}
       {% set current_image %}
-        {{ thumbnail(project, size="lg") }}
+        {{ thumbnail(project, size="md") }}
       {% endset %}
       {% set default_image %}
-        {{ thumbnail(project, size="lg", ignore_avatar=True) }}
+        {{ thumbnail(project, size="md", ignore_avatar=True) }}
       {% endset %}
       {{ image_upload(
         general_form.avatar,
@@ -97,7 +97,7 @@
           <img :src="`https://github.com/${repoOwner}.png`" :alt="`${repoOwner}'s avatar`" class="w-6 h-6 rounded">
           <span x-text="repoFullName"></span>
           <span class="text-muted-foreground">
-            {% include "icons/chevrons-up-down.svg" %}
+            {% include "shared/icons/chevrons-up-down.svg" %}
           </span>
         </button>
       </div>
@@ -114,7 +114,7 @@
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
-    {% include "icons/loader.svg" %}
+    {% include "shared/icons/loader.svg" %}
     {{ _('Saving') }}
   </div>
 </div>

@@ -22,7 +22,7 @@
 					</a>
 					{% from "components/dropdown-menu.html" import dropdown_menu %}
 					{% set trigger %}
-						{% include "icons/chevrons-up-down.svg" %}
+						{% include "shared/icons/chevrons-up-down.svg" %}
 					{% endset %}
 					{% call dropdown_menu(
             trigger=trigger,
@@ -58,8 +58,12 @@
 				
 				<div class="flex items-center">
 					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-sm-ghost">
-						{% from "components/status.html" import status %} {# From /shared #}
-						{{ status(conclusion=deployment.conclusion, compact=True, id='header-nav-trigger-deployment-status-' + deployment.id[:7]) }}
+						{% from "shared/deployment/components/status.html" import status %}
+						{{ status(
+              conclusion=deployment.conclusion,
+              compact=True,
+              attrs={ 'data-deployment-status': deployment.id }
+            ) }}
 						<span class="font-mono">{{ deployment.id[:7] }}</span>
 					</a>
 					{% call dropdown_menu(
@@ -85,10 +89,10 @@
 				aria-label="Toggle theme"
 			>
 				<span x-show="$store.theme.isDark">
-					{% include "icons/moon.svg" %}
+					{% include "shared/icons/moon.svg" %}
 				</span>
 				<span x-show="!$store.theme.isDark">
-					{% include "icons/sun.svg" %}
+					{% include "shared/icons/sun.svg" %}
 				</span>
 			</button>
 

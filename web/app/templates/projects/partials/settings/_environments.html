@@ -112,7 +112,7 @@
       aria-label="{{ _('Save') }}"
       data-tooltip="{{ _('Save') }}"
     >
-      {% include "icons/check.svg" %}
+      {% include "shared/icons/check.svg" %}
     </button>
     <button
       class="btn-icon-ghost"
@@ -121,7 +121,7 @@
       aria-label="{{ _('Cancel') }}"
       data-tooltip="{{ _('Cancel') }}"
     >
-      {% include "icons/x.svg" %}
+      {% include "shared/icons/x.svg" %}
     </button>
   </div>
 </form>
@@ -174,11 +174,11 @@
               @click="activeForm = {{ loop.index }}"
               :disabled="activeForm"
             >
-              {% include "icons/pencil.svg" %}
+              {% include "shared/icons/pencil.svg" %}
             </button>
             {% if environment and environment.id != 'prod' %}
               {% set trigger %}
-                {% include "icons/trash-2.svg" %}
+                {% include "shared/icons/trash-2.svg" %}
               {% endset %}
               {% call dialog(
                 trigger=trigger,
@@ -233,7 +233,7 @@
         x-show="activeForm !== 0"
         :disabled="activeForm"
       >
-        {% include "icons/plus.svg" %}
+        {% include "shared/icons/plus.svg" %}
         {{ _('Add environment') }}
       </button>
     </div>
@@ -242,7 +242,7 @@
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
-    {% include "icons/loader.svg" %}
+    {% include "shared/icons/loader.svg" %}
     {{ _('Saving') }}
   </div>
 </div>

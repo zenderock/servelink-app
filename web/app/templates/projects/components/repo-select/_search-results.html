@@ -9,7 +9,7 @@
       >{{ repo.name }}</a>
       {% if repo.private %}
           <span class="text-muted-foreground [&>svg]:size-4">
-            {% include "icons/lock.svg" %}
+            {% include "shared/icons/lock.svg" %}
           </span>
         {% endif %}
       {% if repo.updated_at %}
@@ -20,6 +20,7 @@
           id: {{ repo.id }}, 
           owner: '{{ repo.owner.login }}',
           name: '{{ repo.name }}',
+          defaultBranch: '{{ repo.default_branch }}',
           fullName: '{{ repo.full_name }}'
         })"
         class="btn-sm ml-auto"

@@ -293,6 +293,15 @@ class Project(db.Model):
         environments = self.active_environments if active_only else self.environments
         return next((env for env in environments if env['slug'] == slug), None)
 
+    def get_environment_aliases(self) -> dict[str, 'Alias']:
+        env_aliases = db.session.scalars(
+            select(Alias)
+            .join(Alias.deployment)
+            .filter(Deployment.project_id == self.id, Alias.type == 'environment')
+        ).all()
+        
+        return {alias.value: alias for alias in env_aliases}
+
 
 @event.listens_for(Project, 'after_insert')
 def set_project_slug(mapper, connection, project):
@@ -385,11 +394,9 @@ class Deployment(db.Model):
     def featured_slug(self) -> str | None:
         if not self.conclusion:
             return None
-        # First try to find an environment alias
         env_alias = next(filter(lambda a: a.type == 'environment', self.aliases), None)
         if env_alias:
             return env_alias.subdomain
-        # Then try to find a branch alias
         branch_alias = next(filter(lambda a: a.type == 'branch', self.aliases), None)
         if branch_alias:
             return branch_alias.subdomain
@@ -475,9 +482,18 @@ class Alias(db.Model):
         alias = db.session.execute(
             select(cls).filter_by(subdomain=subdomain)
         ).scalar_one_or_none()
+        
+        result = {
+            'alias': None,
+            'demoted_previous_deployment_id': None
+        }
+        
         if alias:
             if alias.deployment_id == deployment_id:
-                return alias
+                result['alias'] = alias
+                return result
+            
+            result['demoted_previous_deployment_id'] = alias.previous_deployment_id
             alias.previous_deployment_id = alias.deployment_id
             alias.deployment_id = deployment_id
         else:
@@ -488,4 +504,6 @@ class Alias(db.Model):
                 value=value,
             )
             db.session.add(alias)
-        return alias
+        
+        result['alias'] = alias
+        return result

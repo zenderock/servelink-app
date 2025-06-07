@@ -17,8 +17,11 @@ WORKDIR /app
 # Set UV cache directory to writable location
 ENV UV_CACHE_DIR=/app/.cache/uv
 
-# Create data directory for DB and Traefik with proper permissions
+# Make sure data directory exists and set permissions
 RUN mkdir -p /data && chown -R appuser:appgroup /data
+
+# Make sure upload directory exists
+RUN mkdir -p /app/app/static/upload/
 
 # Switch to non-root user
 USER appuser

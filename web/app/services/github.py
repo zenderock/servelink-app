@@ -194,7 +194,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()['repositories']  # Note: returns paginated response
 
-    def get_repo_installation(self, repo_full_name: str) -> dict:
+    def get_repository_installation(self, repo_full_name: str) -> dict:
         """Retrieve the GitHub App installation details for a given repository."""
         response = requests.get(
             f'https://api.github.com/repos/{repo_full_name}/installation',

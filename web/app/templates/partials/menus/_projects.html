@@ -3,7 +3,7 @@
   {{ thumbnail(project, size='xs') }}
   {{ project.name }}
   <span class="h-4 w-4 ml-auto text-muted-foreground">
-    {% include "icons/check.svg" %}
+    {% include "shared/icons/check.svg" %}
   </span>
 </span>
 {% for other_project in get_latest_projects(project) %}

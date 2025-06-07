@@ -96,10 +96,10 @@
         data-tooltip-position="top-right"
       >
         <template x-if="rootDirectoryLocked">
-          {% include "icons/pencil.svg" %}
+          {% include "shared/icons/pencil.svg" %}
         </template>
         <template x-if="!rootDirectoryLocked">
-          {% include "icons/x.svg" %}
+          {% include "shared/icons/x.svg" %}
         </template>
       </button>
     </div>
@@ -144,10 +144,10 @@
         data-tooltip-position="top-right"
       >
         <template x-if="buildCommand.locked">
-          {% include "icons/pencil.svg" %}
+          {% include "shared/icons/pencil.svg" %}
         </template>
         <template x-if="!buildCommand.locked">
-          {% include "icons/x.svg" %}
+          {% include "shared/icons/x.svg" %}
         </template>
       </button>
       {{ form.use_custom_build_command(
@@ -192,10 +192,10 @@
         data-tooltip-position="top-right"
       >
         <template x-if="preDeployCommand.locked">
-          {% include "icons/pencil.svg" %}
+          {% include "shared/icons/pencil.svg" %}
         </template>
         <template x-if="!preDeployCommand.locked">
-          {% include "icons/x.svg" %}
+          {% include "shared/icons/x.svg" %}
         </template>
       </button>
       {{ form.use_custom_pre_deploy_command(
@@ -238,10 +238,10 @@
         data-tooltip-position="top-right"
       >
         <template x-if="startCommand.locked">
-          {% include "icons/pencil.svg" %}
+          {% include "shared/icons/pencil.svg" %}
         </template>
         <template x-if="!startCommand.locked">
-          {% include "icons/x.svg" %}
+          {% include "shared/icons/x.svg" %}
         </template>
       </button>
       {{ form.use_custom_start_command(

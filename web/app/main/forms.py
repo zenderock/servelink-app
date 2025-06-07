@@ -220,7 +220,7 @@ class ProjectForm(FlaskForm):
         )
     ])
     repo_id = IntegerField(_l('Repo ID'), validators=[DataRequired()])
-    production_branch = SelectField(_l('Production branch'), choices=[], validators=[DataRequired(), Length(min=1, max=255)])
+    production_branch = StringField(_l('Production branch'), validators=[DataRequired(), Length(min=1, max=255)])
     framework = SelectField(
         _l('Framework presets'),
         choices=[

@@ -81,7 +81,7 @@ def deploy(deployment_id: str):
                 "event_type": "deployment_status_update",
                 "project_id": project.id,
                 "deployment_id": deployment.id,
-                "status": "in_progress",
+                "deployment_status": "in_progress",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
             app.redis_client.xadd(
@@ -309,7 +309,7 @@ def deploy(deployment_id: str):
                 "event_type": "deployment_status_update",
                 "project_id": project.id,
                 "deployment_id": deployment.id,
-                "status": deployment.conclusion,
+                "deployment_status": deployment.conclusion,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
             

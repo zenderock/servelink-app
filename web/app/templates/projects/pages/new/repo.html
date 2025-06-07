@@ -7,6 +7,9 @@
   @repo-selected="
     const url = new URL('{{ url_for('main.new_project_details', _external=True) }}');
     url.searchParams.set('repo_id', $event.detail.id);
+    url.searchParams.set('repo_owner', $event.detail.owner);
+    url.searchParams.set('repo_name', $event.detail.name);
+    url.searchParams.set('repo_default_branch', $event.detail.defaultBranch);
     window.location = url.toString();
   "
 >
@@ -42,7 +45,7 @@
     class="flex items-center justify-center h-[296px]"
   >
     <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-      {% include "icons/loader.svg" %}
+      {% include "shared/icons/loader.svg" %}
       {{ _('Loading accounts') }}
     </span>
   </div>

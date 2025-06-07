@@ -1,6 +1,6 @@
 import logging
 from flask import Flask, request, current_app, get_flashed_messages
-from jinja2 import FileSystemLoader
+from jinja2 import ChoiceLoader, FileSystemLoader 
 from flask_babel import Babel, lazy_gettext as _l
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -38,10 +38,12 @@ babel = Babel()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
-    app.jinja_loader = FileSystemLoader([
-        "app/templates",
-        "shared/templates"
+
+    app.jinja_loader = ChoiceLoader([
+        app.jinja_loader,  # Flask's default loader (handles app & blueprint templates)
+        FileSystemLoader('../shared/templates')
     ])
+
     app.config.from_object(config_class)
     app.logger.setLevel(logging.INFO)
     app.github = GitHub(

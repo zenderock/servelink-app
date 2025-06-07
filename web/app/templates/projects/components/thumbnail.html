@@ -4,11 +4,11 @@
       src="{{ url_for('static', filename='upload/avatars/project_' + project.id|string + '.webp') }}?v={{ project.avatar_updated_at.timestamp()|int }}"
       alt="{{ project.name }}" 
       class="
-        object-cover
-        {% if size == 'xs' %}w-5 h-5 rounded
-        {% elif size == 'sm' %}w-6 h-6 rounded-md
-        {% elif size == 'md' %}w-10 h-10 rounded-lg
-        {% elif size == 'lg' %}w-14 h-14 rounded-xl
+        object-cover shrink-0
+        {% if size == 'xs' %}size-5 rounded
+        {% elif size == 'sm' %}size-6 rounded-md
+        {% elif size == 'md' %}size-10 rounded-lg
+        {% elif size == 'lg' %}size-14 rounded-xl
         {% else %}size-8 rounded-lg
         {% endif %}
         {% if class %}{{ class }}{% endif %}
@@ -17,10 +17,10 @@
   {% else %}
     <div class="
       flex items-center justify-center uppercase bg-gradient-to-tl border shrink-0
-      {% if size == 'xs' %}w-5 h-5 rounded text-xs font-semibold
-      {% elif size == 'sm' %}w-6 h-6 rounded-md text-sm font-semibold
-      {% elif size == 'md' %}w-10 h-10 rounded-lg text-xl font-medium
-      {% elif size == 'lg' %}w-14 h-14 rounded-xl text-4xl font-medium
+      {% if size == 'xs' %}size-5 rounded text-xs font-semibold
+      {% elif size == 'sm' %}size-6 rounded-md text-sm font-semibold
+      {% elif size == 'md' %}size-10 rounded-lg text-xl font-medium
+      {% elif size == 'lg' %}size-14 rounded-xl text-4xl font-medium
       {% else %}size-8 rounded-lg text-lg font-semibold
       {% endif %}
       from-{{ project.color }}-100 to-{{ project.color }}-100/50 

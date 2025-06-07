@@ -36,7 +36,7 @@
   <div class="flex items-center gap-x-2">
     <div id="image-preview-container">
       <span x-show="preview">
-        <img :src="preview" class="w-14 h-14 object-cover rounded-lg">
+        <img :src="preview" class="size-10 object-cover rounded-lg">
       </span>
       <span x-show="!preview && !remove">
         {{ current_image }}
@@ -54,7 +54,7 @@
         }
       ) }}
       <div class="btn-sm-outline cursor-pointer">
-        {% include "icons/arrow-up-from-line.svg" %}
+        {% include "shared/icons/arrow-up-from-line.svg" %}
         {{ _('Upload image') }}
       </div>
     </label>
@@ -66,7 +66,7 @@
       x-show="!remove"
       data-tooltip="{{ _('Delete image') }}"
     >
-      {% include "icons/trash-2.svg" %}
+      {% include "shared/icons/trash-2.svg" %}
     </button>
     
   </div>

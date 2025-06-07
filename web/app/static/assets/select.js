@@ -26,6 +26,12 @@ window.basecoat.registerSelect = function(Alpine) {
           this.selectOption(this.options[0], false);
         }
       });
+
+      this.$watch('selectedValue', (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          this.selectValue(newValue);
+        }
+      });
     },
     focusOption() {
       if (this.options.length === 0) return;
@@ -95,6 +101,14 @@ window.basecoat.registerSelect = function(Alpine) {
           label: this.selectedLabel
         });
         this.$dispatch('change'); 
+      }
+    },
+    selectValue(value, dispatch = true) {
+      if (this.options.length === 0 || value == null) return;
+      
+      const option = this.options.find(opt => opt.getAttribute('data-value') === String(value));
+      if (option) {
+        this.selectOption(option, dispatch);
       }
     },
     filterOptions(query) {
