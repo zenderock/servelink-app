@@ -5,4 +5,7 @@
 {% endif %}
 
 {% from 'components/toast.html' import toaster %}
-{{ toaster(toasts=get_flashed_toasts(), is_fragment=True) }}
+{{ toaster(
+  toasts=get_flashed_toasts(),
+  attrs={"hx-swap-oob": "beforeend"}
+) }}

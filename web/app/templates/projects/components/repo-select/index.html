@@ -1,6 +1,6 @@
 {% macro repo_select(accounts, selected_account=None, query=None, link=True) %}
 {% if accounts %}
-<section class="space-y-4">
+<section class="space-y-4 w-full">
   <form
     class="form flex gap-x-2 items-center"
     x-data='{
@@ -22,15 +22,16 @@
     {% from "components/dropdown-menu.html" import dropdown_menu %}
     {% set trigger %}
       <img :src="`https://github.com/${selected_account}.png`" alt="Avatar" class="w-6 h-6 rounded">
-      <span x-text="selected_account"></span>
+      <span class="truncate" x-text="selected_account"></span>
       <span class="text-muted-foreground">
         {% include "shared/icons/chevrons-up-down.svg" %}
       </span>
     {% endset %}
     {% call dropdown_menu(
       trigger=trigger,
-      trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2"},
-      content_attrs={"data-align": "start"}
+      main_attrs={"class": "max-w-1/2"},
+      trigger_attrs={"class": "btn-outline font-normal px-3 flex items-center gap-x-2 truncate w-full"},
+      popover_attrs={"data-align": "start"}
     ) %}
       <template x-for="account in accounts" :key="account">
         <button
@@ -66,15 +67,11 @@
   </form>
 
   <div class="relative">
-    <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
-      <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
-        {% include "shared/icons/loader.svg" %}
-        <span>Loading repositories</span>
-      </div>
+    <div class="h-60 htmx-indicator absolute inset-0 bg-background">
+      {% include "projects/components/repo-select/_skeleton-list.html" %}
     </div>
-    <div role="listbox" aria-label="Repository list" aria-live="polite">
-      <div class="h-60" aria-hidden="true"></div>
-    </div>
+
+    <div role="listbox" aria-label="Repository list" aria-live="polite"></div>
   </div>
 </section>
 {% else %}

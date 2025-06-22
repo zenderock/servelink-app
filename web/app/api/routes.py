@@ -22,7 +22,7 @@ def github_repos():
         account,
         query
     )
-    return render_template('projects/components/repo-select/_search-results.html', repos=repos)
+    return render_template('projects/components/repo-select/_list.html', repos=repos)
 
 
 @bp.route('/github/install')

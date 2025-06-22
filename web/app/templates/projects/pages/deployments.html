@@ -14,198 +14,185 @@
 
     {% if deployments %}
       {% from "components/dialog.html" import dialog %}
-      {% set trigger %}
+      <button
+        type="button"
+        class="btn"
+        onclick="
+          const dialog = document.getElementById('dialog-deploy');
+          dialog.dispatchEvent(new Event('dialog:opened'));
+          dialog.showModal();
+        "
+      >
         {% include "shared/icons/cloud-upload.svg" %}
         {{ _('Deploy') }}
-      {% endset %}
-      {% call dialog(
-        trigger=trigger,
-        title="Deploy",
-        id="dialog-deploy",
-        trigger_attrs={"class": "btn gap-x-2"},
-        content_attrs={"class": "w-full max-w-xl"}
-      ) %}
-        <div
-          hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
-          hx-trigger="dialog:opened from:#dialog-deploy"
-          hx-swap="outerHTML"
-          class="flex items-center justify-center"
-        >
-          <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-            {% include "shared/icons/loader.svg" %}
-            {{ _('Loading') }}
-          </span>
-        </div>
-      {% endcall %}
+      </button>
+      {% include "projects/partials/_deploy-dialog.html" %}
     {% endif %}
   </header>
 
   <section class="space-y-4">
-    {% if deployments %}
-      <form
-        class="flex justify-start items-center gap-x-4"
-        hx-get="{{ url_for('main.project_deployments', project_name=project.name, fragment='deployments') }}"
-        hx-target="#deployments"
-        hx-indicator="next .htmx-indicator"
-        hx-trigger="change delay:10ms, reset delay:10ms"
-        hx-push-url="true"
-        hx-swap="innerHTML"
-        x-data="{
-          isDirty: false,
-          updateDirty() {
-            const params = new URLSearchParams(window.location.search);
-            for (const [key, value] of params) {
-              if (['environment', 'status', 'branch', 'date-from', 'date-to'].includes(key) && value.trim() !== '') {
-                this.isDirty = true;
-                return;
-              }
+    <form
+      action="{{ url_for('main.project_deployments', project_name=project.name) }}"
+      class="flex justify-start items-center gap-x-4"
+      hx-get="{{ url_for('main.project_deployments', project_name=project.name, fragment='deployments') }}"
+      hx-target="#deployments"
+      hx-indicator="next .htmx-indicator"
+      hx-trigger="change delay:10ms, reset delay:10ms"
+      hx-push-url="true"
+      hx-swap="innerHTML"
+      x-data="{
+        isDirty: false,
+        dateFrom: '{{ request.args.get('date-from') or '' }}',
+        dateTo: '{{ request.args.get('date-to') or '' }}',
+        updateDirty() {
+          const params = new URLSearchParams(window.location.search);
+          for (const [key, value] of params) {
+            if (['environment', 'status', 'branch', 'date-from', 'date-to'].includes(key) && value.trim() !== '') {
+              this.isDirty = true;
+              return;
             }
-            this.isDirty = false;
           }
-        }"
-        x-init="
+          this.isDirty = false;
+        },
+        reset() { 
+          console.log('reset');
+          $el.querySelectorAll('input').forEach(input => input.value = '');
+          dateFrom = '';
+          dateTo = '';
+          this.updateDirty();
+        }
+      }"
+      x-init="
+        updateDirty();
+        document.body.addEventListener('htmx:pushedIntoHistory', () => {
           updateDirty();
-          document.body.addEventListener('htmx:pushedIntoHistory', () => {
-            updateDirty();
-          });
-        "
-      >
-        {% from "components/select.html" import select %}
-        
-        {# Environments #}
-        {% from "deployments/components/color.html" import color %}
-        {% call select(
-          name='environment',
-          selected=request.args.get('environment'),
-          trigger_attrs={":class": "selectedValue ? 'bg-muted' : ''"}
-        ) %}
-          <div role="option" data-value="">
-            {{ _('All environments') }}
-          </div>
-          {% for environment in project.active_environments %}
-          <div role="option" data-value="{{ environment['slug'] }}">
-            <span class="flex items-center gap-x-2">
-              {{ color(environment['color']) }}
-              {{ environment['name'] }}
-            </span>
-          </div>
-        {% endfor %}
-        {% endcall %}
+        });
+      "
+    >
+      {% from "components/select.html" import select %}
+      
+      {# Environments #}
+      {% set items = [{
+        "label": _('All environments'),
+        "value": ""
+      }] %}
+      {% from "projects/components/environment-label.html" import environment_label %}
+      {% for environment in project.active_environments %}
+        {% set items = items.append({
+          "label": environment_label(environment),
+          "value": environment['slug']
+        }) %}
+      {% endfor %}
+      {{ select(
+        name='environment',
+        selected=request.args.get('environment'),
+        items=items
+      ) }}
 
-        {% from "shared/deployment/components/status.html" import status %}
-        {% call select(
-          name="status",
-          selected=request.args.get("status"),
-          trigger_attrs={":class": "selectedValue ? 'bg-muted' : ''"}
-        ) %}
-          <div role="option" data-value="">
-            {{ _('All statuses') }}
+      {% from "shared/deployment/components/status.html" import status %}
+
+      {% set items = [{
+        "label": _('All statuses'),
+        "value": ""
+      }] %}
+      {% for conclusion in ['succeeded', 'failed', 'skipped', 'canceled', 'in_progress'] %}
+        {% set items = items.append({
+          "label": status(conclusion=conclusion if conclusion != 'in_progress' else None) | safe,
+          "value": conclusion
+        }) %}
+      {% endfor %}
+      
+      {{ select(
+        name="status",
+        selected=request.args.get("status"),
+        items=items
+      ) }}
+      
+      {% from "components/popover.html" import popover %}
+      {% set date_range_trigger %}
+        <span class="truncate">
+          <span x-show="dateFrom">
+            {{ _('From') }} <span x-text="dateFrom ? new Date(dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
+          </span>
+          <span x-show="dateTo">
+            <span x-text="dateFrom ? '{{ _('to') }}' : '{{ _('Until') }}'"></span> <span x-text="dateTo ? new Date(dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
+          </span>
+          <span x-show="!dateFrom && !dateTo">
+            {{ _('All dates') }}
+          </span>
+        </span>
+        <span class="text-muted-foreground opacity-50 ml-auto">
+          {% include "shared/icons/chevron-down.svg" %}
+        </span>
+      {% endset %}
+      {% call popover(
+        trigger=date_range_trigger,
+        trigger_attrs={
+          'class': 'btn-outline font-normal',
+          ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
+        },
+        popover_attrs={
+          'class': 'form p-4 space-y-4 min-w-auto',
+          'data-align': 'start'
+        }
+      ) %}
+        <div class="space-y-2">
+          <label>From</label>
+          <div class="flex items-center gap-x-2">
+            <input class="flex-1 h-8" type="date" name="date-from" x-model="dateFrom"/>
+            <button
+              type="button"
+              @click="dateFrom = null; $dispatch('change');"
+              class="btn-sm-icon-ghost"
+              data-tooltip="Clear"
+              :disabled="!dateFrom"
+            >
+              {% include "shared/icons/circle-x.svg" %}
+            </button>
           </div>
-          {% for conclusion in ['succeeded', 'failed', 'skipped', 'canceled', 'in_progress'] %}
-            <div role="option" data-value="{{ conclusion }}">
-              {{ status(conclusion=conclusion if conclusion != 'in_progress' else None) | safe }}
-            </div>
-          {% endfor %}
-        {% endcall %}
-        
-        {% from "components/popover.html" import popover %}
-        {% set date_range_trigger %}
-          <span class="truncate">
-            <span x-show="dateFrom">
-              {{ _('From') }} <span x-text="dateFrom ? new Date(dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
-            </span>
-            <span x-show="dateTo">
-              <span x-text="dateFrom ? '{{ _('to') }}' : '{{ _('Until') }}'"></span> <span x-text="dateTo ? new Date(dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
-            </span>
-            <span x-show="!dateFrom && !dateTo">
-              {{ _('All dates') }}
-            </span>
-          </span>
-          <span class="text-muted-foreground opacity-50 ml-auto">
-            {% include "shared/icons/chevron-down.svg" %}
-          </span>
-        {% endset %}
-        <div
-          x-data="{ dateFrom: '{{ request.args.get('date-from') or '' }}', dateTo: '{{ request.args.get('date-to') or '' }}' }"
-        >
-          {% call popover(
-            trigger=date_range_trigger,
-            trigger_attrs={
-              'class': 'btn-outline font-normal',
-              ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
-            },
-            content_attrs={
-              'class': 'form p-4 space-y-4 min-w-auto',
-              'data-align': 'start'
-            }
-          ) %}
-            <div class="space-y-2">
-              <label>From</label>
-              <div class="flex items-center gap-x-2">
-                <input class="flex-1 h-8" type="date" name="date-from" x-model="dateFrom"/>
-                <button
-                  type="button"
-                  @click="dateFrom = null; $dispatch('change');"
-                  class="btn-sm-icon-ghost"
-                  data-tooltip="Clear"
-                  :disabled="!dateFrom"
-                >
-                  {% include "shared/icons/circle-x.svg" %}
-                </button>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <label>To</label>
-              <div class="flex items-center gap-x-2">
-                <input class="flex-1 h-8" type="date" name="date-to" x-model="dateTo"/>
-                <button
-                  type="button"
-                  @click="dateTo = null; $dispatch('change');"
-                  class="btn-sm-icon-ghost"
-                  data-tooltip="Clear"
-                  :disabled="!dateTo"
-                >
-                  {% include "shared/icons/circle-x.svg" %}
-                </button>
-              </div>
-            </div>
-            
-          {% endcall %}
         </div>
-
-        {% call select(
-          name="branch",
-          selected=request.args.get("branch"),
-          trigger_attrs={":class": "selectedValue ? 'bg-muted' : ''"}
-        ) %}
-          <div role="option" data-value="">
-            {{ _('All branches') }}
+        <div class="space-y-2">
+          <label>To</label>
+          <div class="flex items-center gap-x-2">
+            <input class="flex-1 h-8" type="date" name="date-to" x-model="dateTo"/>
+            <button
+              type="button"
+              @click="dateTo = null; $dispatch('change');"
+              class="btn-sm-icon-ghost"
+              data-tooltip="Clear"
+              :disabled="!dateTo"
+            >
+              {% include "shared/icons/circle-x.svg" %}
+            </button>
           </div>
-          {% for branch in branches %}
-            <div role="option" data-value="{{ branch['name'] }}">
-              {{ branch['name'] }}
-            </div>
-          {% endfor %}
-        {% endcall %}
+        </div>
+      {% endcall %}
 
-        <!-- <a
-          href="{{ url_for('main.project_deployments', project_name=project.name) }}"
-          class="btn-ghost text-muted-foreground hover:text-foreground"
-          x-show="isDirty"
-        >
-          {% include "shared/icons/circle-x.svg" %}
-          {{ _('Reset') }}
-        </a> -->
-        <button
-          type="reset"
-          class="btn-ghost text-muted-foreground hover:text-foreground"
-          x-show="isDirty"
-        >
-          {% include "shared/icons/circle-x.svg" %}
-          {{ _('Reset') }}
-        </button>
-      </form>
-    {% endif %}
+      {% set items = [{
+        "label": _('All branches'),
+        "value": ""
+      }] %}
+      {% for branch in branches %}
+        {% set items = items.append({
+          "label": branch['name'],
+          "value": branch['name']
+        }) %}
+      {% endfor %}
+      {{ select(
+        name="branch",
+        selected=request.args.get("branch"),
+        items=items
+      ) }}
+
+      <a
+        href="{{ url_for('main.project_deployments', project_name=project.name) }}"
+        class="btn-ghost text-muted-foreground hover:text-foreground"
+        x-show="isDirty"
+      >
+        {% include "shared/icons/circle-x.svg" %}
+        {{ _('Reset') }}
+      </a>
+    </form>
 
     <div class="relative">
       <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">

@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Create non-root user
-RUN addgroup --system appgroup && adduser --system --group appuser
+RUN addgroup --system appgroup && adduser --system --group --home /app appuser
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -14,6 +14,10 @@ COPY ./shared/ /shared/
 
 # Set permissions
 RUN chown -R appuser:appgroup /app /shared
+
+# Set UV cache directory to writable location
+RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
+ENV UV_CACHE_DIR=/app/.cache/uv
 
 # Switch to non-root user
 USER appuser

@@ -41,7 +41,7 @@
     {% call dropdown_menu(
       trigger=trigger,
       trigger_attrs={"class": "btn-icon-ghost"},
-      content_attrs={"class": "[&>nav]:grid [&>nav]:grid-cols-6 [&>nav]:gap-2 "}
+      menu_attrs={"class": "grid grid-cols-6 gap-2"}
     ) %}
       {% for color in colors %}
         <button
@@ -189,7 +189,7 @@
                   "data-tooltip": _('Delete'),
                   ":disabled": "activeForm"
                 },
-                content_attrs={"class": "max-w-md"}
+                dialog_attrs={"class": "max-w-md"}
               ) %}
                 <div class="space-y-4" x-data="{ confirm: '' }">
                   <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
@@ -241,7 +241,7 @@
 </div>
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
-  <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
+  <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
     {% include "shared/icons/loader.svg" %}
     {{ _('Saving') }}
   </div>

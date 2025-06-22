@@ -14,9 +14,8 @@
       {% call dialog(
         trigger=trigger,
         title=_('Delete "%(name)s"?', name=project.name),
-        
         trigger_attrs={"class": "btn-destructive"},
-        content_attrs={"class": "max-w-md"}
+        dialog_attrs={"class": "max-w-md"}
       ) %}
         <div class="space-y-4" x-data="{ confirm: '' }">
           <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>

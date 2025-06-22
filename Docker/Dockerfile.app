@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Create non-root user
-RUN addgroup --system appgroup && adduser --system --group appuser
+RUN addgroup --system appgroup && adduser --system --group --home /app appuser
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -26,6 +26,10 @@ RUN mkdir -p /data && chown -R appuser:appgroup /data
 
 # Make sure upload directory exists
 RUN mkdir -p /app/app/static/upload/
+
+# Set UV cache directory to writable location
+RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
+ENV UV_CACHE_DIR=/app/.cache/uv
 
 # Switch to non-root user
 USER appuser

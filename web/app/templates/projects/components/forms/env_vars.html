@@ -1,5 +1,6 @@
 {% macro render_env_vars(form, environments) %}
 {% from "components/select.html" import select %}
+{% from "projects/components/environment-label.html" import environment_label %}
 <div
   class="space-y-2"
   x-data="{
@@ -44,25 +45,26 @@
         {% endfor %}
       </div>
       <div class="flex-1 space-y-2 min-w-0">
-        {% call select(
+        {% set items = [{
+          "label": _('All environments'),
+          "value": ""
+        }] %}
+        {% for environment in environments %}
+          {% set items = items.append({
+            "label": environment_label(environment),
+            "value": environment.slug
+          }) %}
+        {% endfor %}
+        {{ select(
           name='env_vars-' ~ loop.index0 ~ '-environment',
           selected=env_var.environment.data,
+          items=items,
           main_attrs={"class": "w-full"},
           trigger_attrs={
             "class": "w-full",
             ":disabled": "remove"
           }
-        ) %}
-          <div role="option" data-value="">
-            {{ _('All environments') }}
-          </div>
-          {% for environment in environments %}
-          <div role="option" data-value="{{ environment.slug }}">
-            <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
-            {{ environment.name }}
-          </div>
-          {% endfor %}
-        {% endcall %}
+        ) }}
         {% for error in env_var.environment.errors %}
           <p class="text-sm text-destructive">{{ error }}</p>
         {% endfor %}
@@ -111,8 +113,19 @@
         ></textarea>
       </div>
       <div class="field flex-1 min-w-0">
-        {% call select(
+        {% set items = [{
+          "label": _('All environments'),
+          "value": ""
+        }] %}
+        {% for environment in environments %}
+          {% set items = items.append({
+            "label": environment_label(environment),
+            "value": environment.slug
+          }) %}
+        {% endfor %}
+        {{ select(
           name='',
+          items=items,
           main_attrs={"class": "w-full"},
           trigger_attrs={
             "class": "w-full",
@@ -122,17 +135,7 @@
             ':name': "'env_vars-' + actualIndex + '-environment'",
             ':disabled': "remove"
           }
-        ) %}
-          <div role="option" data-value="">
-            {{ _('All environments') }}
-          </div>
-          {% for environment in environments %}
-          <div role="option" data-value="{{ environment.slug }}">
-            <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
-            {{ environment.name }}
-          </div>
-          {% endfor %}
-        {% endcall %}
+        ) }}
       </div>
       <div class="shrink-0">
         <input type="checkbox" x-model="remove" class="hidden">

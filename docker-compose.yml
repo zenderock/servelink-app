@@ -28,7 +28,7 @@ services:
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_default"
+      - "traefik.docker.network=devpush_internal"
 
   api:
     container_name: api
@@ -50,7 +50,7 @@ services:
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
       - "traefik.http.routers.api.service=api@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_default"
+      - "traefik.docker.network=devpush_internal"
 
   redis:
     container_name: redis

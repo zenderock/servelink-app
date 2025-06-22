@@ -1,0 +1,98 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    deploy_user: deploy
+
+  tasks:
+    - name: Update system
+      apt: update_cache=yes upgrade=dist
+
+    - name: Install packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+          - git
+          - ufw
+          - fail2ban
+          - unattended-upgrades
+        state: latest
+
+    - name: Create deploy user
+      user:
+        name: "{{ deploy_user }}"
+        groups: sudo,docker
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Add SSH key for deploy user
+      authorized_key:
+        user: "{{ deploy_user }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: Configure passwordless sudo for deploy user
+      lineinfile:
+        path: /etc/sudoers.d/deploy
+        line: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+
+    - name: Configure SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+      notify: restart ssh
+
+    - name: Configure UFW
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop: [22, 80, 443]
+
+    - name: Enable UFW
+      ufw: state=enabled
+
+    - name: Create .ssh directory for deploy user
+      file:
+        path: /home/{{ deploy_user }}/.ssh
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0700'
+
+    - name: Generate GitHub deploy key
+      command: ssh-keygen -t ed25519 -f /home/{{ deploy_user }}/.ssh/github_deploy_key -N "" -C "{{ deploy_user }}@devpush-deploy"
+      args:
+        creates: /home/{{ deploy_user }}/.ssh/github_deploy_key
+      become_user: "{{ deploy_user }}"
+
+    - name: Configure SSH for GitHub
+      copy:
+        content: |
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/github_deploy_key
+            StrictHostKeyChecking no
+        dest: /home/{{ deploy_user }}/.ssh/config
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0600'
+
+    - name: Read GitHub deploy public key
+      slurp:
+        src: /home/{{ deploy_user }}/.ssh/github_deploy_key.pub
+      register: github_public_key
+
+    - name: Display GitHub deploy key
+      debug:
+        msg: "GitHub Deploy Key: {{ github_public_key.content | b64decode | trim }}"
+
+  handlers:
+    - name: restart ssh
+      service: name=ssh state=restarted 

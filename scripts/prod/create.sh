@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+if [ -f "$(dirname "$0")/../../devops/.env" ]; then
+    source "$(dirname "$0")/../../devops/.env"
+fi
+
+if [ -z "$HETZNER_API_TOKEN" ]; then
+    echo -e "\033[31mError: HETZNER_API_TOKEN not found in devops/.env\033[0m"
+    exit 1
+fi
+
+echo "Creating the server with Terraform"
+echo ""
+
+cd "$(dirname "$0")/../../devops/terraform"
+terraform init
+terraform apply -var="hcloud_token=$HETZNER_API_TOKEN"
+
+echo ""
+echo -e "\033[1;32mServer successfully created!\033[0m"
+echo -e "\033[1mRemember to add the server IP to .env: $(terraform output -raw server_ip)\033[0m"

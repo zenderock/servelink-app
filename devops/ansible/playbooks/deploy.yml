@@ -1,0 +1,45 @@
+---
+- hosts: all
+  vars:
+    deploy_user: deploy
+    app_dir: /home/deploy/devpush
+    domain: "{{ domain }}"
+    github_repo: "{{ github_repo }}"
+
+  tasks:
+    - name: Test GitHub SSH connection
+      command: ssh -T git@github.com
+      register: github_test
+      failed_when: github_test.rc != 1
+      changed_when: false
+
+    - name: Display GitHub connection status
+      debug:
+        msg: "✅ GitHub SSH connection successful"
+      when: github_test.rc == 1
+
+    - name: Clone repository
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_dir }}"
+        update: yes
+        force: yes
+
+    - name: Create .env file
+      template:
+        src: ../templates/env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0600'
+
+    - name: Pull Docker images
+      command: docker compose pull
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Start services
+      command: docker compose up -d --remove-orphans
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ deploy_user }}"

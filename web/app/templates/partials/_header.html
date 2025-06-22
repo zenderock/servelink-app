@@ -27,7 +27,7 @@
 					{% call dropdown_menu(
             trigger=trigger,
             trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
-            content_attrs={"data-align": "start"}
+            popover_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_accounts.html" %}
 					{% endcall %}
@@ -46,7 +46,7 @@
 					{% call dropdown_menu(
             trigger=trigger,
             trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
-            content_attrs={"data-align": "start"}
+            popover_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_projects.html" %}
 					{% endcall %}
@@ -69,7 +69,7 @@
 					{% call dropdown_menu(
             trigger=trigger,
             trigger_attrs={"class": "btn-sm-ghost text-muted-foreground w-6"},
-            content_attrs={"data-align": "start"}
+            popover_attrs={"data-align": "start"}
           ) %}
 						{% include "partials/menus/_deployments.html" %}
 					{% endcall %}
@@ -104,7 +104,7 @@
 				{% call dropdown_menu(
           trigger=trigger,
           trigger_attrs={'class': 'block'},
-          content_attrs={'data-align': 'end'}
+          popover_attrs={'data-align': 'end'}
         ) %}
 					<header class="px-2.5 py-1.5">
 						<div class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</div>

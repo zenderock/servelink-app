@@ -25,23 +25,19 @@
   <div class="relative">
     <div
       id="commits"
+      class="h-60"
       hx-get="{{ url_for('main.project_environment_commits', project_name=project.name, environment_slug=project.active_environments[0]['slug']) }}"
       hx-trigger="load"
       hx-indicator="next .htmx-indicator"
-    >
-      <div class="h-60" aria-hidden="true"></div>
-    </div>
+    ></div>
     <div
-      class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20"
+      class="htmx-indicator bg-background absolute inset-0 h-60 z-20"
       role="alert"
       aria-busy="true"
       aria-live="polite"
       aria-label="{{ _('Loading commits') }}"
     >
-      <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-        {% include "shared/icons/loader.svg" %}
-        {{ _('Loading commits') }}
-      </span>
+      {% include "projects/partials/_deploy-dialog-commits-skeleton.html" %}
     </div>
   </div>
   {% if deployment_form.errors %}

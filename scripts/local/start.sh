@@ -1,3 +1,7 @@
+#!/bin/bash
+
+echo "Starting local environment..."
+
 mkdir -p ./data/{db,traefik,upload}
 docker-compose build runner && \
 docker-compose down -v && \

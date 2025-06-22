@@ -67,30 +67,20 @@
     <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Latest deployments') }}</h2>
       {% if deployments %}
-        {% from "components/dialog.html" import dialog %}
-        {% set trigger %}
+        {% include "projects/partials/_deploy-dialog.html" %}
+        <button
+          type="button"
+          class="btn-sm"
+          x-init
+          @click="
+            const dialog = document.getElementById('dialog-deploy');
+            dialog.dispatchEvent(new Event('dialog:opened'));
+            dialog.showModal();
+          "
+        >
           {% include "shared/icons/cloud-upload.svg" %}
           {{ _('Deploy') }}
-        {% endset %}
-        {% call dialog(
-          trigger=trigger,
-          title="Deploy",
-          id="dialog-deploy",
-          trigger_attrs={"class": "btn-sm"},
-          content_attrs={"class": "w-full max-w-xl"}
-        ) %}
-          <div
-            hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
-            hx-trigger="dialog:opened from:#dialog-deploy"
-            hx-swap="outerHTML"
-            class="flex items-center justify-center"
-          >
-            <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4">
-              {% include "shared/icons/loader.svg" %}
-              {{ _('Loading') }}
-            </span>
-          </div>
-        {% endcall %}
+        </button>
       {% endif %}
     </header>
     <div class="space-y-4">

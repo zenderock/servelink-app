@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.4",
-    "basecoat-css": "^0.1.0",
+    "basecoat-css": "^0.2.2",
     "htmx-ext-sse": "^2.2.3",
     "tailwindcss": "^4.1.4"
   }

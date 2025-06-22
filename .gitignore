@@ -27,3 +27,6 @@ supervisord.pid
 # Node
 node_modules/
 package-lock.json
+
+# Terraform
+terraform.tfstate

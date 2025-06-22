@@ -4,18 +4,22 @@ services:
       dockerfile: Docker/Dockerfile.app.dev
     volumes:
       - ./web:/app
-      - ./local.sqlite3:/local.sqlite3
-      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./data/traefik}:/traefik_configs:rw
+      - ./shared:/shared
+      - ./data/db:/data/db
+      - ./data/traefik:/data/traefik
+      - ./data/upload:/app/app/static/upload
     environment:
       - FLASK_DEBUG=1
+      - DATABASE_URL=sqlite:////data/db/local.sqlite3
+      - TRAEFIK_CONFIG_DIR=/data/traefik
+      - UPLOAD_DIR=/app/app/static/upload
 
   api:
     build:
       dockerfile: Docker/Dockerfile.api.dev
     volumes:
       - ./api:/app
-    environment:
-      - FASTAPI_DEBUG=1
+      - ./shared:/shared
 
   traefik:
     command:
@@ -30,7 +34,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ${TRAEFIK_DYNAMIC_CONFIG_HOST_PATH:-./data/traefik}:/etc/traefik/dynamic_conf:rw
+      - ./data/traefik:/etc/traefik/dynamic_conf
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${BASE_DOMAIN}`)"

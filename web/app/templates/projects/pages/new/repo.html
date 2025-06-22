@@ -42,12 +42,9 @@
     hx-get="{{ url_for('main.repo_select') }}"
     hx-trigger="load"
     hx-swap="outerHTML"
-    class="flex items-center justify-center h-[296px]"
+    class="flex items-center justify-center h-[296px] w-full"
   >
-    <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-      {% include "shared/icons/loader.svg" %}
-      {{ _('Loading accounts') }}
-    </span>
+    {% include "projects/components/repo-select/_skeleton-index.html" %}
   </div>
 </div>
 {% endblock %}

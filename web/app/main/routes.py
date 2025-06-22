@@ -296,7 +296,7 @@ def project_deploy(project):
                 return render_template('layouts/fragment.html') # TODO: FIX OOB
 
     return render_template(
-        'projects/partials/_deploy.html',
+        'projects/partials/_deploy-dialog-content.html',
         project=project,
         deployment_form=deployment_form
     )
@@ -407,7 +407,7 @@ def project_settings(project, fragment=None):
                 except Exception as e:
                     flash("You do not have access to this repository.")
                 project.repo_id = general_form.repo_id.data
-                project.repo_full_name = repo.get('full_name')            
+                project.repo_full_name = repo.get('full_name')
             
             # Avatar upload
             avatar_file = general_form.avatar.data
@@ -508,14 +508,12 @@ def project_settings(project, fragment=None):
                 project=project
             )
 
-    # Environments
+    # Environmentse
     environment_form = EnvironmentForm(project=project)
     delete_environment_form = DeleteEnvironmentForm(project=project)
     environments_updated = False
 
     if (request.method == 'GET' and not fragment) or fragment == 'environment':
-        current_app.logger.info(f"Environment form: {environment_form.data}")
-        
         if environment_form.validate_on_submit():
             try:
                 if environment_form.environment_id.data:
@@ -726,13 +724,11 @@ def project_deployments(project):
 def deployment(project, deployment):
     fragment = request.args.get('fragment')
 
-    bearer_token = None
-    if not deployment.conclusion:
-        bearer_token = generate_token(current_app.config['SECRET_KEY'], {
-            'did': deployment.id,
-            'pid': project.id,
-            'uid': current_user.id
-        })
+    bearer_token = generate_token(current_app.config['SECRET_KEY'], {
+        'did': deployment.id,
+        'pid': project.id,
+        'uid': current_user.id
+    })
 
     if request.headers.get('HX-Request') and fragment == 'status-sse':
         return render_htmx_partial(

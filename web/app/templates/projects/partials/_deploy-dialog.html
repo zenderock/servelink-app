@@ -1,0 +1,19 @@
+{% from "components/dialog.html" import dialog %}
+{% call dialog(
+  title="Deploy",
+  id="dialog-deploy",
+  dialog_attrs={
+    "class": "w-full max-w-xl"
+  },
+) %}
+  <div
+    hx-get="{{ url_for('main.project_deploy', project_name=project.name) }}"
+    hx-trigger="dialog:opened from:closest dialog"
+  >
+    XXX
+    <span class="text-muted-foreground flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
+      {% include "shared/icons/loader.svg" %}
+      {{ _('Loading') }}
+    </span>
+  </div>
+{% endcall %}

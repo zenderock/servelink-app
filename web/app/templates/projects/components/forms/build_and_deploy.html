@@ -46,8 +46,10 @@
     ) %}
       {% for framework in frameworks %}
         <div role="option" data-value="{{ framework.slug }}">
-          {{ framework.logo | safe }}
-          {{ framework.name | safe }}
+          <span class="flex items-center gap-x-2">
+            {{ framework.logo | safe }}
+            {{ framework.name | safe }}
+          </span>
         </div>
       {% endfor %}
     {% endcall %}

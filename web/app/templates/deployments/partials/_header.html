@@ -36,7 +36,7 @@
     {% call dropdown_menu(
       trigger=trigger,
       trigger_attrs={"class": "btn-icon-outline"},
-      content_attrs={"data-align": "end"}
+      popover_attrs={"data-align": "end"}
     ) %}
       {% from "shared/deployment/components/options.html" import options %}
       {{ options(deployment, env_aliases) }}
@@ -80,7 +80,7 @@
           {% call dropdown_menu(
             trigger=trigger,
             trigger_attrs={"class": "btn-outline text-muted-foreground text-xs h-4 pl-1 pr-1.5 rounded-full"},
-            content_attrs={"data-align": "end"}
+            popover_attrs={"data-align": "end"}
           ) %}
             {% for alias in deployment.aliases %}
               <a
