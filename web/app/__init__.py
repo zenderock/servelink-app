@@ -1,6 +1,6 @@
 import logging
 from flask import Flask, request, current_app, get_flashed_messages
-from jinja2 import ChoiceLoader, FileSystemLoader 
+from jinja2 import ChoiceLoader, FileSystemLoader, FileSystemBytecodeCache
 from flask_babel import Babel, lazy_gettext as _l
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -14,6 +14,7 @@ from redis import Redis
 from rq import Queue
 import json
 import os
+import time
 
 
 def get_locale():
@@ -80,6 +81,8 @@ def create_app(config_class=Config):
         )
     app.jinja_env.filters['js_escape'] = js_escape
 
+    app.jinja_env.bytecode_cache = FileSystemBytecodeCache("/tmp/jinja-cache")
+
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
@@ -106,6 +109,24 @@ def create_app(config_class=Config):
             {"category": c, "title": m}
             for c, m in get_flashed_messages(with_categories=True)
         ]
+
+    @app.before_request
+    def _t0(): g.t0 = time.perf_counter()
+
+    @app.after_request
+    def _t1(resp):
+        dt = (time.perf_counter() - g.t0) * 1000
+        app.logger.info("%s %.1f ms", request.path, dt)
+        return resp
+
+    app.config["SQLALCHEMY_RECORD_QUERIES"] = True
+    from flask_sqlalchemy.record_queries import get_recorded_queries
+    @app.after_request
+    def _sql(resp):
+        for q in get_recorded_queries():
+            if q.duration > 0.02:  # 20 ms
+                app.logger.info("⚠️  %.0f ms: %s", q.duration*1000, q.statement)
+        return resp
 
     return app
 

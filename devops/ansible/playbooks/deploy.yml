@@ -32,12 +32,18 @@
         group: "{{ deploy_user }}"
         mode: "0600"
 
-    - name: Pull Docker images
-      command: docker compose pull
+    - name: Prune builder cache
+      command: docker builder prune -af
+      when: docker_prune | default(false) | bool
+
+    - name: Build images
+      command: >
+        docker compose --profile build-only build
+        {% if docker_no_cache | default(true) | bool %} --no-cache {% endif %}
       args:
         chdir: "{{ app_dir }}"
 
     - name: Start services
-      command: docker compose up -d --remove-orphans
+      command: docker compose up -d --pull always --remove-orphans
       args:
         chdir: "{{ app_dir }}"
