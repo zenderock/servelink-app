@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Create non-root user with a fixed UID and GID
-RUN addgroup --gid 1000 --system appgroup && adduser --uid 1000 --system --gid 1000 --home /app appuser
+RUN addgroup --system appgroup && adduser --system --group --home /app --shell /bin/bash appuser
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,4 +38,4 @@ EXPOSE 8000
 
 # Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-ENTRYPOINT ["sh", "-c", "chown -R 1000:1000 /data /app/app/static/upload && su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'"]
+ENTRYPOINT ["sh", "-c", "chown -R appuser:appgroup /data /app/app/static/upload && su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'"]
