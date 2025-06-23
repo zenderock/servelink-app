@@ -32,10 +32,13 @@ RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
 ENV UV_CACHE_DIR=/app/.cache/uv
 
 # Switch to non-root user
-USER appuser
+USER root
 
 EXPOSE 8000
 
 # Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-ENTRYPOINT ["sh", "-c", "uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf"]
+ENTRYPOINT ["sh", "-c", "
+    chown -R 1000:1000 /data /app/app/static/upload /data/traefik &&
+    su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'
+"]
