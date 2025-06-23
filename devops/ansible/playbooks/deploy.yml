@@ -14,7 +14,7 @@
 
     - name: Display GitHub connection status
       debug:
-        msg: "✅ GitHub SSH connection successful"
+        msg: "GitHub SSH connection successful"
       when: github_test.rc == 1
 
     - name: Clone repository

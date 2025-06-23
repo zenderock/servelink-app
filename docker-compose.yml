@@ -20,9 +20,9 @@ services:
       - DOCKER_HOST=tcp://docker-proxy:2375
       - REDIS_URL=redis://redis:6379
     volumes:
-      - devpush-db:/data/db
-      - devpush-traefik:/data/traefik
-      - devpush-upload:/app/app/static/upload
+      - /srv/devpush/db:/data/db
+      - /srv/devpush/traefik:/data/traefik
+      - /srv/devpush/upload:/app/app/static/upload
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
@@ -91,7 +91,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - devpush-traefik:/etc/traefik/dynamic_conf
+      - /srv/devpush/traefik:/etc/traefik/dynamic_conf
     networks:
       - default
       - internal
