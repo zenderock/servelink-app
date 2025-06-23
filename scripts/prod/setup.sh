@@ -10,13 +10,12 @@ if [ -z "$SERVER_IP" ]; then
     exit 1
 fi
 
-echo "Setting up the server ($SERVER_IP) with Ansible"
+echo "\033[31mSetting up the server ($SERVER_IP) with Ansible\033[0m"
 echo ""
 
 cd "$(dirname "$0")/../../devops/ansible"
-ansible-playbook -i inventory.yml playbooks/setup.yml \
-  -e "server_ip=$SERVER_IP" \
-  --user root
+ansible-playbook -i inventories/setup.yml playbooks/setup.yml \
+  -e "server_ip=$SERVER_IP"
 
 echo ""
 echo -e "\033[1;32mServer setup complete!\033[0m"

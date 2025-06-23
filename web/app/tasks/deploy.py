@@ -58,7 +58,7 @@ def deploy(deployment_id: str):
         container_logs = ""
         deployment = db.session.get(Deployment, deployment_id)
         project = deployment.project
-        base_domain = app.config['BASE_DOMAIN']
+        apps_base_domain = app.config['APPS_BASE_DOMAIN']
 
         # TODO: REVIEW THIS ENTIRE SECTION (SKIPPING/CANCELING )
         if project.status != 'active':
@@ -142,7 +142,7 @@ def deploy(deployment_id: str):
                 network="devpush_default",
                 labels={
                     "traefik.enable": "true",
-                    f"traefik.http.routers.deployment-{deployment.id}.rule": f"Host(`{deployment.slug}.{base_domain}`)",
+                    f"traefik.http.routers.deployment-{deployment.id}.rule": f"Host(`{deployment.slug}.{apps_base_domain}`)",
                     f"traefik.http.routers.deployment-{deployment.id}.service": f"deployment-{deployment.id}@docker",
                     f"traefik.http.services.deployment-{deployment.id}.loadbalancer.server.port": "8000",
                     "traefik.docker.network": "devpush_default",
@@ -190,7 +190,7 @@ def deploy(deployment_id: str):
             branch = deployment.branch
             sanitized_branch = re.sub(r'[^a-zA-Z0-9-]', '-', branch) # Won't prevent collisions, but good enough
             branch_subdomain = f"{project.slug}-branch-{sanitized_branch}"
-            branch_hostname = f"{branch_subdomain}.{base_domain}"
+            branch_hostname = f"{branch_subdomain}.{apps_base_domain}"
 
             try:
                 Alias.update_or_create(
@@ -205,7 +205,7 @@ def deploy(deployment_id: str):
             # Setup environment domain
             if deployment.environment_id == 'prod':
                 env_subdomain = project.slug
-                env_hostname = f"{env_subdomain}.{base_domain}"
+                env_hostname = f"{env_subdomain}.{apps_base_domain}"
                 try:
                     Alias.update_or_create(
                         subdomain=env_subdomain,
@@ -217,7 +217,7 @@ def deploy(deployment_id: str):
                     app.logger.error(f"Failed to setup production domain {env_hostname}: {e}")
             elif deployment.environment:
                 env_subdomain = f"{project.slug}-env-{deployment.environment['slug']}"
-                env_hostname = f"{env_subdomain}.{base_domain}"
+                env_hostname = f"{env_subdomain}.{apps_base_domain}"
                 try:
                     Alias.update_or_create(
                         subdomain=env_subdomain,
@@ -248,7 +248,7 @@ def deploy(deployment_id: str):
                 for alias_obj in project_aliases:
                     router_name = f"router-alias-{alias_obj.id}"
                     routers_config[router_name] = {
-                        'rule': f"Host(`{alias_obj.subdomain}.{base_domain}`)",
+                        'rule': f"Host(`{alias_obj.subdomain}.{apps_base_domain}`)",
                         'service': f"deployment-{alias_obj.deployment_id}@docker",
                     }
                 

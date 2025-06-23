@@ -225,7 +225,7 @@ def project(project):
         'projects/pages/index.html',
         project=project,
         deployments=deployments,
-        base_domain=current_app.config['BASE_DOMAIN'],
+        apps_base_domain=current_app.config['APPS_BASE_DOMAIN'],
         env_aliases=env_aliases,
         bearer_token=bearer_token
     )

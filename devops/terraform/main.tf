@@ -53,4 +53,4 @@ output "server_ip" {
 
 output "server_id" {
   value = hcloud_server.devpush.id
-} 
+}

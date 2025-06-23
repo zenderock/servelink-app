@@ -13,12 +13,6 @@ services:
       - internal
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - DOCKER_HOST=tcp://docker-proxy:2375
-      - DATABASE_URL=sqlite:////data/db/local.sqlite3
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - UPLOAD_DIR=/app/app/static/upload
     volumes:
       - devpush-db:/data/db
       - devpush-traefik:/data/traefik
@@ -43,8 +37,6 @@ services:
       - internal
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
@@ -113,8 +105,25 @@ services:
 
 volumes:
   devpush-db:
+    driver: local
+    driver_opts:
+      uid: "1000"
+      gid: "1000"
+      mode: "770"
+
   devpush-traefik:
+    driver: local
+    driver_opts:
+      uid: "1000"
+      gid: "1000"
+      mode: "770"
+
   devpush-upload:
+    driver: local
+    driver_opts:
+      uid: "1000"
+      gid: "1000"
+      mode: "770"
 
 networks:
   default:

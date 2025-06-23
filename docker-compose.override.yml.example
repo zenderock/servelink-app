@@ -8,11 +8,6 @@ services:
       - ./data/db:/data/db
       - ./data/traefik:/data/traefik
       - ./data/upload:/app/app/static/upload
-    environment:
-      - FLASK_DEBUG=1
-      - DATABASE_URL=sqlite:////data/db/local.sqlite3
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - UPLOAD_DIR=/app/app/static/upload
 
   api:
     build:

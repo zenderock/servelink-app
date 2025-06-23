@@ -35,7 +35,7 @@
           <ul class="space-y-1">
             <li>
               <a
-                href="http://{{ project.slug }}-env-{{ environment.slug }}.{{ base_domain }}"
+                href="http://{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}"
                 class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors"
                 target="_blank"
                 data-tooltip="{{ _('Visit') }}"
@@ -43,7 +43,7 @@
                 <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
                   {% include "shared/icons/link-2.svg" %}
                 </span>
-                <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ base_domain }}</span>
+                <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}</span>
               </a>
             </li>
             <li>

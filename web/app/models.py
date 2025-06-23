@@ -133,7 +133,7 @@ class Project(db.Model):
     
     @property
     def hostname(self) -> str:
-        return f"{self.slug}.{current_app.config['BASE_DOMAIN']}"
+        return f"{self.slug}.{current_app.config['APPS_BASE_DOMAIN']}"
     
     @property
     def url(self) -> str:
@@ -384,7 +384,7 @@ class Deployment(db.Model):
     
     @property
     def hostname(self) -> str:
-        return f"{self.slug}.{current_app.config['BASE_DOMAIN']}"
+        return f"{self.slug}.{current_app.config['APPS_BASE_DOMAIN']}"
     
     @property
     def url(self) -> str:
@@ -406,7 +406,7 @@ class Deployment(db.Model):
     def featured_hostname(self) -> str | None:
         if not self.conclusion:
             return None
-        return f"{self.featured_slug}.{current_app.config['BASE_DOMAIN']}"
+        return f"{self.featured_slug}.{current_app.config['APPS_BASE_DOMAIN']}"
     
     @property
     def featured_url(self) -> str | None:
@@ -471,7 +471,7 @@ class Alias(db.Model):
 
     @property
     def hostname(self) -> str:
-        return f"{self.subdomain}.{current_app.config['BASE_DOMAIN']}"
+        return f"{self.subdomain}.{current_app.config['APPS_BASE_DOMAIN']}"
     
     @property
     def url(self) -> str:

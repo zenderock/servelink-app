@@ -11,9 +11,10 @@ from utils.token import verify_token
 
 app = FastAPI()
 
+base_domain = os.getenv('BASE_DOMAIN', 'localhost')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://app.localhost", "http://localhost:5000"],
+    allow_origins=[f"http://app.{base_domain}"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],

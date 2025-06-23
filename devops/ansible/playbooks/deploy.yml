@@ -3,10 +3,14 @@
   vars:
     deploy_user: deploy
     app_dir: /home/deploy/devpush
-    domain: "{{ domain }}"
     github_repo: "{{ github_repo }}"
 
   tasks:
+    - name: DEBUG - Check if Ansible can see local environment variables
+      debug:
+        msg: "The value of BASE_DOMAIN from my local environment is: '{{ lookup('env', 'BASE_DOMAIN') }}'"
+      delegate_to: localhost
+      run_once: true
     - name: Test GitHub SSH connection
       command: ssh -T git@github.com
       register: github_test
@@ -26,8 +30,8 @@
         force: yes
 
     - name: Create .env file
-      template:
-        src: ../templates/env.j2
+      ansible.builtin.copy:
+        content: "{{ lookup('template', '../templates/env.j2') }}"
         dest: "{{ app_dir }}/.env"
         owner: "{{ deploy_user }}"
         group: "{{ deploy_user }}"
@@ -42,4 +46,3 @@
       command: docker compose up -d --remove-orphans
       args:
         chdir: "{{ app_dir }}"
-      become_user: "{{ deploy_user }}"
