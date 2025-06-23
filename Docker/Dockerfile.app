@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
-# Create non-root user
-RUN addgroup --system appgroup && adduser --system --group --home /app appuser
+# Create non-root user with a fixed UID and GID
+RUN addgroup --gid 1000 --system appgroup && adduser --uid 1000 --system --gid 1000 --home /app appuser
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

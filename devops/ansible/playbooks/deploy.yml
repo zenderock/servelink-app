@@ -6,11 +6,6 @@
     github_repo: "{{ github_repo }}"
 
   tasks:
-    - name: DEBUG - Check if Ansible can see local environment variables
-      debug:
-        msg: "The value of BASE_DOMAIN from my local environment is: '{{ lookup('env', 'BASE_DOMAIN') }}'"
-      delegate_to: localhost
-      run_once: true
     - name: Test GitHub SSH connection
       command: ssh -T git@github.com
       register: github_test
@@ -29,13 +24,13 @@
         update: yes
         force: yes
 
-    - name: Create .env file
+    - name: Copy .env file for app container
       ansible.builtin.copy:
-        content: "{{ lookup('template', '../templates/env.j2') }}"
+        src: ../../.env.app
         dest: "{{ app_dir }}/.env"
         owner: "{{ deploy_user }}"
         group: "{{ deploy_user }}"
-        mode: '0600'
+        mode: "0600"
 
     - name: Pull Docker images
       command: docker compose pull

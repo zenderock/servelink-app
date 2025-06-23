@@ -4,6 +4,8 @@
 !.dockerignore
 !.flaskenv
 !.env.example
+!.env.devops.example
+!.env.app.example
 
 # Python
 __pycache__/
