@@ -31,9 +31,6 @@ RUN mkdir -p /app/app/static/upload/
 RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
 ENV UV_CACHE_DIR=/app/.cache/uv
 
-# Switch to non-root user
-USER appuser
-
 EXPOSE 8000
 
 # Supervisor process manager
