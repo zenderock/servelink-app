@@ -1,5 +1,5 @@
 import logging
-from flask import Flask, request, current_app, get_flashed_messages
+from flask import Flask, request, current_app, get_flashed_messages, g
 from jinja2 import ChoiceLoader, FileSystemLoader, FileSystemBytecodeCache
 from flask_babel import Babel, lazy_gettext as _l
 from flask_sqlalchemy import SQLAlchemy
@@ -81,7 +81,9 @@ def create_app(config_class=Config):
         )
     app.jinja_env.filters['js_escape'] = js_escape
 
-    app.jinja_env.bytecode_cache = FileSystemBytecodeCache("/tmp/jinja-cache")
+    cache_dir = "/tmp/jinja-cache"
+    os.makedirs(cache_dir, exist_ok=True)
+    app.jinja_env.bytecode_cache = FileSystemBytecodeCache(cache_dir)
 
     db.init_app(app)
     migrate.init_app(app, db)
