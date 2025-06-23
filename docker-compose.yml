@@ -12,7 +12,13 @@ services:
       - default
       - internal
     env_file:
-      - app.env
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:////data/db/local.sqlite3
+      - UPLOAD_DIR=/app/app/static/upload
+      - TRAEFIK_CONFIG_DIR=/data/traefik
+      - DOCKER_HOST=tcp://docker-proxy:2375
+      - REDIS_URL=redis://redis:6379
     volumes:
       - devpush-db:/data/db
       - devpush-traefik:/data/traefik
@@ -22,7 +28,7 @@ services:
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_internal"
+      - "traefik.docker.network=devpush_default"
 
   api:
     container_name: api
@@ -36,13 +42,15 @@ services:
       - default
       - internal
     env_file:
-      - api.env
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
       - "traefik.http.routers.api.service=api@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_internal"
+      - "traefik.docker.network=devpush_default"
 
   redis:
     container_name: redis

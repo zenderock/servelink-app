@@ -10,11 +10,6 @@ if [ -z "$SERVER_IP" ]; then
     exit 1
 fi
 
-if [ -z "$BASE_DOMAIN" ]; then
-    echo -e "\033[31mError: BASE_DOMAIN not found in devops/.env\033[0m"
-    exit 1
-fi
-
 echo "Deploying the app on the server ($SERVER_IP) with Ansible"
 echo ""
 
