@@ -60,26 +60,10 @@
   <link rel="stylesheet" href="{{url_for('static',filename='styles.css')}}">
 
   <!-- JS -->
-  <script defer src="{{ url_for('static', filename='assets/dialog.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='assets/dropdown-menu.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='assets/popover.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='assets/select.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='assets/toast.js') }}"></script>
-  <script>
-    document.addEventListener('alpine:init', () => {
-      window.basecoat.registerDialog(Alpine);
-      window.basecoat.registerDropdownMenu(Alpine);
-      window.basecoat.registerPopover(Alpine);
-      window.basecoat.registerSelect(Alpine);
-      window.basecoat.registerToast(Alpine);
-    });
-  </script>
-  <script defer src="{{ url_for('static', filename='assets/alpine.min.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.2.5/dist/js/all.min.js" defer></script>
+  <script src="{{ url_for('static', filename='assets/alpine.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='assets/htmx.min.js') }}"></script>
   <script src="{{ url_for('static', filename='assets/htmx-sse.min.js') }}"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.2.3/dist/js/all.min.js" defer></script>
-  
   <!-- Additional head content (JS, CSS, etc.) -->
   {% block head %}{% endblock %}
 </head>
