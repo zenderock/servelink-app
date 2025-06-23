@@ -113,25 +113,8 @@ services:
 
 volumes:
   devpush-db:
-    driver: local
-    driver_opts:
-      uid: "1000"
-      gid: "1000"
-      mode: "770"
-
   devpush-traefik:
-    driver: local
-    driver_opts:
-      uid: "1000"
-      gid: "1000"
-      mode: "770"
-
   devpush-upload:
-    driver: local
-    driver_opts:
-      uid: "1000"
-      gid: "1000"
-      mode: "770"
 
 networks:
   default:
