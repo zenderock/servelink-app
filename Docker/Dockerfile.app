@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Create non-root user
-RUN addgroup appgroup && adduser --ingroup appgroup --home /app --shell /bin/sh --no-create-home appuser
+RUN addgroup --system appgroup && adduser --system --group --home /app appuser
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,12 +21,21 @@ COPY ./shared/ /shared/
 # Set permissions
 RUN chown -R appuser:appgroup /app /shared
 
+# Make sure data directory exists and set permissions
+RUN mkdir -p /data && chown -R appuser:appgroup /data
+
+# Make sure upload directory exists
+RUN mkdir -p /app/app/static/upload/
+
 # Set UV cache directory to writable location
 RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
 ENV UV_CACHE_DIR=/app/.cache/uv
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8000
 
 # Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-ENTRYPOINT ["sh","-c","chown -R appuser:appgroup /data /app/app/static/upload && exec su -s /bin/sh appuser -c 'uv run supervisord -c /etc/supervisord.conf'"]
+ENTRYPOINT ["sh","-c","chown -R appuser:appgroup /data /app/app/static/upload && exec su -s /bin/sh appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'"]
