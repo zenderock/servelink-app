@@ -1,43 +1,40 @@
 FROM python:3.13-slim
 
-# Install system dependencies and bash (required for su to work)
+# Create non-root user with a fixed UID and GID
+RUN addgroup --system appgroup && adduser --system --group --home /app appuser
+
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 \
-    supervisor \
-    bash \
- && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user with a valid shell and no password
-RUN useradd -u 1000 -r -g nogroup -d /app -s /bin/bash appuser \
- && mkdir -p /app && chown appuser:nogroup /app
-
-WORKDIR /app
+        sqlite3 \
+        supervisor \
+        gosu \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Copy app code
+WORKDIR /app
+
+# Copy project
 COPY ./web/ .
 COPY ./shared/ /shared/
 
-# Fix permissions at build time for copied files
-RUN chown -R appuser:nogroup /app /shared
+# Set permissions
+RUN chown -R appuser:appgroup /app /shared
 
-# Ensure necessary dirs exist
-RUN mkdir -p /data \
- && mkdir -p /app/app/static/upload \
- && mkdir -p /app/.cache \
- && chown -R appuser:nogroup /data /app/.cache
+# Make sure data directory exists and set permissions
+RUN mkdir -p /data && chown -R appuser:appgroup /data
 
+# Make sure upload directory exists
+RUN mkdir -p /app/app/static/upload/
+
+# Set UV cache directory to writable location
+RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
 ENV UV_CACHE_DIR=/app/.cache/uv
-
-# Still run as root (so we can fix volume perms at container startup)
-USER root
 
 EXPOSE 8000
 
-# Copy supervisor config
+# Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
+ENTRYPOINT ["sh","-c","chown -R appuser:appgroup /data /app/app/static/upload && exec su -s /bin/sh -c 'uv run supervisord -c /etc/supervisord.conf' appuser"]
 
-# Entrypoint: fix volume permissions, then drop to appuser
-ENTRYPOINT ["sh", "-c", "chown -R appuser:nogroup /data /app/app/static/upload && su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'"]
