@@ -6,7 +6,7 @@ if [ -f "$(dirname "$0")/../../devops/.env" ]; then
 fi
 
 if [ -z "$SERVER_IP" ]; then
-    echo -e "\033[31mError: SERVER_IP not found in .env\033[0m"
+    echo -e "\033[31mError: SERVER_IP not found in devops/.env\033[0m"
     exit 1
 fi
 

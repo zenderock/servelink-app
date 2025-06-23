@@ -29,10 +29,18 @@
         update: yes
         force: yes
 
-    - name: Create .env file
+    - name: Create env vars file for app container
       ansible.builtin.copy:
-        content: "{{ lookup('template', '../templates/env.j2') }}"
-        dest: "{{ app_dir }}/.env"
+        content: "{{ lookup('template', '../templates/app.env.j2') }}"
+        dest: "{{ app_dir }}/app.env"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0600'
+
+    - name: Create env vars file for api container
+      ansible.builtin.copy:
+        content: "{{ lookup('template', '../templates/api.env.j2') }}"
+        dest: "{{ app_dir }}/api.env"
         owner: "{{ deploy_user }}"
         group: "{{ deploy_user }}"
         mode: '0600'

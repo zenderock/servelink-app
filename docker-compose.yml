@@ -12,7 +12,7 @@ services:
       - default
       - internal
     env_file:
-      - .env
+      - app.env
     volumes:
       - devpush-db:/data/db
       - devpush-traefik:/data/traefik
@@ -36,7 +36,7 @@ services:
       - default
       - internal
     env_file:
-      - .env
+      - api.env
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
