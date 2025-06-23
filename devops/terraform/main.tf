@@ -39,7 +39,7 @@ resource "hcloud_server" "devpush" {
   name         = "devpush-prod-us1"
   server_type  = "cpx31"
   image        = "ubuntu-22.04"
-  location     = "ash"
+  location     = "hil"
   ssh_keys     = [hcloud_ssh_key.deploy.id]
   firewall_ids = [hcloud_firewall.web.id]
   backups      = true

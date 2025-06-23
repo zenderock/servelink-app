@@ -2,7 +2,6 @@ services:
   app:
     build:
       dockerfile: Docker/Dockerfile.app.dev
-    env_file: []
     volumes:
       - ./web:/app
       - ./shared:/shared
@@ -13,7 +12,6 @@ services:
   api:
     build:
       dockerfile: Docker/Dockerfile.api.dev
-    env_file: []
     volumes:
       - ./api:/app
       - ./shared:/shared

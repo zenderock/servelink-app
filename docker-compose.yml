@@ -29,6 +29,8 @@ services:
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
+      - "traefik.http.middlewares.compress.compress=true"
+      - "traefik.http.routers.app.middlewares=compress"
 
   api:
     container_name: api
@@ -51,6 +53,8 @@ services:
       - "traefik.http.routers.api.service=api@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
+      - "traefik.http.middlewares.compress.compress=true"
+      - "traefik.http.routers.api.middlewares=compress"
 
   redis:
     container_name: redis
@@ -84,9 +88,6 @@ services:
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--api=true"
-      - "--api.dashboard=false"
-      - "--api.insecure=false"
     ports:
       - "80:80"
       - "443:443"
@@ -97,9 +98,6 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik-api.rule=Host(`api.traefik.internal`)"
-      - "traefik.http.routers.traefik-api.service=api@internal"
-      - "traefik.http.routers.traefik-api.entrypoints=web"
 
   runner:
     image: runner
