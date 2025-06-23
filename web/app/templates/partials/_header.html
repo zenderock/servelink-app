@@ -78,23 +78,17 @@
 		</nav>
 
 		<nav class="flex items-center gap-x-2" aria-label="User menu">
-			<button 
-				x-data
-				@click="$store.theme.toggle()" 
-				aria-label="Toggle theme"
-				data-tooltip="Toggle theme"
-				data-side="bottom"
-				type="button" 
-				class="btn-sm-icon-ghost rounded-full"
-				aria-label="Toggle theme"
-			>
-				<span x-show="$store.theme.isDark">
-					{% include "shared/icons/moon.svg" %}
-				</span>
-				<span x-show="!$store.theme.isDark">
-					{% include "shared/icons/sun.svg" %}
-				</span>
-			</button>
+			<button
+        type="button"
+        aria-label="Toggle dark mode"
+        data-tooltip="Toggle dark mode"
+        data-side="bottom"
+        onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
+        class="btn-sm-icon-ghost rounded-full"
+      >
+        <span class="hidden dark:block">{% include "shared/icons/sun.svg" %}</span>
+        <span class="block dark:hidden">{% include "shared/icons/moon.svg" %}</span>
+      </button>
 
 			{% if current_user.is_authenticated %}
 

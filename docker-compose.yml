@@ -31,6 +31,14 @@ services:
       - "traefik.docker.network=devpush_default"
       - "traefik.http.middlewares.compress.compress=true"
       - "traefik.http.routers.app.middlewares=compress"
+      - "traefik.http.routers.app-static.rule=Host(`app.${BASE_DOMAIN}`) && PathPrefix(`/static`)"
+      - "traefik.http.routers.app-static.priority=100"
+      - "traefik.http.routers.app-static.middlewares=static-cache"
+      - "traefik.http.routers.app-static.service=app@docker"
+      - "traefik.http.middlewares.static-cache.headers.cacheControl=true"
+      - "traefik.http.middlewares.static-cache.headers.cacheControl.maxAge=31536000"
+      - "traefik.http.middlewares.static-cache.headers.cacheControl.public=true"
+      - "traefik.http.middlewares.static-cache.headers.cacheControl.immutable=true"
 
   api:
     container_name: api
