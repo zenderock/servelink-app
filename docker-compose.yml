@@ -35,10 +35,7 @@ services:
       - "traefik.http.routers.app-static.priority=100"
       - "traefik.http.routers.app-static.middlewares=static-cache"
       - "traefik.http.routers.app-static.service=app@docker"
-      - "traefik.http.middlewares.static-cache.headers.cacheControl=true"
-      - "traefik.http.middlewares.static-cache.headers.cacheControl.maxAge=31536000"
-      - "traefik.http.middlewares.static-cache.headers.cacheControl.public=true"
-      - "traefik.http.middlewares.static-cache.headers.cacheControl.immutable=true"
+      - "traefik.http.middlewares.static-cache.headers.customresponseheaders.Cache-Control=public,max-age=31536000,immutable"
 
   api:
     container_name: api
