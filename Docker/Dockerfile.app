@@ -38,7 +38,4 @@ EXPOSE 8000
 
 # Supervisor process manager
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-ENTRYPOINT ["sh", "-c", "
-    chown -R 1000:1000 /data /app/app/static/upload /data/traefik &&
-    su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'
-"]
+ENTRYPOINT ["sh", "-c", "chown -R 1000:1000 /data /app/app/static/upload && su appuser -c 'uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf'"]
