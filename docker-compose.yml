@@ -3,7 +3,6 @@ services:
     container_name: app
     build:
       context: .
-      dockerfile: Docker/Dockerfile.app.dev
     restart: always
     depends_on:
       - redis
@@ -20,8 +19,6 @@ services:
       - DOCKER_HOST=tcp://docker-proxy:2375
       - REDIS_URL=redis://redis:6379
     volumes:
-      - ./web:/app
-      - ./shared:/shared
       - ./data/db:/data/db
       - ./data/traefik:/data/traefik
       - ./data/upload:/app/app/static/upload
@@ -44,7 +41,6 @@ services:
     container_name: api
     build:
       context: .
-      dockerfile: Docker/Dockerfile.api.dev
     restart: always
     depends_on:
       - redis
@@ -55,9 +51,6 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
-    volumes:
-      - ./api:/app
-      - ./shared:/shared
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"

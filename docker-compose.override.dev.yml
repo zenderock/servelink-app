@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      dockerfile: Docker/Dockerfile.app.dev
+    volumes:
+      - ./web:/app
+      - ./shared:/shared
+  
+  api:
+    build:
+      dockerfile: Docker/Dockerfile.api.dev
+    volumes:
+      - ./api:/app
+      - ./shared:/shared
