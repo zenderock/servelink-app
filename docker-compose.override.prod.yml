@@ -41,5 +41,5 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
+    volumes: !reset
       - /srv/devpush/traefik:/etc/traefik/dynamic_conf
