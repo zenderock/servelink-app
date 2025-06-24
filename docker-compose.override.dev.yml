@@ -5,6 +5,9 @@ services:
     volumes:
       - ./web:/app
       - ./shared:/shared
+      - ./data/db:/data/db
+      - ./data/traefik:/data/traefik
+      - ./data/upload:/app/app/static/upload
   
   api:
     build:
@@ -12,3 +15,7 @@ services:
     volumes:
       - ./api:/app
       - ./shared:/shared
+  
+  traefik:
+    volumes:
+      - ./data/traefik:/etc/traefik/dynamic_conf

@@ -3,6 +3,7 @@ services:
     container_name: app
     build:
       context: .
+      dockerfile: Docker/Dockerfile.app
     restart: always
     depends_on:
       - redis
@@ -18,10 +19,6 @@ services:
       - TRAEFIK_CONFIG_DIR=/data/traefik
       - DOCKER_HOST=tcp://docker-proxy:2375
       - REDIS_URL=redis://redis:6379
-    volumes:
-      - ./data/db:/data/db
-      - ./data/traefik:/data/traefik
-      - ./data/upload:/app/app/static/upload
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
@@ -41,6 +38,7 @@ services:
     container_name: api
     build:
       context: .
+      dockerfile: Docker/Dockerfile.api
     restart: always
     depends_on:
       - redis
@@ -92,8 +90,6 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-    volumes:
-      - ./data/traefik:/etc/traefik/dynamic_conf
     networks:
       - default
       - internal

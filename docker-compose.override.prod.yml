@@ -1,7 +1,5 @@
 services:
   app:
-    build:
-      dockerfile: Docker/Dockerfile.app
     volumes:
       - /srv/devpush/db:/data/db
       - /srv/devpush/traefik:/data/traefik
@@ -15,8 +13,6 @@ services:
       - traefik.http.routers.app-static.tls.certresolver=le
   
   api:
-    build:
-      dockerfile: Docker/Dockerfile.api
     volumes:
     labels:
       - traefik.http.routers.api.entrypoints=websecure

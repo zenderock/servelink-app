@@ -16,6 +16,6 @@ CACHE_FLAG=""
 
 [ "$PRUNE" = true ] && docker image prune -f
 
-docker-compose build $CACHE_FLAG runner && \
-docker-compose down -v && \
-docker-compose up --build --force-recreate
+docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml build $CACHE_FLAG runner && \
+docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml down -v && \
+docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml up --build --force-recreate
