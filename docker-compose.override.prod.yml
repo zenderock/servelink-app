@@ -2,7 +2,7 @@ services:
   app:
     build:
       dockerfile: Docker/Dockerfile.app
-    volumes: []
+    volumes:
       - /srv/devpush/db:/data/db
       - /srv/devpush/traefik:/data/traefik
       - /srv/devpush/upload:/app/app/static/upload
@@ -41,5 +41,5 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes: []
+    volumes:
       - /srv/devpush/traefik:/etc/traefik/dynamic_conf
