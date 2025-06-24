@@ -10,6 +10,10 @@ if [ -z "$SERVER_IP" ]; then
     exit 1
 fi
 
+if [ -z "$LE_EMAIL" ]; then
+    echo -e "\033[31mError: LE_EMAIL not found in devops/.env.devops\033[0m"
+    exit 1
+fi
 
 NO_CACHE=true
 PRUNE=false
@@ -25,6 +29,7 @@ cd "$(dirname "$0")/../../devops/ansible"
 ansible-playbook -i inventories/deploy.yml playbooks/deploy.yml \
   -e "server_ip=$SERVER_IP" \
   -e "github_repo=$GITHUB_REPO" \
+  -e "le_email=$LE_EMAIL" \
   -e "docker_no_cache=$NO_CACHE" \
   -e "docker_prune=$PRUNE"
 

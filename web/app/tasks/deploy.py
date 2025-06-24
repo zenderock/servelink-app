@@ -146,6 +146,9 @@ def deploy(deployment_id: str):
                     f"traefik.http.routers.deployment-{deployment.id}.service": f"deployment-{deployment.id}@docker",
                     f"traefik.http.services.deployment-{deployment.id}.loadbalancer.server.port": "8000",
                     "traefik.docker.network": "devpush_default",
+                    f"traefik.http.routers.deployment-{deployment.id}.entrypoints": "websecure",
+                    f"traefik.http.routers.deployment-{deployment.id}.tls": "true",
+                    f"traefik.http.routers.deployment-{deployment.id}.tls.certresolver": "le",
                     "app.deployment_id": deployment.id,
                     "app.project_id": project.id
                 }
