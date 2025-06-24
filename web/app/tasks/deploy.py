@@ -132,6 +132,26 @@ def deploy(deployment_id: str):
             # Run the container
             # TODO: Add cache for pip
             container_name = f"runner-{deployment.id[:7]}"
+            router = f"deployment-{deployment.id}"
+            labels = {
+                "traefik.enable": "true",
+                f"traefik.http.routers.{router}.rule": f"Host(`{deployment.slug}.{apps_base_domain}`)",
+                f"traefik.http.routers.{router}.service": f"{router}@docker",
+                f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
+                "traefik.docker.network": "devpush_default",
+                "app.deployment_id": deployment.id,
+                "app.project_id": project.id,
+            }
+
+            if app.config.get("ENV") == "production":
+                labels.update({
+                    f"traefik.http.routers.{router}.entrypoints": "websecure",
+                    f"traefik.http.routers.{router}.tls": "true",
+                    f"traefik.http.routers.{router}.tls.certresolver": "le",
+                })
+            else:
+                labels[f"traefik.http.routers.{router}.entrypoints"] = "web"
+
             container = docker_client.containers.run(
                 name=container_name,
                 image="runner",
@@ -140,18 +160,7 @@ def deploy(deployment_id: str):
                 working_dir="/app",
                 detach=True,
                 network="devpush_default",
-                labels={
-                    "traefik.enable": "true",
-                    f"traefik.http.routers.deployment-{deployment.id}.rule": f"Host(`{deployment.slug}.{apps_base_domain}`)",
-                    f"traefik.http.routers.deployment-{deployment.id}.service": f"deployment-{deployment.id}@docker",
-                    f"traefik.http.services.deployment-{deployment.id}.loadbalancer.server.port": "8000",
-                    "traefik.docker.network": "devpush_default",
-                    f"traefik.http.routers.deployment-{deployment.id}.entrypoints": "websecure",
-                    f"traefik.http.routers.deployment-{deployment.id}.tls": "true",
-                    f"traefik.http.routers.deployment-{deployment.id}.tls.certresolver": "le",
-                    "app.deployment_id": deployment.id,
-                    "app.project_id": project.id
-                }
+                labels=labels
             )
             docker_client.networks.get("devpush_internal").connect(container.id)
 

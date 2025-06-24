@@ -3,7 +3,7 @@ services:
     container_name: app
     build:
       context: .
-      dockerfile: Docker/Dockerfile.app
+      dockerfile: Docker/Dockerfile.app.dev
     restart: always
     depends_on:
       - redis
@@ -20,9 +20,11 @@ services:
       - DOCKER_HOST=tcp://docker-proxy:2375
       - REDIS_URL=redis://redis:6379
     volumes:
-      - /srv/devpush/db:/data/db
-      - /srv/devpush/traefik:/data/traefik
-      - /srv/devpush/upload:/app/app/static/upload
+      - ./web:/app
+      - ./shared:/shared
+      - ./data/db:/data/db
+      - ./data/traefik:/data/traefik
+      - ./data/upload:/app/app/static/upload
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
@@ -36,15 +38,13 @@ services:
       - "traefik.http.routers.app-static.middlewares=static-cache"
       - "traefik.http.routers.app-static.service=app@docker"
       - "traefik.http.middlewares.static-cache.headers.customresponseheaders.Cache-Control=public,max-age=31536000,immutable"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls=true"
-      - "traefik.http.routers.app.tls.certresolver=le"
+      - "traefik.http.routers.app.entrypoints=web"
 
   api:
     container_name: api
     build:
       context: .
-      dockerfile: Docker/Dockerfile.api
+      dockerfile: Docker/Dockerfile.api.dev
     restart: always
     depends_on:
       - redis
@@ -55,15 +55,16 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./api:/app
+      - ./shared:/shared
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)"
       - "traefik.http.routers.api.service=api@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls=true"
-      - "traefik.http.routers.api.tls.certresolver=le"
+      - "traefik.http.routers.api.entrypoints=web"
 
   redis:
     container_name: redis
@@ -96,17 +97,10 @@ services:
       - "--providers.file.directory=/etc/traefik/dynamic_conf"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--certificatesresolvers.le.acme.email=${LE_EMAIL}"
-      - "--certificatesresolvers.le.acme.storage=/etc/traefik/dynamic_conf/acme.json"
-      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
-      - "443:443"
     volumes:
-      - /srv/devpush/traefik:/etc/traefik/dynamic_conf
+      - ./data/traefik:/etc/traefik/dynamic_conf
     networks:
       - default
       - internal
@@ -122,10 +116,6 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
-    labels:
-      - "traefik.http.routers.runner.entrypoints=websecure"
-      - "traefik.http.routers.runner.tls=true"
-      - "traefik.http.routers.runner.tls.certresolver=le"
 
 volumes:
   devpush-db:

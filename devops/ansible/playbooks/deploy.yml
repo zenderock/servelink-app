@@ -44,6 +44,6 @@
         chdir: "{{ app_dir }}"
 
     - name: Start services
-      command: docker compose up -d --pull always --remove-orphans
+      command: docker compose -f docker-compose.yml -f docker-compose.override.prod.yml up -d --pull always --remove-orphans
       args:
         chdir: "{{ app_dir }}"
