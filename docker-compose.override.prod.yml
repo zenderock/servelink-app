@@ -2,7 +2,7 @@ services:
   app:
     build:
       dockerfile: Docker/Dockerfile.app
-    volumes:
+    volumes: !override
       - /srv/devpush/db:/data/db
       - /srv/devpush/traefik:/data/traefik
       - /srv/devpush/upload:/app/app/static/upload
@@ -17,7 +17,7 @@ services:
   api:
     build:
       dockerfile: Docker/Dockerfile.api
-    volumes: []
+    volumes: !override []
     labels:
       - traefik.http.routers.api.entrypoints=websecure
       - traefik.http.routers.api.tls=true
