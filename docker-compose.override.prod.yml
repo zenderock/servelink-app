@@ -13,7 +13,6 @@ services:
       - traefik.http.routers.app-static.tls.certresolver=le
   
   api:
-    volumes: []
     labels:
       - traefik.http.routers.api.entrypoints=websecure
       - traefik.http.routers.api.tls=true
