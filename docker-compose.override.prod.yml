@@ -17,7 +17,7 @@ services:
   api:
     build:
       dockerfile: Docker/Dockerfile.api
-    volumes: !reset
+    volumes: !reset []
     labels:
       - traefik.http.routers.api.entrypoints=websecure
       - traefik.http.routers.api.tls=true
