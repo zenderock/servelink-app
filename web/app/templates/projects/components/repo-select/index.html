@@ -75,11 +75,11 @@
   </div>
 </section>
 {% else %}
-<section class="flex items-center justify-center">
-  <div class="text-center">
-    <h3 class="font-medium mb-1">{{ _('No accounts connected') }}</h3>
-    <p class="text-muted-foreground">{{ _('Connect your GitHub accounts and start adding projects.') }}</p>
-    <a class="btn-outline mt-4" href="{{ url_for('api.github_app_install') }}">{{ _('Manage account') }}</a>
+<section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+  <div class="max-w-sm text-center">
+    <h2 class="h4">{{ _('No accounts connected') }}</h2>
+    <p class="text-muted-foreground mt-1">{{ _('Connect your GitHub accounts and start adding projects.') }}</p>
+    <a class="btn-sm mt-4" href="{{ url_for('api.github_app_install') }}">{{ _('Manage account') }}</a>
   </div>
 </section>
 {% endif %}
