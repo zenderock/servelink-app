@@ -1,7 +1,7 @@
 <div class="card">
   <header class="border-b">
     <h2>{{ _('Danger zone') }}</h2>
-    <p>{{ _('Permanently delete the project and all of its configuration, environments and deployments.') }}</p>
+    <p>{{ _('Permanently delete the team and all of its settings, projects and deployments.') }}</p>
   </header>
 
   <section class="space-y-6">
@@ -18,7 +18,7 @@
         dialog_attrs={"class": "max-w-md"}
       ) %}
         <div class="space-y-4" x-data="{ confirm: '' }">
-          <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>
+          <p>{{ _('This will delete the team, its configuration, projects anddeployments. This action cannot be undone.') }}</p>
           <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
           <form method="POST" action="{{ url_for('team.project_settings', project_name=project.name, _anchor='danger') }}">
             {{ delete_project_form.hidden_tag() }}

@@ -1,6 +1,6 @@
 {% macro logs(logs_list) -%}
 {%- for log in logs_list -%}
-<div class="flex items-start gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono">
+<div class="flex items-start gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono text-[13px]">
   <time
     class="text-muted-foreground whitespace-nowrap"
     datetime="{{ log.timestamp }}"

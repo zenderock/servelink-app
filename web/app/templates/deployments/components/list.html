@@ -32,7 +32,7 @@
         ) }}
         
         <a
-          href="{{ url_for('main.deployment', project_name=deployment.project.name, deployment_id=deployment.id) }}"
+          href="{{ url_for('team.deployment', project_name=deployment.project.name, deployment_id=deployment.id) }}"
           data-tooltip="{{ _('Deployment ID') }}"
         >
           <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
@@ -40,7 +40,7 @@
       
         {% if display_project %}
           <a
-            href="{{ url_for('main.project', project_name=deployment.project.name) }}"
+            href="{{ url_for('team.project', project_name=deployment.project.name) }}"
             class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
             data-tooltip="{{ _('Project') }}"
           >
@@ -50,7 +50,7 @@
         {% endif %}
         
         <a
-          href="{{ url_for('main.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
+          href="{{ url_for('team.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
           class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
           data-tooltip="{{ _('Environment') }}"
         >
@@ -195,22 +195,24 @@
   {% endif %}
 {% elif display_empty and project %}
   <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
-    <div class="max-w-sm text-center">
-      <h2 class="h4">{{ _('No deployments') }}</h2>
-      <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
-      {% from "components/dialog.html" import dialog %}
-      <button
-        type="button"
-        class="btn-sm mt-4"
-        onclick="
-          const dialog = document.getElementById('dialog-deploy');
-          dialog.dispatchEvent(new Event('dialog:opened'));
-          dialog.showModal();
-        "
-      >
-        {% include "shared/icons/cloud-upload.svg" %}
-        {{ _('Deploy') }}
-      </button>
+    <div class="max-w-sm">
+      <div class="text-center">
+        <h2 class="h4">{{ _('No deployments') }}</h2>
+        <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
+        {% from "components/dialog.html" import dialog %}
+        <button
+          type="button"
+          class="btn-sm mt-4"
+          onclick="
+            const dialog = document.getElementById('dialog-deploy');
+            dialog.dispatchEvent(new Event('dialog:opened'));
+            dialog.showModal();
+          "
+        >
+          {% include "shared/icons/cloud-upload.svg" %}
+          {{ _('Deploy') }}
+        </button>
+      </div>
       {% include "projects/partials/_deploy-dialog.html" %}
     </div>
   </section>

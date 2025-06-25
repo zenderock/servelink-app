@@ -1,7 +1,7 @@
 {% macro teaser(project) %}
 <header class="flex items-center gap-x-2 mb-4">
   <a
-    href="{{ url_for('main.project', project_name=project.name) }}"
+    href="{{ url_for('team.project', project_name=project.name) }}"
     class="flex items-center gap-x-2.5 mr-auto"
   >
     {% from "projects/components/thumbnail.html" import thumbnail %}

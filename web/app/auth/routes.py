@@ -18,25 +18,25 @@ from datetime import datetime
 @bp.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('main.index'))
+    return redirect(url_for('team.index'))
 
 
 @bp.route('/login')
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('team.index'))
     # form = LoginForm()
     # if form.validate_on_submit():
     #     send_login_email(form.email.data)
     #     flash(_("We've sent you an email with a link to log in."))
-    #     return redirect(url_for('main.index'))
+    #     return redirect(url_for('team.index'))
     return render_template('auth/login.html')
 
 
 @bp.route('/github')
 def github_login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('team.index'))
     
     # Store next page if provided
     next_page = request.args.get('next')
@@ -63,7 +63,7 @@ def github_callback():
     if not state or state != expected_state:
         flash(_('Invalid state parameter'), 'error')
         current_app.logger.error(f"Invalid state parameter: received {state}, expected {expected_state}")
-        return redirect(url_for('main.index'))
+        return redirect(url_for('team.index'))
 
     # Installation flow
     if 'installation_id' in request.args:
@@ -95,7 +95,7 @@ def github_callback():
     # OAuth login flow
     if 'code' in request.args:
         if current_user.is_authenticated:
-            return redirect(url_for('main.index'))
+            return redirect(url_for('team.index'))
     
         # Get the OAuth code from the query string
         code = request.args.get('code')
@@ -151,7 +151,7 @@ def github_callback():
 
     next_page = request.args.get('next')
     if not next_page or urlparse(next_page).netloc != '':
-        next_page = url_for('main.index')
+        next_page = url_for('team.index')
     return redirect(next_page)
 
 
@@ -184,11 +184,11 @@ def create_user(github_id: str, base_username: str, token: str | None, name: str
 # @bp.route('/login/<token>', methods=['GET', 'POST'])
 # def login_with_token(token):
 #     if current_user.is_authenticated:
-#         return redirect(url_for('main.index'))
+#         return redirect(url_for('team.index'))
 #     email = verify_login_token(token)
 #     if email is None:
 #         flash(_('Invalid token.'))
-#         return redirect(url_for('main.index'))
+#         return redirect(url_for('team.index'))
 #     else:
 #         user = db.session.scalar(
 #             select(User).where(User.email == email).limit(1)
@@ -201,5 +201,5 @@ def create_user(github_id: str, base_username: str, token: str | None, name: str
 #         login_user(user)
 #         next_page = request.args.get('next')
 #         if not next_page or urlparse(next_page).netloc != '':
-#             next_page = url_for('main.index')
+#             next_page = url_for('team.index')
 #         return redirect(next_page)

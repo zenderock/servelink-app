@@ -50,6 +50,15 @@ def load_user(id: int) -> User | None:
     return db.session.get(User, int(id))
 
 
+class Team(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), index=True)
+    slug: Mapped[str] = mapped_column(String(40), nullable=True, unique=True)
+    avatar_updated_at = db.Column(db.DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+
 class GithubInstallation(db.Model):
     installation_id: Mapped[int] = mapped_column(primary_key=True)
     _token: Mapped[str] = mapped_column('token', String(2048), nullable=True)

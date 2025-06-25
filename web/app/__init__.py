@@ -99,8 +99,8 @@ def create_app(config_class=Config):
     from app.api import bp as api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
 
-    from app.main import bp as main_bp
-    app.register_blueprint(main_bp)
+    from app.team import bp as team_bp
+    app.register_blueprint(team_bp)
 
     # from app.cli import register_commands
     # register_commands(app)

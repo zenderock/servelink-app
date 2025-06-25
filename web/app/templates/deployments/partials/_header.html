@@ -1,11 +1,11 @@
 <header class="flex items-center gap-x-4 justify-between">
   <h1 class="h1 flex items-center gap-x-3">
-    <a href="{{ url_for('main.project', project_name=deployment.project.name) }}" class="shrink-0">
+    <a href="{{ url_for('team.project', project_name=deployment.project.name) }}" class="shrink-0">
       {% from "projects/components/thumbnail.html" import thumbnail %}
       {{ thumbnail(deployment.project, size='md') }}
     </a>
     <span class="text-muted-foreground/25 font-normal">/</span>
-    <a href="{{ url_for('main.project_deployments', project_name=project.name) }}">
+    <a href="{{ url_for('team.project_deployments', project_name=project.name) }}">
       {{ _('Deployments') }}
     </a>
     <span class="text-muted-foreground/25 font-normal">/</span>
@@ -101,7 +101,7 @@
   <ul class="flex gap-x-6 items-start" id="deployment-details">
     <li>
       <a
-        href="{{ url_for('main.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
+        href="{{ url_for('team.project_deployments', project_name=deployment.project.name, environment=deployment.environment.slug) }}"
         class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
         data-tooltip="{{ _('Environment') }}"
       >

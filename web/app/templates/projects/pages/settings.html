@@ -4,7 +4,7 @@
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <header class="flex justify-between items-center">
     <h1 class="h1 flex items-center gap-x-3">
-      <a href="{{ url_for('main.project', project_name=project.name) }}" class="shrink-0">
+      <a href="{{ url_for('team.project', project_name=project.name) }}" class="shrink-0">
         {% from "projects/components/thumbnail.html" import thumbnail %}
         {{ thumbnail(project, size='md') }}
       </a>

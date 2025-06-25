@@ -5,7 +5,7 @@
   class="container max-w-screen-md mx-auto p-8 space-y-6"
   x-init
   @repo-selected="
-    const url = new URL('{{ url_for('main.new_project_details', _external=True) }}');
+    const url = new URL('{{ url_for('team.new_project_details', _external=True) }}');
     url.searchParams.set('repo_id', $event.detail.id);
     url.searchParams.set('repo_owner', $event.detail.owner);
     url.searchParams.set('repo_name', $event.detail.name);
@@ -39,7 +39,7 @@
   </ol>
 
   <div
-    hx-get="{{ url_for('main.repo_select') }}"
+    hx-get="{{ url_for('team.repo_select') }}"
     hx-trigger="load"
     hx-swap="outerHTML"
     class="flex items-center justify-center h-[296px] w-full"

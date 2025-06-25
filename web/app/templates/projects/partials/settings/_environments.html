@@ -10,8 +10,8 @@
 {% endif %}
 <form
   method="POST"
-  action="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
-  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='environment') }}"
+  action="{{ url_for('team.project_settings', project_name=project.name, fragment='environment') }}"
+  hx-post="{{ url_for('team.project_settings', project_name=project.name, fragment='environment') }}"
   hx-target="closest .card"
   hx-swap="outerHTML"
   hx-indicator="next .htmx-indicator"
@@ -196,8 +196,8 @@
                   <p>{{ _('To confirm, enter the environment identifier <b>"%(slug)s"</b> below.', slug=environment.slug) }}</p>
                   <form
                     method="POST"
-                    action="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
-                    hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='delete_environment') }}"
+                    action="{{ url_for('team.project_settings', project_name=project.name, fragment='delete_environment') }}"
+                    hx-post="{{ url_for('team.project_settings', project_name=project.name, fragment='delete_environment') }}"
                     hx-swap="outerHTML"
                     hx-target="closest .card"
                     hx-indicator="next .htmx-indicator"

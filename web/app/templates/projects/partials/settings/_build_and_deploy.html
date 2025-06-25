@@ -1,7 +1,7 @@
 <form
   method="POST"
-  action="{{ url_for('main.project_settings', project_name=project.name, fragment='build_and_deploy') }}"
-  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='build_and_deploy') }}"
+  action="{{ url_for('team.project_settings', project_name=project.name, fragment='build_and_deploy') }}"
+  hx-post="{{ url_for('team.project_settings', project_name=project.name, fragment='build_and_deploy') }}"
   x-data="{ changed: false }"
   @input="changed = true"
   @change="changed = true"

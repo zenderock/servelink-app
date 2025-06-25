@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, SelectField, SubmitField, FieldList, FormField, Form, BooleanField, FileField, HiddenField, TextAreaField
 from flask_wtf.file import FileAllowed
 from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Optional
-from sqlalchemy import select
+from sqlalchemy import select, func
 from flask_babel import _, lazy_gettext as _l
 from app import db
 from app.models import Project
@@ -51,7 +51,7 @@ def process_commands_and_root_directory(form, formdata):
             form.root_directory.data = None
 
 
-class EnvVarForm(Form):
+class ProjectEnvVarForm(Form):
     key = StringField(_l('Name'), validators=[
         DataRequired(),
         Length(min=1, max=100),
@@ -65,8 +65,8 @@ class EnvVarForm(Form):
     delete = BooleanField(_l('Delete'), default=False)
 
 
-class EnvVarsForm(FlaskForm):
-    env_vars = FieldList(FormField(EnvVarForm), min_entries=0)
+class ProjectEnvVarsForm(FlaskForm):
+    env_vars = FieldList(FormField(ProjectEnvVarForm), min_entries=0)
 
     def validate_env_vars(self, field):
         processed_pairs = set()
@@ -99,7 +99,7 @@ class EnvVarsForm(FlaskForm):
         process_env_vars(self, formdata)
 
 
-class EnvironmentForm(FlaskForm):
+class ProjectEnvironmentForm(FlaskForm):
     environment_id = HiddenField()
     color = SelectField(_l('Color'), validators=[DataRequired()], choices=[(color, color) for color in COLORS])
     name = StringField(_l('Name'), validators=[DataRequired(), Length(min=1, max=255)])
@@ -137,7 +137,7 @@ class EnvironmentForm(FlaskForm):
             raise ValidationError(_('This identifier is already in use by another environment.'))
 
 
-class DeleteEnvironmentForm(FlaskForm):
+class ProjectDeleteEnvironmentForm(FlaskForm):
     environment_id = HiddenField(validators=[DataRequired()])
     confirm = StringField(_l('Confirmation'), validators=[DataRequired()])
     submit = SubmitField(_l('Delete'))
@@ -154,7 +154,7 @@ class DeleteEnvironmentForm(FlaskForm):
             raise ValidationError(_('Environment identifier confirmation did not match.'))
 
 
-class BuildAndDeployForm(FlaskForm):
+class ProjectBuildAndProjectDeployForm(FlaskForm):
     framework = SelectField(
         _l('Framework presets'),
         choices=[
@@ -196,7 +196,7 @@ class BuildAndDeployForm(FlaskForm):
         process_commands_and_root_directory(self, formdata)
 
 
-class GeneralForm(FlaskForm):
+class ProjectGeneralForm(FlaskForm):
     name = StringField(_l('Project name'), validators=[
         DataRequired(),
         Length(min=1, max=100),
@@ -254,7 +254,7 @@ class ProjectForm(FlaskForm):
     build_command = StringField(_l('Build command'))
     pre_deploy_command = StringField(_l('Pre-deploy command'))
     start_command = StringField(_l('Start command'))
-    env_vars = FieldList(FormField(EnvVarForm))
+    env_vars = FieldList(FormField(ProjectEnvVarForm))
     submit = SubmitField(_l('Save'))
 
     validate_root_directory = validate_root_directory
@@ -262,7 +262,7 @@ class ProjectForm(FlaskForm):
     def validate_name(self, field):
         project = db.session.scalar(
             select(Project).where(
-                Project.name == field.data,
+                func.lower(Project.name) == field.data.lower(),
                 Project.status != 'deleted'
             )
         )
@@ -275,18 +275,18 @@ class ProjectForm(FlaskForm):
         process_commands_and_root_directory(self, formdata)
 
 
-class DeleteProjectForm(FlaskForm):
-    project_name = HiddenField(_l('Project Name'), validators=[DataRequired()])
+class ProjectDeleteForm(FlaskForm):
+    name = HiddenField(_l('Project Name'), validators=[DataRequired()])
     confirm = StringField(_l('Confirmation'), validators=[DataRequired()])
     submit = SubmitField(_l('Delete'), name='delete_project')
 
     def validate_confirm(self, field):
-        if field.data != self.project_name.data:
+        if field.data != self.name.data:
             raise ValidationError(_('Project name confirmation did not match.'))
 
 
-class DeployForm(FlaskForm):
-    environment_slug = SelectField(_l('Environment'), choices=[], validators=[DataRequired()])
+class ProjectDeployForm(FlaskForm):
+    environment_id = SelectField(_l('Environment'), choices=[], validators=[DataRequired()])
     commit = HiddenField(_l('Commit'), validators=[DataRequired()])
     submit = SubmitField(_l('Deploy'))
 
@@ -317,5 +317,5 @@ class DeployForm(FlaskForm):
         if not environment:
             raise ValidationError(_('Environment not found.'))
         
-        if environment['slug'] != self.environment_slug.data:
+        if environment['id'] != self.environment_id.data:
             raise ValidationError(_('Environment does not match branch.'))

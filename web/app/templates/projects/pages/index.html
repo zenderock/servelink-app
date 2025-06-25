@@ -12,7 +12,7 @@
     <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Environments') }}</h2>
       <a
-        href="{{ url_for('main.project_settings', project_name=project.name) }}#environments"
+        href="{{ url_for('team.project_settings', project_name=project.name) }}#environments"
         class="btn-sm"
       >
         {% include "shared/icons/settings.svg" %}
@@ -25,7 +25,7 @@
         <li class="bg-card text-card-foreground rounded-xl border shadow-sm p-4">
           <header class="flex items-center gap-x-2 mb-4 truncate">
             <a
-              href="{{ url_for('main.project_deployments', project_name=project.name, environment=environment.slug) }}"
+              href="{{ url_for('team.project_deployments', project_name=project.name, environment=environment.slug) }}"
               class="flex items-center gap-x-2 mr-auto h-4 truncate"
             >
               <span class="w-4 h-4 flex items-center justify-center"><span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
@@ -93,7 +93,7 @@
       {% if deployments %}
         <footer class="flex justify-end">
           <a
-            href="{{ url_for('main.project_deployments', project_name=project.name) }}"
+            href="{{ url_for('team.project_deployments', project_name=project.name) }}"
             class="btn-sm-outline"
             aria-label="{{ _('All deployments') }}"
           >

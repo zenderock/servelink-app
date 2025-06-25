@@ -10,7 +10,7 @@
   }
 ) %}
   <div
-    hx-get="{{ url_for('main.repo_select', account=repo_owner) }}"
+    hx-get="{{ url_for('team.repo_select', account=repo_owner) }}"
     hx-trigger="dialog:opened from:closest dialog once"
     class="flex items-start justify-center h-[296px]"
   >
@@ -39,8 +39,8 @@
 <form
   method="POST"
   enctype="multipart/form-data"
-  action="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
-  hx-post="{{ url_for('main.project_settings', project_name=project.name, fragment='general') }}"
+  action="{{ url_for('team.project_settings', project_name=project.name, fragment='general') }}"
+  hx-post="{{ url_for('team.project_settings', project_name=project.name, fragment='general') }}"
   hx-indicator="next .htmx-indicator"
   hx-swap="outerHTML"
   x-data="{

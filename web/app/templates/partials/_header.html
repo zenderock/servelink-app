@@ -2,7 +2,7 @@
 	<div class="flex items-center justify-between gap-x-4 py-4">
 		<nav class="flex items-center gap-x-2.5">
 			<a
-				href="{{ url_for('main.index') }}"
+				href="{{ url_for('team.index') }}"
 				class="w-6 h-8 shrink-0 flex items-center justify-center"
 				aria-label="{{ config.APP_NAME }}"
 			>
@@ -16,7 +16,7 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.index') }}" class="btn-sm-ghost">
+					<a href="{{ url_for('team.index') }}" class="btn-sm-ghost">
 						<img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded -ml-1"/>
 						{{ current_user.username }}
 					</a>
@@ -38,7 +38,7 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 
 				<div class="flex items-center">
-					<a href="{{ url_for('main.project', project_name=project.name) }}" class="btn-sm-ghost">
+					<a href="{{ url_for('team.project', project_name=project.name) }}" class="btn-sm-ghost">
 						{% from "projects/components/thumbnail.html" import thumbnail %}
 						{{ thumbnail(project, size="xs", class="-ml-1") }}
 						{{ project.name }}
@@ -57,7 +57,7 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				
 				<div class="flex items-center">
-					<a href="{{ url_for('main.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-sm-ghost">
+					<a href="{{ url_for('team.deployment', project_name=project.name, deployment_id=deployment.id) }}" class="btn-sm-ghost">
 						{% from "shared/deployment/components/status.html" import status %}
 						{{ status(
               conclusion=deployment.conclusion,
@@ -105,7 +105,7 @@
 						<div class="text-muted-foreground">{{ current_user.email }}</div>
 					</header>
 					<hr role="separator"/>
-					<a href="#" role="menuitem">{{ _('Account') }}</a>
+					<a href="{{ url_for('team.settings') }}" role="menuitem">{{ _('Account') }}</a>
 					<hr role="separator"/>
 					<a href="{{ url_for('auth.logout') }}" role="menuitem">
 						{{ _('Sign out') }}
