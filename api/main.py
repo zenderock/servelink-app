@@ -1,33 +1,39 @@
-from fastapi import FastAPI, Query, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 import asyncio
 import redis.asyncio as redis
 import os
 import time
 from utils.token import verify_token
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from routers import auth, team, github
+from dependencies import templates
+from config import get_settings
+from db import get_db
 
 app = FastAPI()
 
-base_domain = os.getenv('BASE_DOMAIN', 'localhost')
-url_scheme = os.getenv('URL_SCHEME', 'http')
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[f"{url_scheme}://app.{base_domain}"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-)
+# Add session middleware for flash messages
+settings = get_settings()
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(auth.router)
+app.include_router(team.router)
+app.include_router(github.router)
+
+# Add this after including routers
+print("Registered routes:")
+for route in app.routes:
+    if hasattr(route, 'methods'):
+        print(f"{route.methods} {route.path}")
 
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
 redis_client = redis.from_url(redis_url, decode_responses=True)
-
-templates = Jinja2Templates(directory="../shared/templates")
-def translate(text: str) -> str:
-    return text
-templates.env.globals['_'] = translate
 
 @app.get("/events/deployments/{token}")
 async def stream_deployment_events(
@@ -77,7 +83,7 @@ async def stream_deployment_events(
                             streams[stream_name] = message_id
 
                         if logs_list:
-                            logs_html = templates.get_template("shared/deployment/components/logs.html").module.logs(logs_list)
+                            logs_html = templates.get_template("deployment/components/logs.html").module.logs(logs_list)
                             logs_html = logs_html.replace('\n', '').replace('\r', '')
 
                             yield f"id: {last_message_id}\n"
@@ -120,6 +126,7 @@ async def stream_project_events(
         
         streams = { status_stream: start_position }
         
+        
         try:
             while True:
                 if time.time() > token_exp_time:
@@ -140,7 +147,7 @@ async def stream_project_events(
                         if (message_fields.get('event_type') == 'deployment_created'):
                             yield f"data: {message_fields.get('deployment_id')}\n\n"
                         else:
-                            status_html = templates.get_template("shared/deployment/components/status.html").module.status(
+                            status_html = templates.get_template("deployment/components/options.html").module.status(
                                 conclusion=message_fields.get("deployment_status"),
                                 compact=True,
                                 tooltip=True,
@@ -168,6 +175,12 @@ async def stream_project_events(
     )
 
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+@app.get("/db-test")
+async def db_test(db: AsyncSession = Depends(get_db)):
+    """Simple endpoint to check Postgres connectivity using SQLAlchemy."""
+    try:
+        result = await db.execute(text("SELECT 1"))
+        value = result.scalar()
+        return {"db_alive": value == 1}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))

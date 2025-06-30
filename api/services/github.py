@@ -1,4 +1,4 @@
-import requests
+import httpx
 import jwt
 import time
 
@@ -38,7 +38,7 @@ class GitHub:
 
     def get_user_access_token(self, code: str) -> str | None:
         """Exchange OAuth code for access token."""
-        response = requests.post(
+        response = httpx.post(
             'https://github.com/login/oauth/access_token',
             headers={'Accept': 'application/json'},
             data={
@@ -52,7 +52,7 @@ class GitHub:
 
     def get_user_info(self, user_access_token: str) -> tuple[str, str, str | None]:
         """Get user ID and username from GitHub."""
-        response = requests.get(
+        response = httpx.get(
             'https://api.github.com/user',
             headers={'Authorization': f'Bearer {user_access_token}'}
         )
@@ -66,7 +66,7 @@ class GitHub:
 
     def get_user_primary_email(self, user_access_token: str) -> str | None:
         """Get user's primary verified email."""
-        response = requests.get(
+        response = httpx.get(
             'https://api.github.com/user/emails',
             headers={'Authorization': f'Bearer {user_access_token}'}
         )
@@ -80,7 +80,7 @@ class GitHub:
     
     def get_user_installations(self, user_access_token: str) -> list:
         """Get all installations the authenticated user has access to."""
-        response = requests.get(
+        response = httpx.get(
             'https://api.github.com/user/installations',
             headers={'Authorization': f'Bearer {user_access_token}'}
         )
@@ -89,7 +89,7 @@ class GitHub:
 
     def search_user_repositories(self, user_access_token: str, owner: str, keywords: str = "", per_page: int = 5) -> list[dict]:
         """Search repositories for a specific owner."""
-        response = requests.get(
+        response = httpx.get(
             'https://api.github.com/search/repositories',
             params={
                 'q': f"{keywords} in:name org:{owner} fork:true".strip(),
@@ -104,7 +104,7 @@ class GitHub:
 
     def get_repository(self, user_access_token: str, repo_id: int) -> dict:
         """Get a repository by its ID."""
-        response = requests.get(
+        response = httpx.get(
             f'https://api.github.com/repositories/{repo_id}',
             headers={'Authorization': f'Bearer {user_access_token}'}
         )
@@ -113,7 +113,7 @@ class GitHub:
     
     def get_repository_branches(self, user_access_token: str, repo_id: int) -> list:
         """Get branches for a repository."""
-        response = requests.get(
+        response = httpx.get(
             f'https://api.github.com/repositories/{repo_id}/branches',
             headers={'Authorization': f'Bearer {user_access_token}'}
         )
@@ -140,7 +140,7 @@ class GitHub:
         if search:
             params['q'] = search
 
-        response = requests.get(
+        response = httpx.get(
             f'https://api.github.com/repositories/{repo_id}/commits',
             headers={'Authorization': f'Bearer {user_access_token}'},
             params=params
@@ -159,7 +159,7 @@ class GitHub:
         if branch:
             params['ref'] = branch
         
-        response = requests.get(
+        response = httpx.get(
             url,
             headers={'Authorization': f'Bearer {user_access_token}'},
             params=params
@@ -169,7 +169,7 @@ class GitHub:
 
     def get_installation(self, installation_id: str) -> dict:
         """Get installation details from GitHub."""
-        response = requests.get(
+        response = httpx.get(
             f'https://api.github.com/app/installations/{installation_id}',
             headers={ 'Authorization': f'Bearer {self.jwt_token}' }
         )
@@ -178,7 +178,7 @@ class GitHub:
     
     def get_installation_access_token(self, installation_id: str) -> dict[str, str | dict]:
         """Get an installation access token."""
-        response = requests.post(
+        response = httpx.post(
             f'https://api.github.com/app/installations/{installation_id}/access_tokens',
             headers={ 'Authorization': f'Bearer {self.jwt_token}' }
         )
@@ -187,7 +187,7 @@ class GitHub:
     
     def get_installation_repositories(self, installation_access_token: str) -> list[dict]:
         """Get repositories for a specific installation."""
-        response = requests.get(
+        response = httpx.get(
             'https://api.github.com/installation/repositories',
             headers={ 'Authorization': f'Bearer {installation_access_token}' }
         )
@@ -196,7 +196,7 @@ class GitHub:
 
     def get_repository_installation(self, repo_full_name: str) -> dict:
         """Retrieve the GitHub App installation details for a given repository."""
-        response = requests.get(
+        response = httpx.get(
             f'https://api.github.com/repos/{repo_full_name}/installation',
             headers={ 'Authorization': f'Bearer {self.jwt_token}' }
         )

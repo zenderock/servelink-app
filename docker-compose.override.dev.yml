@@ -1,20 +1,19 @@
 services:
-  app:
-    build:
-      dockerfile: Docker/Dockerfile.app.dev
-    volumes:
-      - ./web:/app
-      - ./shared:/shared
-      - ./data/db:/data/db
-      - ./data/traefik:/data/traefik
-      - ./data/upload:/app/app/static/upload
+  # app:
+  #   build:
+  #     dockerfile: Docker/Dockerfile.app.dev
+  #   volumes:
+  #     - ./web:/app
+  #     - ./shared:/shared
+  #     - ./data/db:/data/db
+  #     - ./data/traefik:/data/traefik
+  #     - ./data/upload:/app/app/static/upload
   
   api:
     build:
       dockerfile: Docker/Dockerfile.api.dev
     volumes:
       - ./api:/app
-      - ./shared:/shared
   
   traefik:
     volumes:

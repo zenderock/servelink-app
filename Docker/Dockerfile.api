@@ -8,12 +8,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Copy project and shared folder
+# Copy project
 COPY ./api/ .
-COPY ./shared/ /shared/
 
 # Set permissions
-RUN chown -R appuser:appgroup /app /shared
+RUN chown -R appuser:appgroup /app
 
 # Set UV cache directory to writable location
 RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
@@ -24,5 +23,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Run FastAPI with uv
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migrations then start FastAPI
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]

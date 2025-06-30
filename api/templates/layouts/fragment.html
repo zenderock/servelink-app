@@ -1,0 +1,11 @@
+{% if fragment_content %}
+  {{ fragment_content | safe }}
+{% else %}
+  {% block content %}{% endblock %}
+{% endif %}
+
+{% from 'components/toast.html' import toaster %}
+{{ toaster(
+  toasts=get_flashed_messages(),
+  attrs={"hx-swap-oob": "beforeend"}
+) }}

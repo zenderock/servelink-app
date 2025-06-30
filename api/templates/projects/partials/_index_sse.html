@@ -1,0 +1,16 @@
+<div
+  hx-ext="sse"
+  sse-connect="{{ config.API_BASE_URL }}/events/projects/{{ bearer_token }}"
+>
+  <div
+    hx-trigger="sse:session_expired"
+    hx-get="{{ url_for('team.project', project_name=project.name, fragment='sse') }}"
+    hx-swap="outerHTML"
+    hx-target="closest div"
+  ></div>
+  <div
+    hx-trigger="sse:deployment_created, sse:deployment_status_update"
+    hx-get="{{ url_for('team.project', project_name=project.name, fragment='deployments') }}"
+    hx-target="#deployments"
+  ></div>
+</div>

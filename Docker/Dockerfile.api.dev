@@ -16,5 +16,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Install dependencies and run FastAPI with uvicorn
-ENTRYPOINT ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+# Run migrations then start FastAPI with reload
+ENTRYPOINT ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload"] 

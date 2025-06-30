@@ -1,38 +1,38 @@
 services:
-  app:
-    container_name: app
-    build:
-      context: .
-      dockerfile: Docker/Dockerfile.app
-    restart: always
-    depends_on:
-      - redis
-      - docker-proxy
-    networks:
-      - default
-      - internal
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=sqlite:////data/db/local.sqlite3
-      - UPLOAD_DIR=/app/app/static/upload
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - DOCKER_HOST=tcp://docker-proxy:2375
-      - REDIS_URL=redis://redis:6379
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
-      - "traefik.http.routers.app.service=app@docker"
-      - "traefik.http.services.app.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_default"
-      - "traefik.http.middlewares.compress.compress=true"
-      - "traefik.http.routers.app.middlewares=compress"
-      - "traefik.http.routers.app-static.rule=Host(`app.${BASE_DOMAIN}`) && PathPrefix(`/static`)"
-      - "traefik.http.routers.app-static.priority=100"
-      - "traefik.http.routers.app-static.middlewares=static-cache"
-      - "traefik.http.routers.app-static.service=app@docker"
-      - "traefik.http.middlewares.static-cache.headers.customresponseheaders.Cache-Control=public,max-age=31536000,immutable"
-      - "traefik.http.routers.app.entrypoints=web"
+  # app:
+  #   container_name: app
+  #   build:
+  #     context: .
+  #     dockerfile: Docker/Dockerfile.app
+  #   restart: always
+  #   depends_on:
+  #     - redis
+  #     - docker-proxy
+  #   networks:
+  #     - default
+  #     - internal
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - DATABASE_URL=sqlite:////data/db/local.sqlite3
+  #     - UPLOAD_DIR=/app/app/static/upload
+  #     - TRAEFIK_CONFIG_DIR=/data/traefik
+  #     - DOCKER_HOST=tcp://docker-proxy:2375
+  #     - REDIS_URL=redis://redis:6379
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
+  #     - "traefik.http.routers.app.service=app@docker"
+  #     - "traefik.http.services.app.loadbalancer.server.port=8000"
+  #     - "traefik.docker.network=devpush_default"
+  #     - "traefik.http.middlewares.compress.compress=true"
+  #     - "traefik.http.routers.app.middlewares=compress"
+  #     - "traefik.http.routers.app-static.rule=Host(`app.${BASE_DOMAIN}`) && PathPrefix(`/static`)"
+  #     - "traefik.http.routers.app-static.priority=100"
+  #     - "traefik.http.routers.app-static.middlewares=static-cache"
+  #     - "traefik.http.routers.app-static.service=app@docker"
+  #     - "traefik.http.middlewares.static-cache.headers.customresponseheaders.Cache-Control=public,max-age=31536000,immutable"
+  #     - "traefik.http.routers.app.entrypoints=web"
 
   api:
     container_name: api
@@ -42,6 +42,7 @@ services:
     restart: always
     depends_on:
       - redis
+      - pgsql
     networks:
       - default
       - internal
@@ -106,10 +107,19 @@ services:
       - 8.8.8.8
       - 8.8.4.4
 
+  pgsql:
+    container_name: pgsql
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - internal
+    env_file:
+      - .env
+    volumes:
+      - devpush-db:/var/lib/postgresql/data
+
 volumes:
   devpush-db:
-  devpush-traefik:
-  devpush-upload:
 
 networks:
   default:

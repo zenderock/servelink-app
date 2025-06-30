@@ -1,0 +1,12 @@
+<a href="{{ request.url_for('team_index') }}" role="menuitem">
+  <img src="{{ current_user.avatar }}" alt="{{ current_user.email }}" class="block w-5 h-5 rounded bg-muted"/>
+  {{ current_user.username }}
+  <span class="h-4 w-4 ml-auto text-muted-foreground">
+    {% include "icons/check.svg" %}
+  </span>
+</a>
+<hr role="separator"/>
+<button role="menuitem" disabled>
+  {{ _('Create a team') }}
+  <span class="badge text-popover h-4 px-1">{{ _('Soon') }}</span>
+</a>

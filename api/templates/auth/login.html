@@ -1,0 +1,11 @@
+{% extends "layouts/app.html" %}
+
+{% block app_content %}
+<div class="flex items-center justify-center h-screen">
+    <div class="max-w-md w-full space-y-0">
+        <a href="{{ request.url_for('github_login') }}" class="btn btn-primary w-full">
+            Login with GitHub
+        </a>
+    </div>
+</div>
+{% endblock %}
