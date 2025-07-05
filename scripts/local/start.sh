@@ -2,7 +2,9 @@
 
 echo "Starting local environment..."
 
-mkdir -p ./data/{db,traefik,upload}
+mkdir -p ./data/{traefik,upload}
+chown -R 1000:1000 ./data/upload
+chown -R 1000:1000 ./data/traefik
 
 NO_CACHE=true
 PRUNE=false
@@ -17,5 +19,5 @@ CACHE_FLAG=""
 [ "$PRUNE" = true ] && docker image prune -f
 
 docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml build $CACHE_FLAG runner && \
-docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml down -v && \
+docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml down && \
 docker-compose -f docker-compose.yml -f docker-compose.override.dev.yml up --build --force-recreate

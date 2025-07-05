@@ -1,0 +1,280 @@
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationInfo, AfterValidator, BeforeValidator
+from typing import Annotated, Literal
+import re
+from fastapi import UploadFile
+from sqlalchemy import select, func
+from pydantic_core import PydanticCustomError
+from pathlib import Path
+
+from dependencies import get_translation as _
+from models import Project
+
+ALLOWED_IMG_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def _validate_root_directory(value: str | None) -> str | None:
+    if not value:
+        return value
+    
+    path = value.strip().strip("/")
+    if ".." in path or "/./" in path or "/../" in path:
+        raise ValueError("Invalid path: must be a valid subdirectory relative to repository root")
+    if "//" in path:
+        raise ValueError("Invalid path: cannot contain consecutive slashes")
+    if not re.match(r'^[a-zA-Z0-9_\-./]*$', path):
+        raise ValueError("Root directory can only contain letters, numbers, dots, hyphens, underscores, and forward slashes")
+    return path
+
+RootDir = Annotated[str, AfterValidator(_validate_root_directory)]
+
+
+def _clean_env_vars(value: list["ProjectEnvVarForm"]) -> list["ProjectEnvVarForm"]:
+    return [
+        item for item in value
+        if (item.key or "").strip() and not item.delete
+    ]
+
+def _unique_env_vars(value: list["ProjectEnvVarForm"]) -> list["ProjectEnvVarForm"]:
+    seen, errs = set(), []
+    for idx, item in enumerate(value):
+        key = (item.key, item.environment.strip())
+        if key in seen:
+            errs.append(
+                {"loc": ("env_vars", idx, "key"),
+                 "msg": _("Duplicate key for environment"),
+                 "type": "value_error.duplicate"}
+            )
+        else:
+            seen.add(key)
+    if errs:
+        raise PydanticCustomError("duplicate_env_var", "", errs)
+    return value
+
+EnvVarList = Annotated[
+    list["ProjectEnvVarForm"],
+    BeforeValidator(_clean_env_vars),
+    AfterValidator(_unique_env_vars),
+]
+
+
+async def _validate_project_name(value: str, info: ValidationInfo) -> str:
+    if not re.match(r'^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$', value):
+        raise ValueError("Project names can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen.")
+    
+    db = info.context.get("db")
+    if not db:
+        raise ValueError("Database sessions is required for project name validation")
+    
+    current_user_id = info.context.get("current_user").id
+    if not current_user_id:
+        raise ValueError("Current user is required for project name validation")
+
+    result = await db.execute(
+        select(Project).where(
+            func.lower(Project.name) == value.lower(),
+            Project.user_id == current_user_id,
+            Project.status != 'deleted'
+        )
+    )
+    if result.scalar_one_or_none():
+        raise ValueError(_("A project with this name already exists."))
+
+    return value
+
+ProjectName = Annotated[str, AfterValidator(_validate_project_name)]
+
+
+class ProjectEnvVarForm(BaseModel):
+    key: str = Field(..., min_length=1, max_length=100)
+    value: str | None = None
+    environment: str = ""
+    delete: bool = False
+
+    @field_validator("key", "value", mode="before")
+    @classmethod
+    def strip_whitespace(cls, value: str | None) -> str | None:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, value: str) -> str:
+        if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', value):
+            raise ValueError("Keys can only contain letters, numbers and underscores. They can not start with a number.")
+        return value
+    
+
+class ProjectEnvVarsForm(BaseModel):
+    env_vars: EnvVarList = Field(default_factory=list)
+
+
+class ProjectEnvironmentForm(BaseModel):
+    environment_id: str | None = None
+    color: Literal["red", "blue", "green", "yellow", "purple", "orange"] = Field(..., description="Environment color")
+    name: str = Field(..., min_length=1, max_length=255)
+    slug: str = Field(..., min_length=1, max_length=255)
+    branch: str = Field(..., min_length=1, max_length=255)
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str, info: ValidationInfo) -> str:
+        if not re.match(r'^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$', value):
+            raise ValueError(_("Environment IDs can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen."))
+        
+        project = info.context.get("project")
+        if not project:
+            raise ValueError("Project context is required for environment validation")
+        
+        if info.data.get("environment_id"):
+            environment = project.get_environment_by_id(info.data.get("environment_id"))
+            
+            if value != environment.get("slug") and environment.get("id") == "prod":
+                raise ValueError(_("The production environment identifier cannot be modified."))
+
+        # New environment
+        if project.has_active_environment_with_slug(value):
+            raise ValueError(_("This identifier is already in use by another environment."))
+        
+        return value
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str, info: ValidationInfo) -> str:
+        project = info.context.get("project")
+        if not project:
+            raise ValueError("Project context is required for environment validation")
+        
+        if info.data.get("environment_id") and project:
+            environment = project.get_environment_by_id(info.data.get("environment_id"))
+            if environment.get("id") == "prod" and value != environment.get("name"):
+                raise ValueError(_("The production environment name cannot be modified."))
+        
+        return value
+
+
+
+class ProjectDeleteEnvironmentForm(BaseModel):
+    environment_id: str = Field(..., min_length=1)
+    confirm: str = Field(..., min_length=1)
+
+    @field_validator("confirm")
+    @classmethod
+    def validate_confirm(cls, value: str, info: ValidationInfo) -> str:
+        project = info.context.get("project")
+        if not project:
+            raise ValueError("Project context is required for environment validation")
+        
+        environment = project.get_environment_by_id(info.data.get("environment_id"))
+        if not environment:
+            raise ValueError(_("Environment not found."))
+        
+        if value != environment.get("slug"):
+            raise ValueError(_("Environment identifier confirmation did not match."))
+        
+        return value
+
+
+class ProjectBuildAndDeployForm(BaseModel):
+    framework: Literal["flask", "django", "fastapi", "python"] = Field(..., description="Framework preset")
+    runtime: Literal["python-3", "python-2", "pypy"] = Field(..., description="Runtime version")
+    use_custom_root_directory: bool = False
+    root_directory: RootDir | None = Field(None, max_length=255)
+    use_custom_build_command: bool = False
+    use_custom_pre_deploy_command: bool = False
+    use_custom_start_command: bool = False
+    build_command: str | None = None
+    pre_deploy_command: str | None = None
+    start_command: str | None = None
+
+    @model_validator(mode="after")
+    def clear_cmds(self) -> "ProjectBuildAndDeployForm":
+        if not self.use_custom_build_command:
+            self.build_command = None
+        if not self.use_custom_pre_deploy_command:
+            self.pre_deploy_command = None
+        if not self.use_custom_start_command:
+            self.start_command = None
+        return self
+
+
+class ProjectGeneralForm(BaseModel):
+    name: ProjectName = Field(..., min_length=1, max_length=100)
+    avatar: UploadFile | None = None
+    delete_avatar: bool = False
+    repo_id: int = Field(..., gt=0)
+
+    @field_validator("avatar")
+    @classmethod
+    def validate_avatar(cls, file: UploadFile | None):
+        if file and Path(file.filename).suffix.lower() not in ALLOWED_IMG_EXT:
+            raise ValueError(_("Images only (jpg, jpeg, png, gif, webp)"))
+        return file
+
+
+class ProjectForm(BaseModel):
+    name: ProjectName = Field(..., min_length=1, max_length=100)
+    repo_id: int = Field(..., gt=0)
+    production_branch: str = Field(..., min_length=1, max_length=255)
+    framework: Literal["flask", "django", "fastapi", "python"]
+    runtime: Literal["python-3", "python-2", "pypy"]
+    use_custom_root_directory: bool = False
+    root_directory: RootDir | None = Field(None, max_length=255)
+    use_custom_build_command: bool = False
+    use_custom_pre_deploy_command: bool = False
+    use_custom_start_command: bool = False
+    build_command: str | None = None
+    pre_deploy_command: str | None = None
+    start_command: str | None = None
+    env_vars: EnvVarList = Field(default_factory=list)
+    
+    @model_validator(mode="after")
+    def clear_cmds(self) -> "ProjectBuildAndDeployForm":
+        if not self.use_custom_build_command:
+            self.build_command = None
+        if not self.use_custom_pre_deploy_command:
+            self.pre_deploy_command = None
+        if not self.use_custom_start_command:
+            self.start_command = None
+        return self
+
+
+# class ProjectDelete(BaseModel):
+#     name: str = Field(..., min_length=1)
+#     confirm: str = Field(..., min_length=1)
+
+#     @validator('confirm')
+#     def validate_confirm_matches_name(cls, v, values):
+#         if 'name' in values and v != values['name']:
+#             raise ValueError('Project name confirmation did not match.')
+#         return v
+
+
+# class ProjectDeploy(BaseModel):
+#     environment_id: str = Field(..., min_length=1)
+#     commit: str = Field(..., min_length=1)
+
+#     @validator('commit')
+#     def validate_commit_format(cls, v):
+#         if ':' not in v:
+#             raise ValueError('Invalid commit format.')
+        
+#         parts = v.split(':', 1)
+#         if len(parts) != 2:
+#             raise ValueError('Invalid commit format.')
+        
+#         branch, sha = parts
+        
+#         if not branch.strip():
+#             raise ValueError('Branch cannot be empty.')
+        
+#         if not sha.strip():
+#             raise ValueError('Commit SHA cannot be empty.')
+        
+#         if len(sha) != 40:
+#             raise ValueError('Commit SHA must be 40 characters long.')
+        
+#         if not re.match(r'^[0-9a-fA-F]{40}$', sha):
+#             raise ValueError('Invalid commit SHA format.')
+        
+#         return v
+
+

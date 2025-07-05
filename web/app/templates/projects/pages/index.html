@@ -12,7 +12,7 @@
     <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Environments') }}</h2>
       <a
-        href="{{ url_for('team.project_settings', project_name=project.name) }}#environments"
+        href="{# {{ url_for('team.project_settings', project_name=project.name) }} environments#}"
         class="btn-sm"
       >
         {% include "icons/settings.svg" %}

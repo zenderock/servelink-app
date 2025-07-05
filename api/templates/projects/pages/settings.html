@@ -4,12 +4,13 @@
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <header class="flex justify-between items-center">
     <h1 class="h1 flex items-center gap-x-3">
-      <a href="{{ url_for('team.project', project_name=project.name) }}" class="shrink-0">
-        {% from "projects/components/thumbnail.html" import thumbnail %}
+      <a href="{{ url_for('project_index', project_name=project.name) }}" class="shrink-0">
+        {% from "projects/components/thumbnail.html" import thumbnail with context %}
         {{ thumbnail(project, size='md') }}
       </a>
       <span class="text-muted-foreground/25 font-normal">/</span>
       {{ _('Settings') }}
+      {{ project.id }}
     </h1>
   </header>
 
@@ -19,9 +20,11 @@
       <a href="#environment-variables" class="btn-sm-ghost justify-start">{{ _('Environment variables') }}</a>
       <a href="#environments" class="btn-sm-ghost justify-start">{{ _('Environments') }}</a>
       <a href="#build-and-deploy" class="btn-sm-ghost justify-start">{{ _('Build & Deploy') }}</a>
-      <a href="#danger" class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">{{ _('Danger') }}</a>
+      <a href="#danger"
+        class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">{{
+        _('Danger') }}</a>
     </nav>
-    
+
     <div class="space-y-6 w-full form">
       {# GENERAL #}
       <section class="relative rounded-xl scroll-mt-[101px]" id="general">

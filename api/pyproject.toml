@@ -22,4 +22,11 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "humanize>=4.12.3",
     "python-multipart>=0.0.20",
+    "starlette-wtf>=0.4.5",
+    "arq>=0.25.0",
+    "aiodocker>=0.24.0",
+    "greenlet>=3.2.3",
+    "watchfiles>=1.1.0",
+    "pillow>=11.3.0",
+    "types-pillow>=10.2.0.20240822",
 ]

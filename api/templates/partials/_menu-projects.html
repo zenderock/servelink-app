@@ -1,4 +1,4 @@
-{% from "projects/components/thumbnail.html" import thumbnail %}
+{% from "projects/components/thumbnail.html" import thumbnail with context %}
 <span role="menuitem" class="flex items-center gap-x-1">
   {{ thumbnail(project, size='xs') }}
   {{ project.name }}
@@ -6,14 +6,14 @@
     {% include "icons/check.svg" %}
   </span>
 </span>
-{% for other_project in get_latest_projects(project) %}
-  <a href="{{ url_for('team.project', project_name=other_project.name) }}" role="menuitem">
+{% for other_project in latest_projects %}
+  <a href="{{ url_for('project_index', project_name=other_project.name) }}" role="menuitem">
     {{ thumbnail(other_project, size="xs") }}
     {{ other_project.name }}
     <span class="h-4 w-4 ml-auto"></span>
   </a>
 {% endfor %}
 <hr role="separator"/>
-<a href="{{ url_for('team_new_project') }}" role="menuitem">
+<a href="{{ url_for('project_new') }}" role="menuitem">
   {{ _('Add new project') }}
 </a>

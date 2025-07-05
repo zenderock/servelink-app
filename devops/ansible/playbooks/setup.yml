@@ -121,7 +121,6 @@
     - name: Create data directories
       become: yes
       loop:
-        - /srv/devpush/db
         - /srv/devpush/traefik
         - /srv/devpush/upload
       file:

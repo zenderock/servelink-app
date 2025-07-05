@@ -36,7 +36,7 @@ class GitHub:
         
         return self._jwt_token
 
-    def get_user_access_token(self, code: str) -> str | None:
+    async def get_user_access_token(self, code: str) -> str | None:
         """Exchange OAuth code for access token."""
         response = httpx.post(
             'https://github.com/login/oauth/access_token',
@@ -50,7 +50,7 @@ class GitHub:
         response.raise_for_status()
         return response.json().get('access_token')
 
-    def get_user_info(self, user_access_token: str) -> tuple[str, str, str | None]:
+    async def get_user_info(self, user_access_token: str) -> tuple[str, str, str | None]:
         """Get user ID and username from GitHub."""
         response = httpx.get(
             'https://api.github.com/user',
@@ -64,7 +64,7 @@ class GitHub:
             user_info.get('name')
         )
 
-    def get_user_primary_email(self, user_access_token: str) -> str | None:
+    async def get_user_primary_email(self, user_access_token: str) -> str | None:
         """Get user's primary verified email."""
         response = httpx.get(
             'https://api.github.com/user/emails',
@@ -78,7 +78,7 @@ class GitHub:
         )
         return primary_email.get('email') if primary_email else None
     
-    def get_user_installations(self, user_access_token: str) -> list:
+    async def get_user_installations(self, user_access_token: str) -> list:
         """Get all installations the authenticated user has access to."""
         response = httpx.get(
             'https://api.github.com/user/installations',
@@ -87,7 +87,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()['installations']
 
-    def search_user_repositories(self, user_access_token: str, owner: str, keywords: str = "", per_page: int = 5) -> list[dict]:
+    async def search_user_repositories(self, user_access_token: str, owner: str, keywords: str = "", per_page: int = 5) -> list[dict]:
         """Search repositories for a specific owner."""
         response = httpx.get(
             'https://api.github.com/search/repositories',
@@ -102,7 +102,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()['items']
 
-    def get_repository(self, user_access_token: str, repo_id: int) -> dict:
+    async def get_repository(self, user_access_token: str, repo_id: int) -> dict:
         """Get a repository by its ID."""
         response = httpx.get(
             f'https://api.github.com/repositories/{repo_id}',
@@ -111,7 +111,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
     
-    def get_repository_branches(self, user_access_token: str, repo_id: int) -> list:
+    async def get_repository_branches(self, user_access_token: str, repo_id: int) -> list:
         """Get branches for a repository."""
         response = httpx.get(
             f'https://api.github.com/repositories/{repo_id}/branches',
@@ -120,7 +120,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
     
-    def get_repository_commits(self, user_access_token: str, repo_id: int, branch: str | None = None, search: str | None = None, per_page: int = 30, page: int = 1) -> list:
+    async def get_repository_commits(self, user_access_token: str, repo_id: int, branch: str | None = None, search: str | None = None, per_page: int = 30, page: int = 1) -> list:
         """Get commits for a repository.
         
         Args:
@@ -148,7 +148,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
         
-    def get_repository_commit(self, user_access_token: str, repo_id: int, commit_sha: str, branch: str | None = None) -> dict:
+    async def get_repository_commit(self, user_access_token: str, repo_id: int, commit_sha: str, branch: str | None = None) -> dict:
         """
         Get details for a specific commit by its SHA.
         If branch is specified, it's used for validation but not in the URL.
@@ -167,7 +167,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
 
-    def get_installation(self, installation_id: str) -> dict:
+    async def get_installation(self, installation_id: str) -> dict:
         """Get installation details from GitHub."""
         response = httpx.get(
             f'https://api.github.com/app/installations/{installation_id}',
@@ -176,7 +176,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
     
-    def get_installation_access_token(self, installation_id: str) -> dict[str, str | dict]:
+    async def get_installation_access_token(self, installation_id: str) -> dict[str, str | dict]:
         """Get an installation access token."""
         response = httpx.post(
             f'https://api.github.com/app/installations/{installation_id}/access_tokens',
@@ -185,7 +185,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()
     
-    def get_installation_repositories(self, installation_access_token: str) -> list[dict]:
+    async def get_installation_repositories(self, installation_access_token: str) -> list[dict]:
         """Get repositories for a specific installation."""
         response = httpx.get(
             'https://api.github.com/installation/repositories',
@@ -194,7 +194,7 @@ class GitHub:
         response.raise_for_status()
         return response.json()['repositories']  # Note: returns paginated response
 
-    def get_repository_installation(self, repo_full_name: str) -> dict:
+    async def get_repository_installation(self, repo_full_name: str) -> dict:
         """Retrieve the GitHub App installation details for a given repository."""
         response = httpx.get(
             f'https://api.github.com/repos/{repo_full_name}/installation',

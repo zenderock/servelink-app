@@ -14,6 +14,8 @@ services:
       dockerfile: Docker/Dockerfile.api.dev
     volumes:
       - ./api:/app
+      - ./data/upload:/app/static/upload
+      - ./data/traefik:/data/traefik
   
   traefik:
     volumes:

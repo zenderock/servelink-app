@@ -83,7 +83,7 @@ def new_project_details():
     
     if not repo_id or not repo_owner or not repo_name or not repo_default_branch:
         flash(_('Missing repository details.'), 'error')
-        return redirect(url_for('team_new_project'))
+        return redirect(url_for('project_new'))
     
     defaults = {
         'repo_id': repo_id,
@@ -98,7 +98,7 @@ def new_project_details():
             repo = current_app.github.get_repository(current_user.github_token, repo_id)
         except Exception as e:
             flash("You do not have access to this repository.")
-            return redirect(url_for('team_new_project'))
+            return redirect(url_for('project_new'))
 
         installation = current_app.github.get_repository_installation(repo.get('full_name'))
         # Get the installation instance as this force create/update the token

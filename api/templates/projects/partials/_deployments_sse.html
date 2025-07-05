@@ -4,13 +4,13 @@
 >
   <div
     hx-trigger="sse:session_expired"
-    hx-get="{{ url_for('team.project_deployments', project_name=project.name, page=request.args.get('page') or None, fragment='sse') }}"
+    hx-get="{{ url_for('project_deployments', project_name=project.name).include_query_params(page=request.query_params.get('page') or None, fragment='sse') }}"
     hx-swap="outerHTML"
     hx-target="closest div"
   ></div>
   <div
     hx-trigger="sse:deployment_created, sse:deployment_status_update"
-    hx-get="{{ url_for('team.project_deployments', project_name=project.name, page=request.args.get('page') or None, fragment='deployments') }}"
+    hx-get="{{ url_for('project_deployments', project_name=project.name).include_query_params(page=request.query_params.get('page') or None, fragment='deployments') }}"
     hx-target="#deployments"
   ></div>
 </div>

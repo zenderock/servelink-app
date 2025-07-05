@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-{% from "projects/components/thumbnail.html" import thumbnail %}
+{% from "projects/components/thumbnail.html" import thumbnail with context %}
 
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
   <header class="flex justify-between items-center">
@@ -15,7 +15,7 @@
 
     {% if projects %}
       <a
-        href="{{ url_for('team_new_project') }}"
+        href="{{ url_for('project_new') }}"
         class="btn"
       >
         {% include "icons/plus.svg" %}
@@ -30,7 +30,7 @@
         {% for project in projects %}
           <li class="flex gap-x-6 items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
             <a
-              href="{{ url_for('team.project', project_name=project.name) }}"
+              href="{{ url_for('project_index', project_name=project.name) }}"
               class="flex items-center gap-x-2 font-medium"
               data-tooltip="{{ _('Name') }}"
             >
@@ -59,7 +59,7 @@
             </a>
 
             <div class="flex items-center ml-auto">
-              <a href="{{ url_for('team.project_settings', project_name=project.name) }}" class="btn-sm-icon-ghost" data-tooltip="{{ _('Settings') }}">
+              <a href="{{ url_for('project_settings', project_name=project.name) }}" class="btn-sm-icon-ghost" data-tooltip="{{ _('Settings') }}">
                 {% include "icons/settings.svg" %}
               </a>
             </div>
@@ -74,7 +74,7 @@
         <p class="text-muted-foreground mt-1">{{ _('Add a new project to deploy from an existing GitHub repository.') }}</p>
         <a
           class="btn-sm mt-4"
-          href="{{ url_for('team_new_project') }}"
+          href="{{ url_for('project_new') }}"
         >
           {% include "icons/plus.svg" %}
           {{ _('New project') }}

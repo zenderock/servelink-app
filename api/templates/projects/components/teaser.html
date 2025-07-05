@@ -1,10 +1,10 @@
 {% macro teaser(project) %}
 <header class="flex items-center gap-x-2 mb-4">
   <a
-    href="{{ url_for('team.project', project_name=project.name) }}"
+    href="{{ url_for('project_index', project_name=project.name) }}"
     class="flex items-center gap-x-2.5 mr-auto"
   >
-    {% from "projects/components/thumbnail.html" import thumbnail %}
+    {% from "projects/components/thumbnail.html" import thumbnail with context %}
     {{ thumbnail(project) }}
     <h2 class="h4">{{ project.name }}</h2>
   </a>

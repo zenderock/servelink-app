@@ -8,8 +8,8 @@
 ) %}
   <form
     method="GET"
-    action="{{ url_for('team.project_deploy', project_name=project.name) }}"
-    hx-get="{{ url_for('team.project_deploy', project_name=project.name) }}"
+    action="{{ url_for('project_deploy', project_name=project.name).include_query_params(fragment='environment') }}"
+    hx-get="{{ url_for('project_deploy', project_name=project.name).include_query_params(fragment='environment') }}"
     hx-trigger="change, dialog:opened from:closest dialog"
     hx-indicator="next .htmx-indicator"
     hx-target="#deploy-dialog-form"
@@ -30,7 +30,7 @@
   <div class="relative block h-[292px]">
     <div id="deploy-dialog-form"></div>
     <div class="htmx-indicator absolute inset-0 space-y-4 bg-background">
-      {% include "projects/partials/_deploy-dialog-form-skeleton.html" %}
+      {% include "projects/partials/_deploy-dialog-commits-skeleton.html" %}
     </div>
   </div>
 {% endcall %}

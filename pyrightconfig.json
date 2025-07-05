@@ -1,8 +1,0 @@
-{
-  "extraPaths": [
-    "web",
-    "web/.venv/lib/python3.13/site-packages",
-    "api",
-    "api/.venv/lib/python3.13/site-packages"
-  ]
-}

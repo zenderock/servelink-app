@@ -3,6 +3,10 @@ FROM python:3.13-slim
 # Create non-root user
 RUN addgroup --system appgroup && adduser --system --group appuser
 
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -16,5 +20,6 @@ USER appuser
 
 EXPOSE 8000
 
-# Run migrations then start FastAPI with reload
-ENTRYPOINT ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload"] 
+# Run migrations then start FastAPI
+COPY Docker/supervisord.api.dev.conf /etc/supervisord.conf
+CMD ["sh", "-c", "uv run alembic upgrade head && exec supervisord -c /etc/supervisord.conf"]

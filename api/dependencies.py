@@ -1,33 +1,51 @@
 from fastapi import Request, Depends, HTTPException, status
+from starlette.background import BackgroundTask
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.ext.asyncio import AsyncSession
+from jinja2 import pass_context
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from authlib.jose import jwt
 from functools import lru_cache
 import humanize
 from datetime import datetime
+from redis.asyncio import Redis
+from arq import create_pool
+from arq.connections import ArqRedis, RedisSettings
 
 from config import get_settings, Settings
 from db import get_db
-from models import User
+from models import User, Project, Deployment
 from services.github import GitHub
 
 
 @lru_cache()
-def get_github_service() -> GitHub:
+def get_github_client() -> GitHub:
     settings = get_settings()
     return GitHub(
         client_id=settings.github_app_client_id,
         client_secret=settings.github_app_client_secret,
         app_id=settings.github_app_id,
-        private_key=settings.github_app_private_key
+        private_key=settings.github_app_private_key,
     )
+
+
+@lru_cache()
+def get_redis_client() -> Redis:
+    settings = get_settings()
+    return Redis.from_url(settings.redis_url, decode_responses=True)
+
+
+async def get_deployment_queue() -> ArqRedis:
+    settings = get_settings()
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    return await create_pool(redis_settings)
 
 
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    settings: Settings = Depends(get_settings)
+    settings: Settings = Depends(get_settings),
 ) -> User:
     """Get the current user object, redirect to login if not authenticated."""
     session = request.cookies.get("auth_token")
@@ -35,9 +53,9 @@ async def get_current_user(
         raise HTTPException(
             status.HTTP_303_SEE_OTHER,
             headers={"Location": "/auth/login"},
-            detail="Authentication required"
+            detail="Authentication required",
         )
-    
+
     try:
         data = jwt.decode(session, settings.secret_key)
         user_id = data["sub"]
@@ -45,64 +63,118 @@ async def get_current_user(
         raise HTTPException(
             status.HTTP_303_SEE_OTHER,
             headers={"Location": "/auth/login"},
-            detail="Authentication required"
+            detail="Authentication required",
         )
-        
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
+
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status.HTTP_303_SEE_OTHER,
             headers={"Location": "/auth/login"},
-            detail="Authentication required"
+            detail="Authentication required",
         )
     return user
 
 
 def get_translation(key: str, **kwargs) -> str:
-    """Simple translation function - for now just returns the key."""
-    return key.format(**kwargs) if kwargs else key
+    """Simple translation helper.
+
+    Supports gettext-style ``%(name)s`` placeholders so you can write
+    _( "Delete \"%(name)s\"?", name=project.name )
+    now and later replace this stub with real gettext without changing
+    templates or routes.
+    """
+    if not kwargs:
+        return key
+
+    # 1. Try gettext-style placeholders: %(key)s
+    try:
+        return key % kwargs  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        # 2. Fallback to str.format style placeholders: {key}
+        return key.format(**kwargs)
 
 
-def flash(request: Request, title: str, category: str = "info", description: str = None):
+def flash(
+    request: Request, title: str, category: str = "info", description: str | None = None
+):
     if "_messages" not in request.session:
         request.session["_messages"] = []
-    
-    request.session["_messages"].append({
-        "title": title,
-        "category": category,
-        "description": description
-    })
+
+    request.session["_messages"].append(
+        {"title": title, "category": category, "description": description}
+    )
 
 
-def get_flashed_messages():
-    try:
-        from jinja2 import runtime
-        context = runtime.get_current_context()
-        request = context.get('request')
-        if request and hasattr(request, 'session'):
-            return request.session.pop("_messages", [])
-    except:
-        pass
+@pass_context
+def get_flashed_messages(ctx):
+    request = ctx.get("request")
+    if request and hasattr(request, "session"):
+        return request.session.pop("_messages", [])
     return []
 
 
-def get_request_context():
-    """Make request available globally in templates"""
-    try:
-        from jinja2 import runtime
-        context = runtime.get_current_context()
-        return context.get('request')
-    except:
-        return None
+async def get_project_by_name(
+    project_name: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Project:
+    result = await db.execute(
+        select(Project)
+        .where(
+            Project.name == project_name,
+            Project.user_id == current_user.id,
+            Project.status != "deleted",
+        )
+        .limit(1)
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+async def get_project_by_id(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Project:
+    result = await db.execute(
+        select(Project)
+        .where(
+            Project.id == project_id,
+            Project.user_id == current_user.id,
+            Project.status != "deleted",
+        )
+        .limit(1)
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+async def get_deployment_by_id(
+    deployment_id: str,
+    db: AsyncSession = Depends(get_db)
+) -> Deployment:
+    result = await db.execute(
+        select(Deployment)
+        .options(selectinload(Deployment.aliases))
+        .where(Deployment.id == deployment_id)
+        .limit(1)
+    )
+    deployment = result.scalar_one_or_none()
+    if not deployment:
+        raise HTTPException(status_code=404, detail="Deployment not found")
+    return deployment
 
 
 def timeago_filter(value):
     """Convert a datetime or ISO string to a human readable time ago."""
     if isinstance(value, str):
-        value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
     return humanize.naturaltime(value)
 
 
@@ -112,4 +184,33 @@ templates.env.globals["config"] = get_settings()
 templates.env.globals["get_flashed_messages"] = get_flashed_messages
 templates.env.filters["timeago"] = timeago_filter
 
+
 TemplateResponse = templates.TemplateResponse
+
+
+def TemplateHTMXResponse(
+    request: Request,
+    name: str,
+    context: dict | None = None,
+    status_code: int = 200,
+    headers: dict | None = None,
+    media_type: str | None = None,
+    background: BackgroundTask | None = None,
+):
+    """Render template wrapped in fragment layout for HTMX"""
+    context = context or {}
+
+    # Render the fragment template first
+    template = templates.get_template(name)
+    content = template.render(**context, request=request)
+
+    # Return wrapped in fragment layout
+    return TemplateResponse(
+        request=request,
+        name="layouts/fragment.html",
+        context={"content": content, **context},
+        status_code=status_code,
+        headers=headers,
+        media_type=media_type,
+        background=background,
+    )

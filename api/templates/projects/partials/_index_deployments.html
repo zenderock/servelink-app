@@ -1,2 +1,2 @@
-{% from "deployments/components/list.html" import list %}
+{% from "deployments/components/list.html" import list with context %}
 {{ list(deployments=deployments, project=project, env_aliases=env_aliases) }}

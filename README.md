@@ -150,3 +150,9 @@ colima start --feature docker --log-driver loki --log-opt loki-url=http://host.d
 
 { width: 1200, height: 630, name: 'social-card.png' }
 
+
+
+
+
+uv run alembic revision --autogenerate -m "initial"
+uv run alembic upgrade head

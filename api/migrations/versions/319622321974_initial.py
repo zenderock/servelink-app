@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial
 
-Revision ID: 1847b47cc07c
+Revision ID: 319622321974
 Revises: 
-Create Date: 2025-06-27 09:34:27.885898
+Create Date: 2025-07-05 03:40:32.480797
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1847b47cc07c'
+revision: str = '319622321974'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,7 +32,6 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('slug', sa.String(length=40), nullable=True),
-    sa.Column('avatar_updated_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
@@ -48,16 +47,20 @@ def upgrade() -> None:
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('name', sa.String(length=256), nullable=True),
     sa.Column('github_token', sa.String(length=2048), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_user_created_at'), 'user', ['created_at'], unique=False)
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
     op.create_index(op.f('ix_user_github_id'), 'user', ['github_id'], unique=True)
     op.create_index(op.f('ix_user_name'), 'user', ['name'], unique=False)
+    op.create_index(op.f('ix_user_updated_at'), 'user', ['updated_at'], unique=False)
     op.create_index(op.f('ix_user_username'), 'user', ['username'], unique=True)
     op.create_table('project',
     sa.Column('id', sa.String(length=32), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('avatar_updated_at', sa.DateTime(), nullable=True),
+    sa.Column('has_avatar', sa.Boolean(), nullable=False),
     sa.Column('repo_id', sa.BigInteger(), nullable=False),
     sa.Column('repo_full_name', sa.String(length=255), nullable=False),
     sa.Column('repo_status', sa.Enum('active', 'deleted', 'removed', 'transferred', name='project_github_status'), nullable=False),
@@ -85,7 +88,8 @@ def upgrade() -> None:
     op.create_table('deployment',
     sa.Column('id', sa.String(length=32), nullable=False),
     sa.Column('project_id', sa.String(length=32), nullable=False),
-    sa.Column('repo', sa.JSON(), nullable=False),
+    sa.Column('repo_id', sa.BigInteger(), nullable=False),
+    sa.Column('repo_full_name', sa.String(length=255), nullable=False),
     sa.Column('environment_id', sa.String(length=8), nullable=False),
     sa.Column('branch', sa.String(length=255), nullable=False),
     sa.Column('commit_sha', sa.String(length=40), nullable=False),
@@ -108,6 +112,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_deployment_concluded_at'), 'deployment', ['concluded_at'], unique=False)
     op.create_index(op.f('ix_deployment_created_at'), 'deployment', ['created_at'], unique=False)
     op.create_index(op.f('ix_deployment_project_id'), 'deployment', ['project_id'], unique=False)
+    op.create_index(op.f('ix_deployment_repo_full_name'), 'deployment', ['repo_full_name'], unique=False)
+    op.create_index(op.f('ix_deployment_repo_id'), 'deployment', ['repo_id'], unique=False)
     op.create_table('alias',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('subdomain', sa.String(length=63), nullable=False),
@@ -134,6 +140,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_alias_previous_deployment_id'), table_name='alias')
     op.drop_index(op.f('ix_alias_deployment_id'), table_name='alias')
     op.drop_table('alias')
+    op.drop_index(op.f('ix_deployment_repo_id'), table_name='deployment')
+    op.drop_index(op.f('ix_deployment_repo_full_name'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_project_id'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_created_at'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_concluded_at'), table_name='deployment')
@@ -149,9 +157,11 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_project_created_at'), table_name='project')
     op.drop_table('project')
     op.drop_index(op.f('ix_user_username'), table_name='user')
+    op.drop_index(op.f('ix_user_updated_at'), table_name='user')
     op.drop_index(op.f('ix_user_name'), table_name='user')
     op.drop_index(op.f('ix_user_github_id'), table_name='user')
     op.drop_index(op.f('ix_user_email'), table_name='user')
+    op.drop_index(op.f('ix_user_created_at'), table_name='user')
     op.drop_table('user')
     op.drop_index(op.f('ix_team_updated_at'), table_name='team')
     op.drop_index(op.f('ix_team_name'), table_name='team')

@@ -6,9 +6,9 @@ from secrets import token_urlsafe
 
 # from app.models import GithubInstallation, Project, Deployment
 # from app.tasks.deploy import deploy
-# from app.helpers.environments import get_environment_for_branch
+# from app.utils.environments import get_environment_for_branch
 from config import get_settings
-from dependencies import get_current_user, get_github_service, TemplateResponse
+from dependencies import get_current_user, get_github_client, TemplateResponse
 from models import User
 from services.github import GitHub
 
@@ -19,13 +19,13 @@ router = APIRouter(prefix="/github")
 async def github_repos(
     request: Request,
     current_user: User = Depends(get_current_user),
-    github: GitHub = Depends(get_github_service),
+    github: GitHub = Depends(get_github_client),
     account: str | None = None,
     query: str | None = None
 ):
     
-    repos = github.search_user_repositories(
-        current_user.github_token,
+    repos = await github.search_user_repositories(
+        current_user.github_token or "",
         account or "",
         query or ""
     )
@@ -36,9 +36,6 @@ async def github_repos(
             "repos": repos
         }
     )
-
-
-
 
 
 @router.get("/install", name="github_app_install")

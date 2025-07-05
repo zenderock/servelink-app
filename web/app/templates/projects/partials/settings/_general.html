@@ -10,7 +10,7 @@
   }
 ) %}
   <div
-    hx-get="{{ request.url_for('team_repo_select', account=repo_owner) }}"
+    hx-get="{{ request.url_for('project_repo_select', account=repo_owner) }}"
     hx-trigger="dialog:opened from:closest dialog once"
     class="flex items-start justify-center h-[296px]"
   >

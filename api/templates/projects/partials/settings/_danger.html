@@ -8,37 +8,38 @@
     <div class="field">
       {% from "components/dialog.html" import dialog %}
       {% set trigger %}
-        {% include "icons/trash-2.svg" %}
-        {{ _('Delete project') }}
+      {% include "icons/trash-2.svg" %}
+      {{ _('Delete project') }}
       {% endset %}
       {% call dialog(
-        trigger=trigger,
-        title=_('Delete "%(name)s"?', name=project.name),
-        trigger_attrs={"class": "btn-destructive"},
-        dialog_attrs={"class": "max-w-md"}
+      trigger=trigger,
+      title=_('Delete "%(name)s"?', name=project.name),
+      trigger_attrs={"class": "btn-destructive"},
+      dialog_attrs={"class": "max-w-md"}
       ) %}
-        <div class="space-y-4" x-data="{ confirm: '' }">
-          <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be undone.') }}</p>
-          <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
-          <form method="POST" action="{{ url_for('team.project_settings', project_name=project.name, _anchor='danger') }}">
-            {{ delete_project_form.hidden_tag() }}
-            {{ delete_project_form.confirm(
-              class_="w-full",
-              placeholder=_('Type the project name to confirm'),
-              **{'x-model': 'confirm'}
+      <div class="space-y-4" x-data="{ confirm: '' }">
+        <p>{{ _('This will delete the project, its configuration, environments and deployments. This action cannot be
+          undone.') }}</p>
+        <p>{{ _('To confirm, enter the project name <b>"%(name)s"</b> below.', name=project.name) }}</p>
+        <form method="POST" action="{{ url_for('project_settings', project_name=project.name) }}">
+          {{ delete_project_form.csrf_token() }}
+          {{ delete_project_form.confirm(
+          class_="w-full",
+          placeholder=_('Type the project name to confirm'),
+          **{'x-model': 'confirm'}
+          ) }}
+          <footer class="flex justify-end gap-x-2 mt-4">
+            <button type="button" class="btn-ghost" @click="open = false">{{ _('Cancel') }}</button>
+            {{ delete_project_form.submit(
+            class_="btn-destructive",
+            **{
+            ':disabled': "confirm !== '" + project.name + "'",
+            'data-icon': 'trash'
+            }
             ) }}
-            <footer class="flex justify-end gap-x-2 mt-4">
-              <button type="button" class="btn-ghost" @click="open = false">{{ _('Cancel') }}</button>
-              {{ delete_project_form.submit(
-                class_="btn-destructive",
-                **{
-                  ':disabled': "confirm !== '" + project.name + "'",
-                  'data-icon': 'trash'
-                }
-              ) }}
-            </footer>
-          </form>
-        </div>
+          </footer>
+        </form>
+      </div>
       {% endcall %}
     </div>
   </section>
