@@ -1,0 +1,18 @@
+{% from "components/avatar.html" import avatar with context %}
+<span role="menuitem" class="flex items-center gap-x-1">
+  {{ avatar(team, "team", size="xs") }}
+  {{ team.name }}
+  <span class="h-4 w-4 ml-auto text-muted-foreground">
+    {% include "icons/check.svg" %}
+  </span>
+</span>
+{% for other_team in latest_teams %}
+<a href="{{ url_for('team_index', team_slug=other_team.slug) }}" role="menuitem">
+  {{ avatar(other_team, "team", size="xs") }}
+  {{ other_team.name }}
+  <span class="h-4 w-4 ml-auto"></span>
+</a>
+{% endfor %}
+<hr role="separator" />
+<button role="menuitem" onclick="document.getElementById('dialog-new-team').showModal()">{{ _('Add new team')
+  }}</button>

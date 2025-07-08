@@ -1,6 +1,0 @@
-<div hx-ext="sse" sse-connect="{{ url_for('api_project_events', project_id=project.id) }}"
-  sse-close="sse:stream_closed">
-  <div hx-trigger="sse:deployment_created, sse:deployment_status_update"
-    hx-get="{{ url_for('project_index', project_name=project.name).include_query_params(fragment='deployments') }}"
-    hx-target="#deployments"></div>
-</div>

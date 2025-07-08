@@ -4,8 +4,8 @@
 # Docker
 docker-compose*.yml
 Docker/
-!Docker/supervisord.api.conf
-!Docker/supervisord.api.dev.conf
+!Docker/supervisord.app.conf
+!Docker/supervisord.app.dev.conf
 
 # Python
 __pycache__/

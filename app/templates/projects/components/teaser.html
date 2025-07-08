@@ -1,0 +1,28 @@
+{% macro teaser(project) %}
+<header class="flex items-center gap-x-2 mb-4">
+  <a href="{{ url_for('project_index', team_slug=team.slug, project_name=project.name) }}"
+    class="flex items-center gap-x-2.5 mr-auto">
+    {% from "components/avatar.html" import avatar with context %}
+    {{ avatar(project, "project") }}
+    <h2 class="h4">{{ project.name }}</h2>
+  </a>
+</header>
+<ul class="space-y-1">
+  <li>
+    <span>
+      <a class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors [&>svg]:size-4 [&>svg]:opacity-50 dark:[&>svg]:opacity-60"
+        href="{{ project.url }}" target="_blank">
+        {% include "icons/link-2.svg" %}
+        <span class="truncate">{{ project.hostname }}</span>
+      </a>
+    </span>
+  </li>
+  <li>
+    <a class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors [&>svg]:size-4 [&>svg]:opacity-50 dark:[&>svg]:opacity-60"
+      href="https://github.com/{{ project.repo_full_name }}" target="_blank">
+      {% include "icons/github.svg" %}
+      <span class="truncate">{{ project.repo_full_name }}</span>
+    </a>
+  </li>
+</ul>
+{% endmacro %}

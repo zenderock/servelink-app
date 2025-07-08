@@ -1,0 +1,66 @@
+<form method="POST" enctype="multipart/form-data"
+  action="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
+  hx-post="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
+  hx-indicator="next .htmx-indicator" hx-swap="outerHTML" x-data="{
+    changed: false,
+    deleteAvatar: false
+  }" @input="changed = true" @change="changed = true" class="card">
+  {{ general_form.csrf_token() }}
+  <header class="border-b">
+    <h2>{{ _('General') }}</h2>
+    <p>{{ _('General settings for the team.') }}</p>
+  </header>
+
+  <section class="space-y-6">
+    <div class="space-y-3">
+      {{ general_form.name.label(class="label") }}
+      {{ general_form.name(class="input w-full") }}
+      {% for error in general_form.name.errors %}
+      <p class="text-destructive text-sm">{{ error }}</p>
+      {% endfor %}
+    </div>
+
+    <div class="space-y-3">
+      {{ general_form.slug.label(class="label") }}
+      {{ general_form.slug(class="input w-full") }}
+      {% for error in general_form.slug.errors %}
+      <p class="text-destructive text-sm">{{ error }}</p>
+      {% endfor %}
+    </div>
+
+    <div class="space-y-3">
+      <label for="name" class="label">{{ _('Avatar') }}</label>
+      {% from "components/image_upload.html" import image_upload %}
+
+      {% from "components/avatar.html" import avatar with context %}
+      {% set current_avatar %}
+      {{ avatar(team, "team", size="md") }}
+      {% endset %}
+      {% set default_avatar %}
+      {{ avatar(team, "team", size="md", force_default=True) }}
+      {% endset %}
+      {{ image_upload(
+      field=general_form.avatar,
+      delete_field=general_form.delete_avatar,
+      has_image=team.has_avatar,
+      current_image=current_avatar,
+      default_image=default_avatar,
+      extensions=["jpg", "jpeg", "png", "gif", "webp"]
+      ) }}
+    </div>
+  </section>
+
+  <footer class="flex justify-end gap-x-2">
+    <button type="button" class="btn-ghost"
+      hx-get="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
+      hx-target="closest form" hx-swap="outerHTML" :disabled="!changed">{{ _('Cancel') }}</button>
+    <button class="btn" :disabled="!changed">{{ _('Save') }}</button>
+  </footer>
+</form>
+
+<div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+  <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
+    {% include "icons/loader.svg" %}
+    {{ _('Saving') }}
+  </div>
+</div>

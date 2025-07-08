@@ -1,13 +1,10 @@
 FROM python:3.13-slim
 
 # Create non-root user
-RUN groupadd -g 1000 appgroup \
-    && useradd  -u 1000 -g appgroup -d /app -s /bin/sh -M appuser
+RUN addgroup --system appgroup && adduser --system --group --home /app appuser
 
 # System dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        sqlite3 \
-        supervisor \
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
@@ -16,17 +13,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Copy project
-COPY ./web/ .
-COPY ./shared/ /shared/
+COPY ./app/ .
 
 # Set permissions
-RUN chown -R appuser:appgroup /app /shared
-
-# Make sure data directory exists and set permissions
-RUN mkdir -p /data && chown -R appuser:appgroup /data
-
-# Make sure upload directory exists
-RUN mkdir -p /app/app/static/upload/
+RUN chown -R appuser:appgroup /app
 
 # Set UV cache directory to writable location
 RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
@@ -37,6 +27,6 @@ USER appuser
 
 EXPOSE 8000
 
-# Supervisor process manager
+# Run migrations then start FastAPI
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-ENTRYPOINT ["sh", "-c", "uv run flask db upgrade && uv run supervisord -c /etc/supervisord.conf"]
+CMD ["sh", "-c", "uv run alembic upgrade head && exec supervisord -c /etc/supervisord.conf"]

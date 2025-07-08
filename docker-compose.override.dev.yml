@@ -1,22 +1,18 @@
 services:
-  # app:
-  #   build:
-  #     dockerfile: Docker/Dockerfile.app.dev
-  #   volumes:
-  #     - ./web:/app
-  #     - ./shared:/shared
-  #     - ./data/db:/data/db
-  #     - ./data/traefik:/data/traefik
-  #     - ./data/upload:/app/app/static/upload
-  
-  api:
+  app:
     build:
-      dockerfile: Docker/Dockerfile.api.dev
+      dockerfile: Docker/Dockerfile.app.dev
     volumes:
-      - ./api:/app
+      - ./app:/app
       - ./data/upload:/app/static/upload
       - ./data/traefik:/data/traefik
   
+  pgsql:
+    ports:
+      - "5432:5432"
+    networks:
+      - default
+
   traefik:
     volumes:
       - ./data/traefik:/etc/traefik/dynamic_conf

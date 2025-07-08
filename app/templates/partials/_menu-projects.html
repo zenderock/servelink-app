@@ -1,0 +1,19 @@
+{% from "components/avatar.html" import avatar with context %}
+<span role="menuitem" class="flex items-center gap-x-1">
+  {{ avatar(project, "project", size="xs") }}
+  {{ project.name }}
+  <span class="h-4 w-4 ml-auto text-muted-foreground">
+    {% include "icons/check.svg" %}
+  </span>
+</span>
+{% for other_project in latest_projects %}
+<a href="{{ url_for('project_index', team_slug=team.slug, project_name=other_project.name) }}" role="menuitem">
+  {{ avatar(other_project, "project", size="xs") }}
+  {{ other_project.name }}
+  <span class="h-4 w-4 ml-auto"></span>
+</a>
+{% endfor %}
+<hr role="separator" />
+<a href="{{ url_for('new_project', team_slug=team.slug) }}" role="menuitem">
+  {{ _('Add new project') }}
+</a>

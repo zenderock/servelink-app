@@ -19,7 +19,7 @@ docker-compose.override.yml
 supervisord.log
 supervisord.pid
 
-# Data (DB and Traefik)
+# Data (uploads and Traefik)
 /data/
 
 # SQLite

@@ -1,0 +1,5 @@
+<div hx-ext="sse"
+  sse-connect="{{ url_for('api_project_events', team_slug=team.slug, project_id=deployment.project.id) }}"
+  sse-close="sse:stream_closed">
+  <div sse-swap="deployment_status_update"></div>
+</div>

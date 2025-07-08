@@ -3,8 +3,6 @@
 echo "Starting local environment..."
 
 mkdir -p ./data/{traefik,upload}
-chown -R 1000:1000 ./data/upload
-chown -R 1000:1000 ./data/traefik
 
 NO_CACHE=true
 PRUNE=false

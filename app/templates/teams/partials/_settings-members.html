@@ -1,0 +1,60 @@
+<div hx-get="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='members') }}"
+  hx-trigger="environments:updated from:window" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+  <form method="POST"
+    action="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='members') }}"
+    hx-post="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='env_vars') }}"
+    hx-indicator="next .htmx-indicator" hx-target="closest div" hx-swap="outerHTML" x-data="{ changed: false }"
+    @input="changed = true" @change="changed = true" class="card">
+    <header class="border-b">
+      <h2>{{ _('Members') }}</h2>
+      <p>{{ _('Manage the members of the team.') }}</p>
+    </header>
+
+    <section>
+      <div class="flex gap-x-2 border-b border-border/50 pb-2">
+        <div class="shrink-0 w-6"></div>
+        <div class="flex-1 label">{{ _('Name') }}</div>
+        <div class="flex-1 label">{{ _('Role') }}</div>
+        <div class="shrink-0 w-20"></div>
+      </div>
+
+      <ul>
+        {% for member in members %}
+        <li class="flex items-center gap-x-2 border-b border-border/50 py-2">
+          <div class="flex items-center justify-center">
+            <img src="{{ member.user.avatar }}" class="size-6 rounded-full" />
+          </div>
+          <div class="flex-1 font-medium">{{ member.user.name }}</div>
+          <div class="flex-1 text-muted-foreground">{{ member.role }}</div>
+          <div class="flex items-center w-20">
+            <button type="button" class="btn-icon-ghost" aria-label="{{ _('Options') }}">
+              {% include "icons/settings.svg" %}
+            </button>
+            <button type="button" class="btn-icon-ghost" aria-label="{{ _('Remove') }}">
+              {% include "icons/trash-2.svg" %}
+            </button>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <button class="btn-sm-outline mt-2" type="button">
+        {% include "icons/plus.svg" %}
+        {{ _('Invite member') }}
+      </button>
+    </section>
+    <footer class="flex justify-end gap-x-2">
+      <button type="button" class="btn-ghost"
+        hx-get="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='members') }}"
+        hx-target="closest form" hx-swap="outerHTML" :disabled="!changed">{{ _('Cancel') }}</button>
+      <button class="btn" :disabled="!changed">{{ _('Save') }}</button>
+    </footer>
+  </form>
+
+  <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+    <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
+      {% include "icons/loader.svg" %}
+      {{ _('Saving') }}
+    </div>
+  </div>
+</div>

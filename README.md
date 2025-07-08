@@ -153,6 +153,12 @@ colima start --feature docker --log-driver loki --log-opt loki-url=http://host.d
 
 
 
+docker exec -it api bash
 
 uv run alembic revision --autogenerate -m "initial"
 uv run alembic upgrade head
+
+postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}
+
+
+POSTGRES_HOST=localhost uv run alembic revision --autogenerate -m "initial"
