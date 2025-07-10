@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 30926c8ed9df
+Revision ID: 9e8b54d031ee
 Revises: 
-Create Date: 2025-07-10 11:58:26.909990
+Create Date: 2025-07-10 19:21:22.539590
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '30926c8ed9df'
+revision: str = '9e8b54d031ee'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,7 +29,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('installation_id')
     )
     op.create_table('team',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.String(length=32), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('slug', sa.String(length=40), nullable=True),
     sa.Column('has_avatar', sa.Boolean(), nullable=False),
@@ -57,7 +57,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('status', sa.Enum('active', 'paused', 'deleted', name='project_status'), nullable=False),
-    sa.Column('team_id', sa.Integer(), nullable=False),
+    sa.Column('team_id', sa.String(length=32), nullable=False),
     sa.ForeignKeyConstraint(['github_installation_id'], ['github_installation.installation_id'], ),
     sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -81,7 +81,7 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('active', 'deleted', name='team_status'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
-    sa.Column('default_team_id', sa.Integer(), nullable=True),
+    sa.Column('default_team_id', sa.String(length=32), nullable=True),
     sa.ForeignKeyConstraint(['default_team_id'], ['team.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -121,7 +121,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_deployment_repo_id'), 'deployment', ['repo_id'], unique=False)
     op.create_table('team_member',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('team_id', sa.Integer(), nullable=False),
+    sa.Column('team_id', sa.String(length=32), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('role', sa.Enum('owner', 'member', name='team_member_role'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -134,7 +134,7 @@ def upgrade() -> None:
     op.create_table('user_identity',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('provider', sa.Enum('password', 'github', 'google', name='identity_provider'), nullable=False),
+    sa.Column('provider', sa.Enum('github', 'google', name='identity_provider'), nullable=False),
     sa.Column('provider_user_id', sa.String(length=100), nullable=True),
     sa.Column('access_token', sa.String(length=2048), nullable=True),
     sa.Column('refresh_token', sa.String(length=2048), nullable=True),
