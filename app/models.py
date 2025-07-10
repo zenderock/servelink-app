@@ -43,50 +43,116 @@ class User(Base):
     __tablename__: str = "user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    github_id: Mapped[int] = mapped_column(index=True, unique=True)
-    email: Mapped[str] = mapped_column(String(320), index=True, unique=True)
-    username: Mapped[str] = mapped_column(String(50), index=True, unique=True)
+    email: Mapped[str | None] = mapped_column(
+        String(320), index=True, unique=True, nullable=False
+    )
+    username: Mapped[str | None] = mapped_column(
+        String(50), index=True, unique=True, nullable=False
+    )
     name: Mapped[str | None] = mapped_column(String(256), index=True, nullable=True)
-    _github_token: Mapped[str | None] = mapped_column("github_token", String(2048), nullable=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_avatar: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("active", "deleted", name="team_status"),
+        nullable=False,
+        default="active",
+    )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
     )
     updated_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now, onupdate=utc_now
     )
-    default_team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), nullable=True)
-    
+    default_team_id: Mapped[str] = mapped_column(ForeignKey("team.id"), nullable=True)
+
     # Relationships
     default_team: Mapped["Team"] = relationship(foreign_keys=[default_team_id])
+    identities: Mapped[list["UserIdentity"]] = relationship(back_populates="user")
 
     @override
     def __repr__(self):
         return f"<User {self.email}>"
 
-    @property
-    def avatar(self):
-        return f"https://unavatar.io/{self.email.lower()}"
+
+class UserIdentity(Base):
+    __tablename__: str = "user_identity"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    provider: Mapped[str] = mapped_column(
+        SQLAEnum("github", "google", name="identity_provider"),
+        nullable=False,
+        index=True,
+    )
+    provider_user_id: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )
+    _access_token: Mapped[str | None] = mapped_column(
+        "access_token", String(2048), nullable=True
+    )
+    _refresh_token: Mapped[str | None] = mapped_column(
+        "refresh_token", String(2048), nullable=True
+    )
+    token_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # Only for password provider
+    provider_metadata: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True
+    )  # Store provider-specific data
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    user: Mapped[User] = relationship(back_populates="identities")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "provider", "provider_user_id", name="uq_identity_provider_user"
+        ),
+    )
 
     @property
-    def github_token(self) -> str | None:
-        if self._github_token:
+    def access_token(self) -> str | None:
+        if self._access_token:
             fernet = get_fernet()
-            return fernet.decrypt(self._github_token.encode()).decode()
+            return fernet.decrypt(self._access_token.encode()).decode()
         return None
 
-    @github_token.setter
-    def github_token(self, value: str):
+    @access_token.setter
+    def access_token(self, value: str | None):
         if value:
             fernet = get_fernet()
-            self._github_token = fernet.encrypt(value.encode()).decode()
+            self._access_token = fernet.encrypt(value.encode()).decode()
         else:
-            self._github_token = None
+            self._access_token = None
+
+    @property
+    def refresh_token(self) -> str | None:
+        if self._refresh_token:
+            fernet = get_fernet()
+            return fernet.decrypt(self._refresh_token.encode()).decode()
+        return None
+
+    @refresh_token.setter
+    def refresh_token(self, value: str | None):
+        if value:
+            fernet = get_fernet()
+            self._refresh_token = fernet.encrypt(value.encode()).decode()
+        else:
+            self._refresh_token = None
+
+    @override
+    def __repr__(self):
+        return f"<UserIdentity {self.provider}:{self.provider_user_id}>"
 
 
 class Team(Base):
     __tablename__: str = "team"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
     name: Mapped[str] = mapped_column(String(100), index=True)
     slug: Mapped[str] = mapped_column(String(40), nullable=True, unique=True)
     has_avatar: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -95,8 +161,12 @@ class Team(Base):
         nullable=False,
         default="active",
     )
-    created_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(index=True, nullable=False, default=utc_now, onupdate=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        index=True, nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        index=True, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     # Relationships
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
@@ -120,21 +190,17 @@ def set_team_slug(mapper, connection, team):
 
         new_slug = (
             base_slug
-            if not connection.scalar(
-                select(Team.slug).where(Team.slug == base_slug)
-            )
+            if not connection.scalar(select(Team.slug).where(Team.slug == base_slug))
             else f"{base_slug[:32]}-{str(team.id)[:7]}"
         )
-        
-        connection.execute(
-            update(Team).where(Team.id == team.id).values(slug=new_slug)
-        )
+
+        connection.execute(update(Team).where(Team.id == team.id).values(slug=new_slug))
         team.slug = new_slug
 
 
 class TeamMember(Base):
     __tablename__ = "team_member"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
@@ -144,7 +210,7 @@ class TeamMember(Base):
         default="member",
     )
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
-    
+
     # Relationships
     team: Mapped[Team] = relationship()
     user: Mapped[User] = relationship()
@@ -229,13 +295,13 @@ class Project(Base):
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), index=True)
 
     # Relationships
-    github_installation: Mapped[GithubInstallation] = relationship(back_populates="projects")
+    github_installation: Mapped[GithubInstallation] = relationship(
+        back_populates="projects"
+    )
     deployments: Mapped[list["Deployment"]] = relationship(back_populates="project")
     team: Mapped[Team] = relationship(back_populates="projects")
 
-    __table_args__ = (
-        UniqueConstraint("team_id", "name", name="uq_project_team_name"),
-    )
+    __table_args__ = (UniqueConstraint("team_id", "name", name="uq_project_team_name"),)
 
     @property
     def env_vars(self) -> list[dict[str, str]]:
@@ -261,28 +327,6 @@ class Project(Base):
     def url(self) -> str:
         settings = get_settings()
         return f"{settings.url_scheme}://{self.hostname}"
-
-    # @property
-    # async def aliases(self) -> list[str]:
-    #     promoted_deployment = await self.promoted_deployment
-    #     if promoted_deployment:
-    #         return [alias.subdomain for alias in promoted_deployment.aliases]
-    #     return []
-
-    # @property
-    # async def promoted_deployment(self) -> Deployment | None:
-    #     # TODO: add a flag for promoted deployment (rollback)
-    #     deployment = await db.scalar(
-    #         select(Deployment)
-    #         .where(
-    #             Deployment.project_id == self.id,
-    #             Deployment.conclusion == 'succeeded',
-    #             # Deployment.environment == 'production'
-    #         )
-    #         .order_by(Deployment.created_at.desc())
-    #         .limit(1)
-    #     )
-    #     return deployment
 
     @property
     def color(self) -> str:
@@ -328,7 +372,8 @@ class Project(Base):
         return any(
             environment
             for environment in self.active_environments
-            if environment.get("slug") == slug and (exclude_id is None or environment.get("id") != exclude_id)
+            if environment.get("slug") == slug
+            and (exclude_id is None or environment.get("id") != exclude_id)
         )
 
     def create_environment(self, name: str, slug: str, **kwargs) -> dict:
@@ -355,7 +400,10 @@ class Project(Base):
             return None
 
         # Prevent production rename
-        if environment_id == "prod" and (env.get("name") != values.get("name") or env.get("slug") != values.get("slug")):
+        if environment_id == "prod" and (
+            env.get("name") != values.get("name")
+            or env.get("slug") != values.get("slug")
+        ):
             raise ValueError("Cannot modify production environment")
 
         # If changing slug, check it's unique
@@ -493,7 +541,7 @@ class Deployment(Base):
     )
     _env_vars: Mapped[str] = mapped_column("env_vars", Text, nullable=False, default="")
     container_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    container_status: Mapped[str | None ] = mapped_column(
+    container_status: Mapped[str | None] = mapped_column(
         SQLAEnum("running", "stopped", "removed", name="deployment_container_status"),
         nullable=True,
     )
@@ -525,7 +573,7 @@ class Deployment(Base):
         back_populates="deployment", foreign_keys="Alias.deployment_id"
     )
 
-    def __init__(self, *, project: "Project", environment_id: str, **kwargs):
+    def __init__(self, *args, project: "Project", environment_id: str, **kwargs):
         super().__init__(project=project, environment_id=environment_id, **kwargs)
         # Snapshot repo, config, environments and env_vars from project at time of creation
         self.repo_id = project.repo_id

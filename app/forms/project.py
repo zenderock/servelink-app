@@ -16,7 +16,7 @@ from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Op
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from dependencies import get_translation as _
+from dependencies import get_translation as _, get_lazy_translation as _l
 from models import Project, Team
 from utils.colors import COLORS
 from utils.environments import get_environment_for_branch
@@ -46,7 +46,7 @@ def process_env_vars(form, formdata):
         for e in form.env_vars.entries
         if not e.delete.data and (e.key.data.strip() or e.value.data.strip())
     ]
-    
+
     form.env_vars.entries = filtered
     form.env_vars._fields = {str(i): e for i, e in enumerate(filtered)}
 
@@ -78,24 +78,25 @@ def process_commands_and_root_directory(form, formdata):
 class ProjectEnvVarForm(Form):
     env_var_id = HiddenField()
     key = StringField(
-        _("Name"),
+        _l("Name"),
         validators=[
             DataRequired(),
             Length(min=1, max=100),
             Regexp(
                 r"^[A-Za-z_][A-Za-z0-9_]*$",
-                message=_(
+                message=_l(
                     "Keys can only contain letters, numbers and underscores. They can not start with a number."
                 ),
             ),
         ],
     )
-    value = TextAreaField(_("Value"), validators=[Optional()])
-    environment = SelectField(_("Environment"), default="", choices=[
-        ("", _("All environments")),
-        ("production", _("Production"))
-    ])
-    delete = BooleanField(_("Delete"), default=False)
+    value = TextAreaField(_l("Value"), validators=[Optional()])
+    environment = SelectField(
+        _l("Environment"),
+        default="",
+        choices=[("", _l("All environments")), ("production", _l("Production"))],
+    )
+    delete = BooleanField(_l("Delete"), default=False)
 
 
 class ProjectEnvVarsForm(StarletteForm):
@@ -121,8 +122,10 @@ class ProjectEnvVarsForm(StarletteForm):
             if current_pair in processed_pairs:
                 duplicates_found = True
                 entry_form.key.errors.append(
-                    _('Duplicate key "{}" for environment "{}".').format(
-                        key_data, env_data or _("All environments")
+                    _(
+                        'Duplicate key "{key_name}" for environment "{env_name}".',
+                        key_name=key_data,
+                        env_name=env_data or _("All environments"),
                     )
                 )
             else:
@@ -135,26 +138,26 @@ class ProjectEnvVarsForm(StarletteForm):
 class ProjectEnvironmentForm(StarletteForm):
     environment_id = HiddenField()
     color = SelectField(
-        _("Color"),
+        _l("Color"),
         validators=[DataRequired()],
         choices=[(color, color) for color in COLORS],
     )
-    name = StringField(_("Name"), validators=[DataRequired(), Length(min=1, max=255)])
+    name = StringField(_l("Name"), validators=[DataRequired(), Length(min=1, max=255)])
     slug = StringField(
-        _("Identifier"),
+        _l("Identifier"),
         validators=[
             DataRequired(),
             Length(min=1, max=255),
             Regexp(
                 r"^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$",
-                message=_(
+                message=_l(
                     "Environment IDs can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen."
                 ),
             ),
         ],
     )
     branch = StringField(
-        _("Branch"), validators=[DataRequired(), Length(min=1, max=255)]
+        _l("Branch"), validators=[DataRequired(), Length(min=1, max=255)]
     )
 
     def __init__(self, *args, project, **kwargs):
@@ -162,16 +165,16 @@ class ProjectEnvironmentForm(StarletteForm):
         self.project = project
 
     def validate_name(self, field):
-        if self.environment_id.data: # type: ignore
-            env = self.project.get_environment_by_id(self.environment_id.data) # type: ignore
+        if self.environment_id.data:  # type: ignore
+            env = self.project.get_environment_by_id(self.environment_id.data)  # type: ignore
             if env["slug"] == "production" and field.data != env["name"]:
                 raise ValidationError(
                     _("The production environment name cannot be modified.")
                 )
 
     def validate_slug(self, field):
-        if self.environment_id.data: # type: ignore
-            env = self.project.get_environment_by_id(self.environment_id.data) # type: ignore
+        if self.environment_id.data:  # type: ignore
+            env = self.project.get_environment_by_id(self.environment_id.data)  # type: ignore
             if field.data == env["slug"]:
                 return
 
@@ -189,15 +192,15 @@ class ProjectEnvironmentForm(StarletteForm):
 
 class ProjectDeleteEnvironmentForm(StarletteForm):
     environment_id = HiddenField(validators=[DataRequired()])
-    confirm = StringField(_("Confirmation"), validators=[DataRequired()])
-    submit = SubmitField(_("Delete"))
+    confirm = StringField(_l("Confirmation"), validators=[DataRequired()])
+    submit = SubmitField(_l("Delete"))
 
     def __init__(self, *args, project, **kwargs):
         super().__init__(*args, **kwargs)
         self.project = project
 
     def validate_confirm(self, field):
-        environment = self.project.get_environment_by_id(self.environment_id.data) # type: ignore
+        environment = self.project.get_environment_by_id(self.environment_id.data)  # type: ignore
         if not environment:
             raise ValidationError(_("Environment not found."))
         if field.data != environment["slug"]:
@@ -208,7 +211,7 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
 
 class ProjectBuildAndProjectDeployForm(StarletteForm):
     framework = SelectField(
-        _("Framework presets"),
+        _l("Framework presets"),
         choices=[
             ("flask", "Flask"),
             ("django", "Django"),
@@ -218,31 +221,31 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     runtime = SelectField(
-        _("Runtime"),
+        _l("Runtime"),
         choices=[("python-3", "Python 3"), ("python-2", "Python 2"), ("pypy", "PyPy")],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    use_custom_root_directory = BooleanField(_("Custom root directory"), default=False)
+    use_custom_root_directory = BooleanField(_l("Custom root directory"), default=False)
     root_directory = StringField(
-        _("Root directory"),
+        _l("Root directory"),
         validators=[
-            Length(max=255, message=_("Root directory cannot exceed 255 characters")),
+            Length(max=255, message=_l("Root directory cannot exceed 255 characters")),
             Regexp(
                 r"^[a-zA-Z0-9_\-./]*$",
-                message=_(
+                message=_l(
                     "Root directory can only contain letters, numbers, dots, hyphens, underscores, and forward slashes"
                 ),
             ),
         ],
     )
-    use_custom_build_command = BooleanField(_("Custom build command"), default=False)
+    use_custom_build_command = BooleanField(_l("Custom build command"), default=False)
     use_custom_pre_deploy_command = BooleanField(
-        _("Custom pre-deploy command"), default=False
+        _l("Custom pre-deploy command"), default=False
     )
-    use_custom_start_command = BooleanField(_("Custom start command"), default=False)
-    build_command = StringField(_("Build command"))
-    pre_deploy_command = StringField(_("Pre-deploy command"))
-    start_command = StringField(_("Start command"))
+    use_custom_start_command = BooleanField(_l("Custom start command"), default=False)
+    build_command = StringField(_l("Build command"))
+    pre_deploy_command = StringField(_l("Pre-deploy command"))
+    start_command = StringField(_l("Start command"))
 
     validate_root_directory = validate_root_directory
 
@@ -253,21 +256,21 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
 
 class ProjectGeneralForm(StarletteForm):
     name = StringField(
-        _("Project name"),
+        _l("Project name"),
         validators=[
             DataRequired(),
             Length(min=1, max=100),
             Regexp(
                 r"^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$",
-                message=_(
+                message=_l(
                     "Project names can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen."
                 ),
             ),
         ],
     )
-    avatar = FileField(_("Avatar"))
-    delete_avatar = BooleanField(_("Delete avatar"), default=False)
-    repo_id = IntegerField(_("Repo ID"), validators=[DataRequired()])
+    avatar = FileField(_l("Avatar"))
+    delete_avatar = BooleanField(_l("Delete avatar"), default=False)
+    repo_id = IntegerField(_l("Repo ID"), validators=[DataRequired()])
 
     def validate_avatar(self, field):
         if field.data:
@@ -305,29 +308,31 @@ class ProjectGeneralForm(StarletteForm):
                     )
                 )
                 if result.scalar_one_or_none():
-                    raise ValidationError(_("A project with this name already exists in this team."))
+                    raise ValidationError(
+                        _("A project with this name already exists in this team.")
+                    )
 
 
 class NewProjectForm(StarletteForm):
     name = StringField(
-        _("Project name"),
+        _l("Project name"),
         validators=[
             DataRequired(),
             Length(min=1, max=100),
             Regexp(
                 r"^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$",
-                message=_(
+                message=_l(
                     "Project names can only contain letters, numbers, hyphens, underscores and dots. They cannot start or end with a dot, underscore or hyphen."
                 ),
             ),
         ],
     )
-    repo_id = IntegerField(_("Repo ID"), validators=[DataRequired()])
+    repo_id = IntegerField(_l("Repo ID"), validators=[DataRequired()])
     production_branch = StringField(
-        _("Production branch"), validators=[DataRequired(), Length(min=1, max=255)]
+        _l("Production branch"), validators=[DataRequired(), Length(min=1, max=255)]
     )
     framework = SelectField(
-        _("Framework presets"),
+        _l("Framework presets"),
         choices=[
             ("flask", "Flask"),
             ("django", "Django"),
@@ -337,33 +342,33 @@ class NewProjectForm(StarletteForm):
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     runtime = SelectField(
-        _("Runtime"),
+        _l("Runtime"),
         choices=[("python-3", "Python 3"), ("python-2", "Python 2"), ("pypy", "PyPy")],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    use_custom_root_directory = BooleanField(_("Custom root directory"), default=False)
+    use_custom_root_directory = BooleanField(_l("Custom root directory"), default=False)
     root_directory = StringField(
-        _("Root directory"),
+        _l("Root directory"),
         validators=[
-            Length(max=255, message=_("Root directory cannot exceed 255 characters")),
+            Length(max=255, message=_l("Root directory cannot exceed 255 characters")),
             Regexp(
                 r"^[a-zA-Z0-9_\-./]*$",
-                message=_(
+                message=_l(
                     "Root directory can only contain letters, numbers, dots, hyphens, underscores, and forward slashes"
                 ),
             ),
         ],
     )
-    use_custom_build_command = BooleanField(_("Custom build command"), default=False)
+    use_custom_build_command = BooleanField(_l("Custom build command"), default=False)
     use_custom_pre_deploy_command = BooleanField(
-        _("Custom pre-deploy command"), default=False
+        _l("Custom pre-deploy command"), default=False
     )
-    use_custom_start_command = BooleanField(_("Custom start command"), default=False)
-    build_command = StringField(_("Build command"))
-    pre_deploy_command = StringField(_("Pre-deploy command"))
-    start_command = StringField(_("Start command"))
+    use_custom_start_command = BooleanField(_l("Custom start command"), default=False)
+    build_command = StringField(_l("Build command"))
+    pre_deploy_command = StringField(_l("Pre-deploy command"))
+    start_command = StringField(_l("Start command"))
     env_vars = FieldList(FormField(ProjectEnvVarForm))
-    submit = SubmitField(_("Save"))
+    submit = SubmitField(_l("Save"))
 
     validate_root_directory = validate_root_directory
 
@@ -387,25 +392,27 @@ class NewProjectForm(StarletteForm):
                 )
             )
             if result.scalar_one_or_none():
-                raise ValidationError(_("A project with this name already exists in this team."))
+                raise ValidationError(
+                    _("A project with this name already exists in this team.")
+                )
 
 
 class ProjectDeleteForm(StarletteForm):
-    name = HiddenField(_("Project Name"), validators=[DataRequired()])
-    confirm = StringField(_("Confirmation"), validators=[DataRequired()])
-    submit = SubmitField(_("Delete"), name="delete_project")
+    name = HiddenField(_l("Project Name"), validators=[DataRequired()])
+    confirm = StringField(_l("Confirmation"), validators=[DataRequired()])
+    submit = SubmitField(_l("Delete"), name="delete_project")
 
     def validate_confirm(self, field):
-        if field.data != self.name.data: # type: ignore
+        if field.data != self.name.data:  # type: ignore
             raise ValidationError(_("Project name confirmation did not match."))
 
 
 class ProjectDeployForm(StarletteForm):
     environment_id = SelectField(
-        _("Environment"), choices=[], validators=[DataRequired()]
+        _l("Environment"), choices=[], validators=[DataRequired()]
     )
-    commit = HiddenField(_("Commit"), validators=[DataRequired()])
-    submit = SubmitField(_("Deploy"))
+    commit = HiddenField(_l("Commit"), validators=[DataRequired()])
+    submit = SubmitField(_l("Deploy"))
 
     def __init__(self, *args, project: Project, **kwargs):
         super().__init__(*args, **kwargs)
@@ -436,5 +443,5 @@ class ProjectDeployForm(StarletteForm):
         if not environment:
             raise ValidationError(_("Environment not found."))
 
-        if environment["id"] != self.environment_id.data: # type: ignore
+        if environment["id"] != self.environment_id.data:  # type: ignore
             raise ValidationError(_("Environment does not match branch."))

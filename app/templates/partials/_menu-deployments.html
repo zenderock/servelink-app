@@ -1,5 +1,5 @@
 <span role="menuitem" class="flex items-center gap-x-2">
-  {% from "deployments/components/status.html" import status %}
+  {% from "deployment/macros/status.html" import status %}
   {{ status(
   conclusion=deployment.conclusion,
   compact=True,

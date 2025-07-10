@@ -1,0 +1,16 @@
+<form action="{{ url_for('auth_login') }}" method="post" class="form grid gap-4" hx-post="{{ url_for('auth_login') }}"
+  hx-swap="outerHTML" hx-indicator=".htmx-indicator" hx-swap="outerHTML" hx-disabled-elt="input, button">
+  {{ form.csrf_token }}
+  <div class="grid gap-2">
+    {{ form.email.label(class="sr-only") }}
+    {{ form.email(class="input",
+    placeholder=_("Enter your email")) }}
+    {% for error in form.email.errors %}
+    <p class="text-destructive text-xs font-medium">{{ error }}</p>
+    {% endfor %}
+  </div>
+  <button type="submit" class="btn">
+    {{ _("Continue with email") }}
+    <div class="htmx-indicator [&>svg]:size-4 [&>svg]:animate-spin">{% include "icons/loader.svg" %}</div>
+  </button>
+</form>

@@ -1,47 +1,81 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 from secrets import token_urlsafe
-# from sqlalchemy import update, select
-# from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# from app.models import GithubInstallation, Project, Deployment
-# from app.tasks.deploy import deploy
-# from app.utils.environments import get_environment_for_branch
 from config import get_settings
-from dependencies import get_current_user, get_github_client, TemplateResponse
+from dependencies import (
+    get_current_user,
+    get_github_client,
+    TemplateResponse,
+    flash,
+    get_db,
+    get_translation as _,
+)
 from models import User
 from services.github import GitHub
+from utils.user import get_user_github_token
+
 
 router = APIRouter(prefix="/github")
 
 
-@router.get("/repos", name="github_repos")
-async def github_repos(
+@router.get("/repo-select", name="github_repo_select")
+async def github_repo_select(
+    request: Request,
+    account: str | None = None,
+    current_user: User = Depends(get_current_user),
+    github_client: GitHub = Depends(get_github_client),
+    db: AsyncSession = Depends(get_db),
+):
+    accounts = []
+    selected_account = None
+    try:
+        github_token = await get_user_github_token(db, current_user)
+        if not github_token:
+            raise ValueError("GitHub token missing.")
+
+        installations = await github_client.get_user_installations(github_token)
+        accounts = [installation["account"]["login"] for installation in installations]
+        selected_account = account or (accounts[0] if accounts else None)
+    except Exception:
+        flash(request, _("Error fetching installations from GitHub."), "error")
+
+    return TemplateResponse(
+        request=request,
+        name="github/partials/_repo-select.html",
+        context={
+            "current_user": current_user,
+            "accounts": accounts,
+            "selected_account": selected_account,
+        },
+    )
+
+
+@router.get("/repo-list", name="github_repo_list")
+async def github_repo_list(
     request: Request,
     current_user: User = Depends(get_current_user),
     github: GitHub = Depends(get_github_client),
     account: str | None = None,
-    query: str | None = None
+    query: str | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
-    
+    github_token = await get_user_github_token(db, current_user)
     repos = await github.search_user_repositories(
-        current_user.github_token or "",
-        account or "",
-        query or ""
+        github_token or "", account or "", query or ""
     )
     return TemplateResponse(
         request=request,
-        name="projects/partials/_repo-select-list.html",
-        context={
-            "repos": repos
-        }
+        name="github/partials/_repo-select-list.html",
+        context={"repos": repos},
     )
 
 
 @router.get("/install", name="github_app_install")
 async def github_app_install(request: Request):
     state = token_urlsafe(32)
-    request.session['github_state'] = state
+    request.session["github_state"] = state
     settings = get_settings()
 
     github_install_url = (
@@ -67,7 +101,7 @@ async def github_app_install(request: Request):
 
 #         event = request.headers.get('X-GitHub-Event')
 #         data = request.get_json()
-        
+
 #         current_app.logger.info(f'Received GitHub webhook event: {event}')
 
 #         match event:
@@ -81,7 +115,7 @@ async def github_app_install(request: Request):
 #                         .values(status=status)
 #                     )
 #                     current_app.logger.info(f"Installation {data['installation']['id']} for {data['installation']['account']['login']} is {data['action']}")
-                        
+
 #                 elif data['action'] == "created":
 #                     # App installed
 #                     installation_id = data['installation']['id']
@@ -93,7 +127,7 @@ async def github_app_install(request: Request):
 #                     )
 #                     db.session.merge(installation)
 #                     current_app.logger.info(f'Installation {installation_id} for {data["installation"]["account"]["login"]} created')
-            
+
 #             case 'installation_target':
 #                 if data['action'] == 'renamed':
 #                     # Installation account is renamed (not used)
@@ -140,7 +174,7 @@ async def github_app_install(request: Request):
 #                         .values(repo_full_name=data['repository']['full_name'])
 #                     )
 #                     current_app.logger.info(f"Repo {data['repository']['id']} renamed to {data['repository']['full_name']}")
-            
+
 #             case 'push':
 #                 # Code pushed to a repository
 #                 projects = db.session.scalars(
@@ -150,13 +184,13 @@ async def github_app_install(request: Request):
 #                         Project.status == 'active'
 #                     )
 #                 ).all()
-                
+
 #                 if not projects:
 #                     current_app.logger.info(f"No projects found for repo {data['repository']['id']}")
 #                     return '', 200
-                
+
 #                 branch = data['ref'].replace('refs/heads/', '')  # Convert refs/heads/main to main
-                
+
 #                 for project in projects:
 #                     # Check if branch matches any environment
 #                     matched_env = get_environment_for_branch(branch, project.active_environments)

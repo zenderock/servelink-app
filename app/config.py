@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     github_app_webhook_secret: str = ""
     github_app_client_id: str = ""
     github_app_client_secret: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    resend_api_key: str = ""
+    email_logo: str = ""
+    email_sender_name: str = ""
+    email_sender_address: str = ""
     secret_key: str = "secret-key"
     encryption_key: str = "encryption-key"
     postgres_host: str = "pgsql"
@@ -43,5 +49,5 @@ def get_settings():
         settings.frameworks = json.loads(frameworks_file.read_text(encoding="utf-8"))
     except Exception:
         settings.frameworks = []
-    
+
     return settings

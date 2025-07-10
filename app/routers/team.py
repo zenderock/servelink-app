@@ -14,7 +14,7 @@ from dependencies import (
     get_deployment_queue,
     flash,
     get_translation as _,
-    TemplateResponse
+    TemplateResponse,
 )
 from config import get_settings, Settings
 from db import get_db
@@ -47,15 +47,13 @@ async def new_team(
         return Response(
             status_code=200,
             headers={
-                "HX-Redirect": str(
-                    request.url_for("team_index", team_slug=team.slug)
-                )
+                "HX-Redirect": str(request.url_for("team_index", team_slug=team.slug))
             },
         )
 
     return TemplateResponse(
         request=request,
-        name="teams/partials/_dialog-new-team.html",
+        name="team/partials/_dialog-new-team.html",
         context={
             "form": form,
         },
@@ -93,7 +91,7 @@ async def team_index(
 
     return TemplateResponse(
         request=request,
-        name="teams/pages/index.html",
+        name="team/pages/index.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -104,7 +102,7 @@ async def team_index(
     )
 
 
-@router.get('/{team_slug}/projects', name="team_projects")
+@router.get("/{team_slug}/projects", name="team_projects")
 async def team_projects(
     request: Request,
     page: int = Query(1, ge=1),
@@ -128,7 +126,7 @@ async def team_projects(
 
     return TemplateResponse(
         request=request,
-        name="teams/pages/projects.html",
+        name="team/pages/projects.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -139,10 +137,12 @@ async def team_projects(
     )
 
 
-@router.api_route('/{team_slug}/settings', methods=["GET", "POST"], name="team_settings")
+@router.api_route(
+    "/{team_slug}/settings", methods=["GET", "POST"], name="team_settings"
+)
 async def team_settings(
     request: Request,
-    fragment: str = Query(default="general"),
+    fragment: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
@@ -156,10 +156,7 @@ async def team_settings(
     result = await db.execute(select(User).where(User.default_team_id == team.id))
     is_default_team = result.scalar_one_or_none()
     if not is_default_team:
-        delete_team_form: Any = await TeamDeleteForm.from_formdata(
-            request,
-            team=team
-        )
+        delete_team_form: Any = await TeamDeleteForm.from_formdata(request, team=team)
         if request.method == "POST" and fragment == "danger":
             if await delete_team_form.validate_on_submit():
                 try:
@@ -168,7 +165,9 @@ async def team_settings(
 
                     # Team is marked as deleted, actual cleanup is delegated to a job
                     deployment_queue = await get_deployment_queue()
-                    await deployment_queue.enqueue_job("cleanup", team.id, job_timeout=300)
+                    await deployment_queue.enqueue_job(
+                        "cleanup_team", team.id, job_timeout=300
+                    )
 
                     flash(
                         request,
@@ -179,7 +178,9 @@ async def team_settings(
                     return RedirectResponse("/")
                 except Exception as e:
                     await db.rollback()
-                    logger.error(f'Error marking team "{team.name}" as deleted: {str(e)}')
+                    logger.error(
+                        f'Error marking team "{team.name}" as deleted: {str(e)}'
+                    )
                     flash(
                         request,
                         _("An error occurred while marking the team for deletion."),
@@ -201,7 +202,7 @@ async def team_settings(
         data={
             "name": team.name,
             "slug": team.slug,
-        }
+        },
     )
 
     if fragment == "general":
@@ -279,7 +280,7 @@ async def team_settings(
         if request.headers.get("HX-Request"):
             return TemplateResponse(
                 request=request,
-                name="teams/partials/_settings-general.html",
+                name="team/partials/_settings-general.html",
                 context={
                     "current_user": current_user,
                     "general_form": general_form,
@@ -299,7 +300,7 @@ async def team_settings(
 
     return TemplateResponse(
         request=request,
-        name="teams/pages/settings.html",
+        name="team/pages/settings.html",
         context={
             "current_user": current_user,
             "team": team,

@@ -1,7 +1,0 @@
-{% macro environment_label(environment) -%}
-  {% from "deployments/components/color.html" import color %}
-  <span class="flex items-center gap-x-2">
-    {{ color(environment.color) }}
-    {{ environment.name }}
-  </span>
-{%- endmacro %}

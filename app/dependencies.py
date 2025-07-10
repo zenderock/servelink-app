@@ -96,6 +96,20 @@ def get_translation(key: str, **kwargs) -> str:
         return key.format(**kwargs)
 
 
+def get_lazy_translation(key: str, **kwargs):
+    """Lazy translation helper for form definitions.
+
+    Returns a string-like object that defers translation until needed.
+    Perfect for form field labels and validator messages.
+    """
+
+    class LazyString(str):
+        def __new__(cls):
+            return str.__new__(cls, get_translation(key, **kwargs))
+
+    return LazyString()
+
+
 def flash(
     request: Request, title: str, category: str = "info", description: str | None = None
 ):
@@ -126,14 +140,14 @@ async def get_team_by_slug(
         .where(
             Team.slug == team_slug,
             TeamMember.user_id == current_user.id,
-            TeamMember.role.in_(["owner", "member"])
+            TeamMember.role.in_(["owner", "member"]),
         )
         .limit(1)
     )
     team_and_membership = result.first()
     if not team_and_membership:
         raise HTTPException(status_code=404, detail="Team not found or access denied")
-    
+
     team, team_member = team_and_membership
     return team, team_member
 
@@ -141,7 +155,7 @@ async def get_team_by_slug(
 async def get_project_by_name(
     project_name: str,
     db: AsyncSession = Depends(get_db),
-    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug)
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
 ) -> Project:
     team, membership = team_and_membership
 
@@ -163,10 +177,10 @@ async def get_project_by_name(
 async def get_project_by_id(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug)
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
 ) -> Project:
     team, membership = team_and_membership
-    
+
     result = await db.execute(
         select(Project)
         .where(
@@ -183,8 +197,7 @@ async def get_project_by_id(
 
 
 async def get_deployment_by_id(
-    deployment_id: str,
-    db: AsyncSession = Depends(get_db)
+    deployment_id: str, db: AsyncSession = Depends(get_db)
 ) -> Deployment:
     result = await db.execute(
         select(Deployment)

@@ -49,46 +49,11 @@ from utils.teams import get_latest_teams
 from utils.pagination import paginate
 from utils.environments import group_branches_by_environment
 from utils.colors import COLORS
+from utils.user import get_user_github_token
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-@router.api_route("/{team_slug}/repo-select", methods=["GET", "POST"], name="project_repo_select")
-async def repo_select(
-    request: Request,
-    account: str | None = None,
-    current_user: User = Depends(get_current_user),
-    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
-    github_client: GitHub = Depends(get_github_client),
-):
-    team, membership = team_and_membership
-    
-    accounts = []
-    selected_account = None
-    try:
-        if not current_user.github_token:
-            raise ValueError("GitHub token missing.")
-
-        installations = await github_client.get_user_installations(
-            current_user.github_token
-        )
-        accounts = [installation["account"]["login"] for installation in installations]
-        selected_account = account or (accounts[0] if accounts else None)
-    except Exception:
-        flash(request, _("Error fetching installations from GitHub."), "error")
-
-    return TemplateResponse(
-        request=request,
-        name="projects/partials/_repo-select.html",
-        context={
-            "current_user": current_user,
-            "team": team,
-            "accounts": accounts,
-            "selected_account": selected_account,
-        },
-    )
 
 
 @router.get("/{team_slug}/new-project", name="new_project")
@@ -101,7 +66,7 @@ async def new_project(
 
     return TemplateResponse(
         request=request,
-        name="projects/pages/new.html",
+        name="project/pages/new.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -109,7 +74,11 @@ async def new_project(
     )
 
 
-@router.api_route("/{team_slug}/new-project/details", methods=["GET", "POST"], name="new_project_details")
+@router.api_route(
+    "/{team_slug}/new-project/details",
+    methods=["GET", "POST"],
+    name="new_project_details",
+)
 async def new_project_details(
     request: Request,
     repo_id: str = Query(None),
@@ -123,16 +92,14 @@ async def new_project_details(
     github_client: GitHub = Depends(get_github_client),
 ):
     team, membership = team_and_membership
-    
+
     if not all([repo_id, repo_owner, repo_name, repo_default_branch]):
         flash(request, _("Missing repository details."), "error")
-        return RedirectResponse(request.url_for("project_new", team_slug=team.slug), status_code=303)
-    
-    form: Any = await NewProjectForm.from_formdata(
-        request, 
-        db=db, 
-        team=team
-    )
+        return RedirectResponse(
+            request.url_for("project_new", team_slug=team.slug), status_code=303
+        )
+
+    form: Any = await NewProjectForm.from_formdata(request, db=db, team=team)
 
     if request.method == "GET":
         form.repo_id.data = int(repo_id)
@@ -141,18 +108,21 @@ async def new_project_details(
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
-            if not current_user.github_token:
+            github_token = await get_user_github_token(db, current_user)
+            if not github_token:
                 raise ValueError("GitHub token missing.")
 
             if not form.repo_id.data:
                 raise ValueError("Repository ID missing.")
 
             repo = await github_client.get_repository(
-                current_user.github_token, int(form.repo_id.data)
+                github_token, int(form.repo_id.data)
             )
         except Exception:
             flash(request, "You do not have access to this repository.", "error")
-            return RedirectResponse(request.url_for("project_new", team_slug=team.slug), status_code=303)
+            return RedirectResponse(
+                request.url_for("project_new", team_slug=team.slug), status_code=303
+            )
 
         installation = await github_client.get_repository_installation(
             repo["full_name"]
@@ -209,12 +179,15 @@ async def new_project_details(
         await db.commit()
         flash(request, _("Project added."), "success")
         return RedirectResponse(
-            request.url_for("project_index", team_slug=team.slug, project_name=project.name), status_code=303
+            request.url_for(
+                "project_index", team_slug=team.slug, project_name=project.name
+            ),
+            status_code=303,
         )
 
     return TemplateResponse(
         request=request,
-        name="projects/pages/new-details.html",
+        name="project/pages/new-details.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -252,10 +225,10 @@ async def project_index(
 
     env_aliases = await project.get_environment_aliases(db=db)
 
-    if request.headers.get('HX-Request') and fragment == 'deployments':
+    if request.headers.get("HX-Request") and fragment == "deployments":
         return TemplateResponse(
             request=request,
-            name="projects/partials/_index_deployments.html",
+            name="project/partials/_index_deployments.html",
             context={
                 "current_user": current_user,
                 "team": team,
@@ -270,7 +243,7 @@ async def project_index(
 
     return TemplateResponse(
         request=request,
-        name="projects/pages/index.html",
+        name="project/pages/index.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -284,7 +257,9 @@ async def project_index(
     )
 
 
-@router.get("/{team_slug}/projects/{project_name}/deployments", name="project_deployments")
+@router.get(
+    "/{team_slug}/projects/{project_name}/deployments", name="project_deployments"
+)
 async def project_deployments(
     request: Request,
     fragment: str = Query(None),
@@ -321,7 +296,9 @@ async def project_deployments(
     if environment:
         environment_object = project.get_environment_by_slug(environment)
         if environment_object:
-            query = query.where(Deployment.environment_id == environment_object.get("id"))
+            query = query.where(
+                Deployment.environment_id == environment_object.get("id")
+            )
 
     # Filter by status (conclusion)
     if status:
@@ -354,7 +331,7 @@ async def project_deployments(
     if request.headers.get("HX-Request") and fragment == "deployments":
         return TemplateResponse(
             request=request,
-            name="projects/partials/_deployments.html",
+            name="project/partials/_deployments.html",
             context={
                 "current_user": current_user,
                 "team": team,
@@ -370,7 +347,7 @@ async def project_deployments(
 
     return TemplateResponse(
         request=request,
-        name="projects/pages/deployments.html",
+        name="project/pages/deployments.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -385,7 +362,11 @@ async def project_deployments(
     )
 
 
-@router.api_route("/{team_slug}/projects/{project_name}/deploy", methods=["GET", "POST"], name="project_deploy")
+@router.api_route(
+    "/{team_slug}/projects/{project_name}/deploy",
+    methods=["GET", "POST"],
+    name="project_deploy",
+)
 async def project_deploy(
     request: Request,
     environment_id: str = Query(None),
@@ -399,7 +380,7 @@ async def project_deploy(
     deployment_queue: ArqRedis = Depends(get_deployment_queue),
 ):
     team, membership = team_and_membership
-    
+
     form: Any = await ProjectDeployForm.from_formdata(request, project=project)
 
     environment_choices = []
@@ -418,13 +399,16 @@ async def project_deploy(
         logger.error(error_message)
         flash(request, error_message, "error")
         return RedirectResponse(
-            request.url_for("project_deploy", team_slug=team.slug, project_name=project.name),
+            request.url_for(
+                "project_deploy", team_slug=team.slug, project_name=project.name
+            ),
             status_code=303,
         )
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
-            if not current_user.github_token:
+            github_token = await get_user_github_token(db, current_user)
+            if not github_token:
                 raise ValueError("GitHub token missing.")
 
             if not form.commit.data:
@@ -432,7 +416,7 @@ async def project_deploy(
 
             branch, commit_sha = form.commit.data.split(":")
             commit = await github_client.get_repository_commit(
-                user_access_token=current_user.github_token,
+                user_access_token=github_token,
                 repo_id=project.repo_id,
                 commit_sha=commit_sha,
                 branch=branch,
@@ -468,7 +452,7 @@ async def project_deploy(
             await deployment_queue.enqueue_job("deploy", deployment.id)
             logger.info(
                 f"Deployment {deployment.id} created and queued for "
-                f"project {project.name} ({project.id}) to environment {environment.get("name")} ({environment.get("id")})"
+                f"project {project.name} ({project.id}) to environment {environment.get('name')} ({environment.get('id')})"
             )
 
             if request.headers.get("HX-Request"):
@@ -508,11 +492,12 @@ async def project_deploy(
     branch_names = []
     commits = []
     try:
-        if not current_user.github_token:
+        github_token = await get_user_github_token(db, current_user)
+        if not github_token:
             raise ValueError("GitHub token missing.")
 
         branches = await github_client.get_repository_branches(
-            current_user.github_token, project.repo_id
+            github_token, project.repo_id
         )
         branch_names = [branch["name"] for branch in branches]
     except Exception as e:
@@ -530,11 +515,11 @@ async def project_deploy(
         if matching_branches:
             for branch in matching_branches:
                 try:
-                    if not current_user.github_token:
+                    if not github_token:
                         raise ValueError("GitHub token missing.")
 
                     branch_commits = await github_client.get_repository_commits(
-                        current_user.github_token, project.repo_id, branch, per_page=5
+                        github_token, project.repo_id, branch, per_page=5
                     )
 
                     # Add branch information to each commit
@@ -554,7 +539,7 @@ async def project_deploy(
 
     return TemplateResponse(
         request=request,
-        name="projects/partials/_dialog-deploy-commits.html",
+        name="project/partials/_dialog-deploy-commits.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -565,7 +550,11 @@ async def project_deploy(
     )
 
 
-@router.api_route("/{team_slug}/projects/{project_name}/settings", methods=["GET", "POST"], name="project_settings")
+@router.api_route(
+    "/{team_slug}/projects/{project_name}/settings",
+    methods=["GET", "POST"],
+    name="project_settings",
+)
 async def project_settings(
     request: Request,
     fragment: str = Query(None),
@@ -590,7 +579,7 @@ async def project_settings(
                 # Project is marked as deleted, actual cleanup is delegated to a job
                 # TODO: job_timeout='1h'
                 deployment_queue = await get_deployment_queue()
-                await deployment_queue.enqueue_job("cleanup", project.id)
+                await deployment_queue.enqueue_job("cleanup_project", project.id)
 
                 flash(
                     request,
@@ -614,18 +603,22 @@ async def project_settings(
             flash(request, error, "error")
 
         return RedirectResponse(
-            url=str(request.url_for("project_settings", team_slug=team.slug, project_name=project.name))
+            url=str(
+                request.url_for(
+                    "project_settings", team_slug=team.slug, project_name=project.name
+                )
+            )
             + "#danger",
             status_code=303,
         )
 
     # General
     general_form: Any = await ProjectGeneralForm.from_formdata(
-        request, 
+        request,
         data={"name": project.name, "repo_id": project.repo_id},
         db=db,
         team=team,
-        project=project
+        project=project,
     )
 
     if fragment == "general":
@@ -638,11 +631,18 @@ async def project_settings(
             if general_form.repo_id.data != project.repo_id:
                 try:
                     github_client = get_github_client()
-                    repo = await github_client.get_repository(current_user.github_token or "", general_form.repo_id.data)
-                except Exception as e:
-                    flash(request, _("You do not have access to this repository."), "error")
+                    github_token = await get_user_github_token(db, current_user)
+                    repo = await github_client.get_repository(
+                        github_token or "", general_form.repo_id.data
+                    )
+                except Exception:
+                    flash(
+                        request,
+                        _("You do not have access to this repository."),
+                        "error",
+                    )
                 project.repo_id = general_form.repo_id.data
-                project.repo_full_name = repo.get('full_name') or ""
+                project.repo_full_name = repo.get("full_name") or ""
 
             # Avatar upload
             avatar_file = general_form.avatar.data
@@ -698,7 +698,9 @@ async def project_settings(
 
             # Redirect if the name has changed
             if old_name != project.name:
-                new_url = request.url_for("project_settings", team_slug=team.slug, project_name=project.name)
+                new_url = request.url_for(
+                    "project_settings", team_slug=team.slug, project_name=project.name
+                )
 
                 if request.headers.get("HX-Request"):
                     return Response(
@@ -710,7 +712,7 @@ async def project_settings(
         if request.headers.get("HX-Request"):
             return TemplateResponse(
                 request=request,
-                name="projects/partials/_settings-general.html",
+                name="project/partials/_settings-general.html",
                 context={
                     "current_user": current_user,
                     "team": team,
@@ -757,7 +759,7 @@ async def project_settings(
         if request.headers.get("HX-Request"):
             return TemplateResponse(
                 request=request,
-                name="projects/partials/settings/_env_vars.html",
+                name="project/partials/_settings-env-vars.html",
                 context={
                     "current_user": current_user,
                     "team": team,
@@ -827,10 +829,12 @@ async def project_settings(
             except ValueError as e:
                 flash(request, str(e), "error")
 
-    if fragment in ("environment", "delete_environment") and request.headers.get("HX-Request"):
+    if fragment in ("environment", "delete_environment") and request.headers.get(
+        "HX-Request"
+    ):
         return TemplateResponse(
             request=request,
-            name="projects/partials/settings/_environments.html",
+            name="project/partials/_settings-environments.html",
             context={
                 "current_user": current_user,
                 "team": team,
@@ -883,7 +887,7 @@ async def project_settings(
         if request.headers.get("HX-Request"):
             return TemplateResponse(
                 request=request,
-                name="projects/partials/settings/_build_and_deploy.html",
+                name="project/partials/_settings-build-and-deploy.html",
                 context={
                     "current_user": current_user,
                     "team": team,
@@ -895,7 +899,7 @@ async def project_settings(
 
     return TemplateResponse(
         request=request,
-        name="projects/pages/settings.html",
+        name="project/pages/settings.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -912,7 +916,10 @@ async def project_settings(
     )
 
 
-@router.get("/{team_slug}/projects/{project_name}/deployments/{deployment_id}", name="project_deployment")
+@router.get(
+    "/{team_slug}/projects/{project_name}/deployments/{deployment_id}",
+    name="project_deployment",
+)
 async def project_deployment(
     request: Request,
     deployment_id: str,
@@ -924,13 +931,13 @@ async def project_deployment(
     deployment: Deployment = Depends(get_deployment_by_id),
 ):
     team, membership = team_and_membership
-    
+
     env_aliases = await project.get_environment_aliases(db=db)
 
     if request.headers.get("HX-Request") and fragment == "header":
         return TemplateResponse(
             request=request,
-            name="deployments/partials/_header.html",
+            name="deployment/partials/_header.html",
             context={
                 "current_user": current_user,
                 "team": team,
@@ -948,7 +955,7 @@ async def project_deployment(
 
     return TemplateResponse(
         request=request,
-        name="deployments/pages/index.html",
+        name="deployment/pages/index.html",
         context={
             "current_user": current_user,
             "team": team,

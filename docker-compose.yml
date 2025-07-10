@@ -39,10 +39,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      CONTAINERS: 1
-      POST: 1
-      EXEC: 1
-      NETWORKS: 1
+      - CONTAINERS=1
+      - POST=1
+      - EXEC=1
+      - NETWORKS=1
+      - DISABLE_IPV6=1
     networks:
       - internal
 
@@ -77,10 +78,13 @@ services:
 
   pgsql:
     container_name: pgsql
-    image: postgres:16-alpine
+    image: postgres:16
     restart: always
     networks:
       - internal
+    environment:
+      - LANG=en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
     env_file:
       - .env
     volumes:

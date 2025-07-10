@@ -1,0 +1,23 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block app_content %}
+<div class="flex flex-col items-center justify-center h-[calc(100vh-65px)]">
+  <div class="w-full max-w-xs space-y-6">
+    <h2 class="h2 text-center">Sign in to {{ settings.app_name }}</h2>
+    <section class="grid gap-4">
+      {% include "auth/partials/_form-email.html" %}
+      <hr>
+      <a href="{{ url_for('auth_github_login') }}" class="btn-outline w-full">
+        {% include "icons/github.svg" %}
+        {{ _("Continue with GitHub") }}
+      </a>
+      <a href="{{ url_for('auth_github_login') }}" class="btn-outline w-full">
+        {% include "icons/google.svg" %}
+        {{ _("Continue with Google") }}
+      </a>
+    </section>
+  </div>
+</div>
+{% endblock %}

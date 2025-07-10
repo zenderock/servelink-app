@@ -80,22 +80,10 @@
     }
 
   </style>
-  <style type="text/css">
-    @media only screen and (max-width:479px) {
-      table.mj-full-width-mobile {
-        width: 100% !important;
-      }
-
-      td.mj-full-width-mobile {
-        width: auto !important;
-      }
-    }
-
-  </style>
 </head>
 
-<body style="word-spacing:normal;background-color:#f5f5f5;">
-  <div style="background-color:#f5f5f5;" lang="und" dir="auto">
+<body style="word-spacing:normal;background-color:#ffffff;">
+  <div style="background-color:#ffffff;" lang="und" dir="auto">
     <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
     <div style="margin:0px auto;max-width:600px;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
@@ -120,66 +108,37 @@
         </tbody>
       </table>
     </div>
-    <!--[if mso | IE]></td></tr></table><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#ffffff" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
-    <div style="background:#ffffff;background-color:#ffffff;margin:0px auto;border-radius:24px;max-width:600px;">
-      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;background-color:#ffffff;width:100%;border-radius:24px;">
+    <!--[if mso | IE]></td></tr></table><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
+    <div style="margin:0px auto;max-width:600px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
         <tbody>
           <tr>
-            <td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center;">
+            <td style="direction:ltr;font-size:0px;padding:0;text-align:center;">
               <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:600px;" ><![endif]-->
               <div class="mj-column-per-100 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-                <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
+                <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
                   <tbody>
                     <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
+                      <td style="vertical-align:top;padding:0;">
+                        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
                           <tbody>
                             <tr>
-                              <td style="width:36px;">
-                                <img alt="" src="{{ url_for('static', filename=mail_logo, _external=True) }}" style="border:0;display:block;outline:none;text-decoration:none;height:36px;width:100%;font-size:16px;" width="36" height="36" />
+                              <td align="left" style="font-size:0px;padding:0;word-break:break-word;">
+                                <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:14px;line-height:21px;text-align:left;color:#0a0a0a;">
+                                  <div style="border: 1px solid #e5e5e5; border-radius: 14px; color: #0a0a0a; padding: 24px;">
+                                    <img src="{{ email_logo }}" height="24" width="24" style="display: block; margin-bottom: 16px;" />
+                                    <h1 style="color: #0a0a0a; font-size: 24px; font-weight: 600; margin: 0 0 12px;">{{ _('Sign in to %(app_name)s', app_name=app_name) }}</h1>
+                                    <p style="color: #0a0a0a; margin: 0 0 16px;">{{ _('Click the button below to sign in to %(app_name)s with %(email)s. This link will expire in 15 minutes.', app_name=app_name, email=email) }}</p>
+                                    <a href="{{ verify_link }}" style="display: inline-block; background: #0a0a0a; color: #fafafa; padding: 8px 16px; border-radius: 8px; font-weight: 500; text-decoration: none;">{{ _('Sign in to %(app_name)s', app_name=app_name) }}</a>
+                                    <p style="color: #0a0a0a; margin: 24px 0 8px;">{{ _('You can also paste this URL into your browser:') }}</p>
+                                    <p style="color: #0a0a0a; word-break: break-all;">{{ verify_link }}</p>
+                                    <p style="color: #0a0a0a; margin-bottom: 0;">{{ _('If you didn\'t request this email, please ignore it.') }}</p>
+                                  </div>
+                                </div>
                               </td>
                             </tr>
                           </tbody>
                         </table>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:28px;font-weight:600;line-height:24px;text-align:left;color:#171717;">Sign in to {{ app_name }}</div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;line-height:24px;text-align:left;color:#171717;">Click the button below to sign in to {{ app_name }} with {{ email}}. This link will expire in 10 minutes.</div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
-                          <tbody>
-                            <tr>
-                              <td align="center" bgcolor="#171717" role="presentation" style="border:none;border-radius:24px;cursor:auto;mso-padding-alt:10px 25px;background:#171717;" valign="middle">
-                                <a href="{{ url_for('auth.login_with_token', token=token, _external=True) }}" style="display:inline-block;background:#171717;color:#ffffff;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;font-weight:500;line-height:24px;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:24px;" target="_blank"> Sign in to {{ app_name }}
-                                </a>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;line-height:24px;text-align:left;color:#171717;">You can also paste this URL into your browser:</div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;line-height:24px;text-align:left;color:#171717;">{{ url_for('auth.login_with_token', token=token, _external=True) }}</div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;line-height:24px;text-align:left;color:#171717;">If you didn&apos;t request this email, please ignore it.</div>
                       </td>
                     </tr>
                   </tbody>
@@ -203,7 +162,7 @@
                   <tbody>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:16px;line-height:24px;text-align:left;color:#a3a3a3;">{{ footer }}</div>
+                        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-size:12px;line-height:21px;text-align:left;color:#737373;"><a href="{{ app_url }}" style="color: #737373; text-decoration: none;">{{ app_name }}</a> - {{ app_description }}</div>
                       </td>
                     </tr>
                   </tbody>
