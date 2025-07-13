@@ -4,7 +4,7 @@
     <div class="text-center">
       <h2 class="h4">{{ _('Connect your GitHub account') }}</h2>
       <p class="text-muted-foreground mt-1">{{ _('Connect your GitHub account to search for repositories.') }}</p>
-      <a class="btn-sm mt-4" href="{{ url_for('github_oauth_authorize') }}">
+      <a class="btn-sm mt-4" href="{{ url_for('github_authorize') }}">
         {% include "icons/github.svg" %}
         {{ _('Connect account') }}
       </a>
@@ -35,7 +35,7 @@
     </div>
     {% endfor %}
     <hr role="separator" />
-    <a role="option" href="{{ url_for('github_app_install') }}">
+    <a role="option" href="{{ url_for('github_install') }}">
       {{ _('Add account') }}
     </a>
     {% endcall %}
@@ -62,7 +62,7 @@
     <div class="text-center">
       <h2 class="h4">{{ _('Install the GitHub app') }}</h2>
       <p class="text-muted-foreground mt-1">{{ _('Install the GitHub application for the accounts you want to select repositories from.') }}</p>
-      <a class="btn-sm mt-4" href="{{ url_for('github_app_install') }}">
+      <a class="btn-sm mt-4" href="{{ url_for('github_install') }}">
         {% include "icons/github.svg" %}
         {{ _('Install app') }}
       </a>

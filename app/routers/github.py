@@ -16,7 +16,7 @@ from dependencies import (
 from models import User, UserIdentity, GithubInstallation
 from services.github import GitHub
 from utils.user import get_user_github_token
-from config import get_settings
+from config import get_settings, Settings
 
 router = APIRouter(prefix="/api/github")
 
@@ -95,8 +95,8 @@ async def github_repo_list(
     )
 
 
-@router.get("/authorize", name="github_oauth_authorize")
-async def github_oauth_authorize(
+@router.get("/authorize", name="github_authorize")
+async def github_authorize(
     request: Request,
     next: str | None = None,
     current_user: User = Depends(get_current_user),
@@ -112,12 +112,12 @@ async def github_oauth_authorize(
     request.session["redirect_after_github"] = redirect_url
 
     return await oauth_client.github.authorize_redirect(
-        request, request.url_for("github_oauth_authorize_callback")
+        request, request.url_for("github_authorize_callback")
     )
 
 
-@router.get("/authorize/callback", name="github_oauth_authorize_callback")
-async def github_oauth_authorize_callback(
+@router.get("/authorize/callback", name="github_authorize_callback")
+async def github_authorize_callback(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -173,14 +173,14 @@ async def github_oauth_authorize_callback(
     return RedirectResponse(redirect_url, status_code=303)
 
 
-@router.get("/install", name="github_app_install")
-async def github_app_install(
+@router.get("/install", name="github_install")
+async def github_install(
     request: Request,
     next: str | None = None,
+    settings: Settings = Depends(get_settings),
     current_user: User = Depends(get_current_user),
 ):
     """Install GitHub App on new organizations"""
-    settings = get_settings()
 
     if not settings.github_app_id:
         flash(request, _("GitHub App not configured."), "error")
@@ -197,8 +197,8 @@ async def github_app_install(
     )
 
 
-@router.get("/install/callback", name="github_app_install_callback")
-async def github_app_install_callback(
+@router.get("/install/callback", name="github_install_callback")
+async def github_install_callback(
     request: Request,
     installation_id: int,
     setup_action: str,
@@ -244,16 +244,14 @@ async def github_app_install_callback(
     return RedirectResponse(redirect_url, status_code=303)
 
 
-@router.get("/manage", name="github_app_manage")
-async def github_app_manage(
+@router.get("/manage/authorization", name="github_manage_authorization")
+async def github_manage_authorization(
     request: Request,
     next: str | None = None,
     current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
 ):
-    """Manage existing GitHub App installations"""
-    from config import get_settings
-
-    settings = get_settings()
+    """Manage authorized GitHub Apps (OAuth connections)"""
 
     if not settings.github_app_name:
         flash(request, _("GitHub App not configured."), "error")
@@ -261,6 +259,29 @@ async def github_app_manage(
         return RedirectResponse(redirect_url, status_code=303)
 
     return RedirectResponse(
-        f"https://github.com/settings/installations/{settings.github_app_id}",
+        f"https://github.com/settings/connections/applications/{settings.github_app_client_id}",
         status_code=303,
     )
+
+
+@router.get("/manage/installation", name="github_manage_installation")
+async def github_manage_installation(
+    request: Request,
+    installation_id: int | None = None,
+    next: str | None = None,
+    settings: Settings = Depends(get_settings),
+    current_user: User = Depends(get_current_user),
+):
+    """Manage installed GitHub Apps"""
+    
+    if not settings.github_app_name:
+        flash(request, _("GitHub App not configured."), "error")
+        redirect_url = next or request.headers.get("Referer", "/")
+        return RedirectResponse(redirect_url, status_code=303)
+
+    if installation_id:
+        url = f"https://github.com/settings/installations/{installation_id}"
+    else:
+        url = "https://github.com/settings/installations"
+
+    return RedirectResponse(url, status_code=303)

@@ -14,7 +14,7 @@
           <div class="text-muted-foreground">{{ current_user.email }}</div>
         </form>
       </li>
-      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not github_username %}[&>svg]:grayscale{% endif %}">
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not github_username %}[&>svg]:grayscale [&>svg]:opacity-50{% endif %}">
         {% include "icons/github.svg" %}
         <div class="font-medium {% if not github_username %}text-muted-foreground{% endif %}">{{ _('GitHub') }}</div>
         {% if github_username %}
@@ -30,20 +30,29 @@
             trigger_attrs={"class": "btn-sm-icon-ghost"},
             popover_attrs={"data-align": "end"}
           ) %}
-            <button role="menuitem">
+            <a role="menuitem" href="{{ url_for('github_manage_authorization') }}">
               {{ _('Manage on GitHub') }}
-            </button>
-            <button role="menuitem">
+              <span class="text-muted-foreground ml-auto text-xs tracking-widest [&>svg]:size-3">
+                {% include "icons/external-link.svg" %}
+              </span>
+            </a>
+            <button
+              role="menuitem"
+              hx-post="{{ url_for('user_settings').include_query_params(fragment='github_revoke_oauth_access') }}"
+              hx-target="closest .card"
+              hx-swap="outerHTML"
+              hx-indicator="next .htmx-indicator"
+            >
               {{ _('Disconnect') }}
             </button>
           {% endcall %}
         {% else %}
-          <button class="btn-sm-ghost ml-auto">
+          <a class="btn-sm-outline ml-auto" href="{{ url_for('github_authorize').include_query_params(next='/settings#authentication') }}">
             {{ _('Connect') }}
-          </button>
+          </a>
         {% endif %}
       </li>
-      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not google_email %}[&>svg]:grayscale{% endif %}">
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not google_email %}[&>svg]:grayscale [&>svg]:opacity-50{% endif %}">
         {% include "icons/google.svg" %}
         <div class="font-medium {% if not google_email %}text-muted-foreground{% endif %}">{{ _('Google') }}</div>
         {% if google_email %}
@@ -69,4 +78,11 @@
       </li>
     </ul>
   </section>
+</div>
+
+<div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
+  <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
+    {% include "icons/loader.svg" %}
+    {{ _('Saving') }}
+  </div>
 </div>

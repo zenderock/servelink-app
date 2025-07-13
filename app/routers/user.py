@@ -21,6 +21,7 @@ from dependencies import (
 from db import get_db
 from models import User, UserIdentity, utc_now
 from forms.user import UserDeleteForm, UserGeneralForm, UserEmailForm
+from utils.github import revoke_oauth_access
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,7 @@ async def user_settings(
                 },
             )
 
+    # Authentication
     result = await db.execute(
         select(UserIdentity).where(UserIdentity.user_id == current_user.id)
     )
@@ -260,6 +262,22 @@ async def user_settings(
             github_username = identity.provider_metadata.get("login")
         elif identity.provider == "google" and identity.provider_metadata:
             google_email = identity.provider_metadata.get("email")
+
+    if request.method == "POST" and fragment == "github_revoke_oauth_access":
+        revoked = await revoke_oauth_access(request, current_user, db)
+        if revoked:
+            github_username = None
+        
+        if request.headers.get("HX-Request"):
+            return TemplateResponse(
+                request=request,
+                name="user/partials/_settings-authentication.html",
+                context={
+                    "current_user": current_user,
+                    "github_username": github_username,
+                    "google_email": google_email,
+                },
+            )
 
     return TemplateResponse(
         request=request,

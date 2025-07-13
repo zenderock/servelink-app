@@ -1,9 +1,11 @@
+from fastapi import Request
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from models import GithubInstallation
+from models import GithubInstallation, User, UserIdentity
 from services.github import GitHub
+from dependencies import flash, get_translation as _
 
 
 async def get_installation_instance(
@@ -41,3 +43,31 @@ async def get_installation_instance(
     installation = await db.merge(installation)
     await db.commit()
     return installation
+
+
+async def revoke_oauth_access(
+    request: Request,
+    user: User,
+    db: AsyncSession,
+) -> bool:
+    """Revoke OAuth access to GitHub"""
+    try:
+        result = await db.execute(
+            select(UserIdentity).where(
+                UserIdentity.user_id == user.id,
+                UserIdentity.provider == "github",
+            )
+        )
+        github_identity = result.scalar_one_or_none()
+        
+        if github_identity:
+            await db.delete(github_identity)
+            await db.commit()
+            flash(request, _("GitHub account disconnected successfully."), "success")
+            return True
+        else:
+            flash(request, _("No GitHub account connected."), "warning")
+            return False
+    except Exception:
+        flash(request, _("Error disconnecting GitHub account."), "error")
+        return False
