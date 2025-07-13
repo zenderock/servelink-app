@@ -32,19 +32,18 @@
         <ul class="space-y-1">
           <li>
             <a href="http://{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}"
-              class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors"
+              class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
               target="_blank" data-tooltip="{{ _('Visit') }}">
-              <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-                {% include "icons/link-2.svg" %}
-              </span>
+              {% include "icons/link-2.svg" %}
               <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}</span>
             </a>
           </li>
           <li>
-            <span class="text-muted-foreground flex items-center gap-x-2 mr-auto" data-tooltip="{{ _('Branch') }}">
-              <span class="opacity-50 dark:opacity-60 [&>svg]:size-4">
-                {% include "icons/git-branch.svg" %}
-              </span>
+            <span
+              class="text-muted-foreground flex items-center gap-x-2 mr-auto [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
+              data-tooltip="{{ _('Branch') }}"
+            >
+              {% include "icons/git-branch.svg" %}
               <span class="font-mono truncate">{{ environment.branch }}</span>
             </span>
           </li>
@@ -73,7 +72,7 @@
       {% include "project/partials/_sse-index.html" %}
 
       <div id="deployments">
-        {% include "project/partials/_index_deployments.html" %}
+        {% include "project/partials/_index-deployments.html" %}
       </div>
 
       {% if deployments %}

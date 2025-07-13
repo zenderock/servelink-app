@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter, Request, Depends, Query
 from starlette.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Any
 from authlib.jose import jwt
 from datetime import timedelta
@@ -18,7 +19,7 @@ from dependencies import (
     get_deployment_queue,
 )
 from db import get_db
-from models import User, utc_now
+from models import User, UserIdentity, utc_now
 from forms.user import UserDeleteForm, UserGeneralForm, UserEmailForm
 
 logger = logging.getLogger(__name__)
@@ -44,14 +45,14 @@ async def user_settings(
 
                 # User is marked as deleted, actual cleanup is delegated to a job
                 deployment_queue = await get_deployment_queue()
-                await deployment_queue.enqueue_job(
-                    "cleanup", current_user.id, job_timeout=300
-                )
+                await deployment_queue.enqueue_job("cleanup_user", current_user.id)
 
                 flash(
                     request,
-                    _('User "%(name)s" has been marked for deletion.')
-                    % {"name": current_user.name},
+                    _(
+                        'User "%(name)s" has been marked for deletion.',
+                        name=current_user.name,
+                    ),
                     "success",
                 )
                 return RedirectResponse("/")
@@ -201,7 +202,9 @@ async def user_settings(
                         "from": f"{settings.email_sender_name} <{settings.email_sender_address}>",
                         "to": [new_email],
                         "subject": _("Verify your new email address"),
-                        "html": templates.get_template("email/change.html").render(
+                        "html": templates.get_template(
+                            "email/email-change.html"
+                        ).render(
                             {
                                 "request": request,
                                 "email": new_email,
@@ -244,6 +247,20 @@ async def user_settings(
                 },
             )
 
+    result = await db.execute(
+        select(UserIdentity).where(UserIdentity.user_id == current_user.id)
+    )
+    identities = result.scalars().all()
+
+    github_username = None
+    google_email = None
+
+    for identity in identities:
+        if identity.provider == "github" and identity.provider_metadata:
+            github_username = identity.provider_metadata.get("login")
+        elif identity.provider == "google" and identity.provider_metadata:
+            google_email = identity.provider_metadata.get("email")
+
     return TemplateResponse(
         request=request,
         name="user/pages/settings.html",
@@ -252,5 +269,7 @@ async def user_settings(
             "delete_form": delete_form,
             "general_form": general_form,
             "email_form": email_form,
+            "github_username": github_username,
+            "google_email": google_email,
         },
     )

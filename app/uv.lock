@@ -328,6 +328,9 @@ requires-dist = [
     { name = "watchfiles", specifier = ">=1.1.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "dnspython"
 version = "2.7.0"

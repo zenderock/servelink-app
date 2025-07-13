@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     traefik_config_dir: str = "/data/traefik"
     frameworks: list[dict] = []
     deployment_timeout: int = 90
-    templates_auto_reload: str = "false"
+    templates_auto_reload: bool = False
     db_echo: bool = False
     env: str = "development"
 

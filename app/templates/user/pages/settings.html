@@ -6,15 +6,15 @@
     <a href="/" class="btn-sm-icon-outline" data-tooltip="{{ _('Back to home') }}">
       {% include "icons/arrow-left.svg" %}
     </a>
-    {{ _('Account settings') }}
+    {{ _("Account settings") }}
   </h1>
 
   <div class="flex flex-row-reverse gap-x-6">
     <nav class="sticky top-[122px] min-w-64 h-full flex flex-col gap-y-1">
-      <a href="#general" class="btn-sm-ghost justify-start">{{ _('General') }}</a>
-      <a href="#email" class="btn-sm-ghost justify-start">{{ _('Email') }}</a>
-      <a href="#auth" class="btn-sm-ghost justify-start">{{ _('Authentication') }}</a>
-      <a href="#teams" class="btn-sm-ghost justify-start">{{ _('Teams') }}</a>
+      <a href="#general" class="btn-sm-ghost justify-start">{{ _("General") }}</a>
+      <a href="#email" class="btn-sm-ghost justify-start">{{ _("Email") }}</a>
+      <a href="#auth" class="btn-sm-ghost justify-start">{{ _("Authentication") }}</a>
+      <a href="#teams" class="btn-sm-ghost justify-start">{{ _("Teams") }}</a>
       <a href="#danger"
         class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20">{{
         _('Danger') }}</a>
@@ -30,7 +30,7 @@
       </section>
 
       <section class="relative rounded-xl scroll-mt-[101px]" id="auth">
-        {% include "user/partials/_settings-auth.html" %}
+        {% include "user/partials/_settings-authentication.html" %}
       </section>
 
       <section class="relative rounded-xl scroll-mt-[101px]" id="teams">

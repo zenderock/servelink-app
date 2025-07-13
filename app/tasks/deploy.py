@@ -154,12 +154,12 @@ async def deploy(ctx, deployment_id: str):
                     commands.append(
                         f"echo 'Cloning {deployment.repo_full_name} (Branch: {deployment.branch}, Commit: {deployment.commit_sha[:7]})'"
                     )
-                    installation = await get_installation_instance(
+                    github_installation = await get_installation_instance(
                         project.github_installation_id, db, github_client
                     )
                     commands.append(
                         "git init -q && "
-                        f"git fetch -q --depth 1 https://x-access-token:{installation.token}@github.com/{deployment.repo_full_name}.git {deployment.commit_sha} && "
+                        f"git fetch -q --depth 1 https://x-access-token:{github_installation.token}@github.com/{deployment.repo_full_name}.git {deployment.commit_sha} && "
                         f"git checkout -q FETCH_HEAD"
                     )
 

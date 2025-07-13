@@ -1,23 +1,24 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
-from secrets import token_urlsafe
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import httpx
 
-from config import get_settings
 from dependencies import (
     get_current_user,
     get_github_client,
+    get_github_oauth_client,
     TemplateResponse,
     flash,
     get_db,
     get_translation as _,
 )
-from models import User
+from models import User, UserIdentity, GithubInstallation
 from services.github import GitHub
 from utils.user import get_user_github_token
+from config import get_settings
 
-
-router = APIRouter(prefix="/github")
+router = APIRouter(prefix="/api/github")
 
 
 @router.get("/repo-select", name="github_repo_select")
@@ -30,16 +31,37 @@ async def github_repo_select(
 ):
     accounts = []
     selected_account = None
-    try:
-        github_token = await get_user_github_token(db, current_user)
-        if not github_token:
-            raise ValueError("GitHub token missing.")
+    has_github_oauth_token = False
 
-        installations = await github_client.get_user_installations(github_token)
-        accounts = [installation["account"]["login"] for installation in installations]
-        selected_account = account or (accounts[0] if accounts else None)
-    except Exception:
-        flash(request, _("Error fetching installations from GitHub."), "error")
+    try:
+        github_oauth_token = await get_user_github_token(db, current_user)
+        if not github_oauth_token:
+            has_github_oauth_token = False
+        else:
+            has_github_oauth_token = True
+            installations = await github_client.get_user_installations(
+                github_oauth_token
+            )
+            accounts = [
+                installation["account"]["login"] for installation in installations
+            ]
+            selected_account = account or (accounts[0] if accounts else None)
+
+    except Exception as e:
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in [
+            401,
+            403,
+        ]:
+            has_github_oauth_token = False
+            flash(
+                request,
+                _(
+                    "GitHub token has expired or is invalid. Please reconnect your account."
+                ),
+                "warning",
+            )
+        else:
+            flash(request, _("Error fetching installations from GitHub."), "error")
 
     return TemplateResponse(
         request=request,
@@ -48,6 +70,7 @@ async def github_repo_select(
             "current_user": current_user,
             "accounts": accounts,
             "selected_account": selected_account,
+            "has_github_oauth_token": has_github_oauth_token,
         },
     )
 
@@ -61,9 +84,9 @@ async def github_repo_list(
     query: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    github_token = await get_user_github_token(db, current_user)
+    github_oauth_token = await get_user_github_token(db, current_user)
     repos = await github.search_user_repositories(
-        github_token or "", account or "", query or ""
+        github_oauth_token or "", account or "", query or ""
     )
     return TemplateResponse(
         request=request,
@@ -72,165 +95,172 @@ async def github_repo_list(
     )
 
 
+@router.get("/authorize", name="github_oauth_authorize")
+async def github_oauth_authorize(
+    request: Request,
+    next: str | None = None,
+    current_user: User = Depends(get_current_user),
+    oauth_client=Depends(get_github_oauth_client),
+):
+    """Authorize GitHub OAuth for account linking"""
+    if not oauth_client.github:
+        flash(request, _("GitHub OAuth not configured."), "error")
+        redirect_url = next or request.headers.get("Referer", "/")
+        return RedirectResponse(redirect_url, status_code=303)
+
+    redirect_url = next or request.headers.get("Referer", "/")
+    request.session["redirect_after_github"] = redirect_url
+
+    return await oauth_client.github.authorize_redirect(
+        request, request.url_for("github_oauth_authorize_callback")
+    )
+
+
+@router.get("/authorize/callback", name="github_oauth_authorize_callback")
+async def github_oauth_authorize_callback(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    github_client: GitHub = Depends(get_github_client),
+    oauth_client=Depends(get_github_oauth_client),
+):
+    """Handle GitHub OAuth callback for account linking"""
+
+    redirect_url = request.session.pop("redirect_after_github", "/")
+
+    if not oauth_client.github:
+        flash(request, _("GitHub OAuth not configured."), "error")
+        return RedirectResponse(redirect_url, status_code=303)
+
+    try:
+        token = await oauth_client.github.authorize_access_token(request)
+        response = await oauth_client.github.get("user", token=token)
+        github_user = response.json()
+
+        result = await db.execute(
+            select(UserIdentity).where(
+                UserIdentity.user_id == current_user.id,
+                UserIdentity.provider == "github",
+            )
+        )
+        github_identity = result.scalar_one_or_none()
+
+        if github_identity:
+            github_identity.access_token = token["access_token"]
+            github_identity.provider_metadata = {
+                "login": github_user["login"],
+                "name": github_user.get("name"),
+            }
+        else:
+            github_identity = UserIdentity(
+                user_id=current_user.id,
+                provider="github",
+                provider_user_id=str(github_user["id"]),
+                access_token=token["access_token"],
+                provider_metadata={
+                    "login": github_user["login"],
+                    "name": github_user.get("name"),
+                },
+            )
+            db.add(github_identity)
+
+        await db.commit()
+        flash(request, _("GitHub account connected successfully!"), "success")
+
+    except Exception:
+        flash(request, _("Error connecting GitHub account."), "error")
+
+    return RedirectResponse(redirect_url, status_code=303)
+
+
 @router.get("/install", name="github_app_install")
-async def github_app_install(request: Request):
-    state = token_urlsafe(32)
-    request.session["github_state"] = state
+async def github_app_install(
+    request: Request,
+    next: str | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Install GitHub App on new organizations"""
     settings = get_settings()
 
-    github_install_url = (
-        f"https://github.com/apps/{settings.github_app_name}/installations/select_target"
-        f"?state={state}"
+    if not settings.github_app_id:
+        flash(request, _("GitHub App not configured."), "error")
+        redirect_url = next or request.headers.get("Referer", "/")
+        return RedirectResponse(redirect_url, status_code=303)
+
+    request.session["redirect_after_install"] = next or request.headers.get(
+        "Referer", "/"
     )
-    return RedirectResponse(github_install_url)
+
+    return RedirectResponse(
+        f"https://github.com/apps/{settings.github_app_name}/installations/new",
+        status_code=303,
+    )
 
 
-# @bp.route('/github/webhook', methods=['POST'])
-# def github_webhook():
-#     try:
-#         # Verify webhook signature
-#         signature = request.headers.get('X-Hub-Signature-256')
-#         payload = request.get_data()
-#         secret = current_app.config['GITHUB_APP_WEBHOOK_SECRET'].encode()
-#         hash_obj = hmac.new(secret, msg=payload, digestmod=hashlib.sha256)
-#         expected_signature = f'sha256={hash_obj.hexdigest()}'
+@router.get("/install/callback", name="github_app_install_callback")
+async def github_app_install_callback(
+    request: Request,
+    installation_id: int,
+    setup_action: str,
+    current_user: User = Depends(get_current_user),
+    github_client: GitHub = Depends(get_github_client),
+    db: AsyncSession = Depends(get_db),
+):
+    """Handle GitHub App installation callback"""
+    redirect_url = request.session.pop("redirect_after_install", "/")
 
-#         if not hmac.compare_digest(signature, expected_signature):
-#             current_app.logger.info(f'INVALID GitHub webhook event: {event}')
-#             return '', 401
+    if setup_action != "install":
+        flash(request, _("GitHub App installation was not completed."), "warning")
+        return RedirectResponse(redirect_url, status_code=303)
 
-#         event = request.headers.get('X-GitHub-Event')
-#         data = request.get_json()
+    try:
+        # Make sure installation exists
+        await github_client.get_installation(str(installation_id))
 
-#         current_app.logger.info(f'Received GitHub webhook event: {event}')
+        result = await db.execute(
+            select(GithubInstallation).where(
+                GithubInstallation.installation_id == installation_id
+            )
+        )
+        existing_installation = result.scalar_one_or_none()
 
-#         match event:
-#             case 'installation':
-#                 if data['action'] == 'deleted' or data['action'] == 'suspended' or data['action'] == 'unsuspended':
-#                     # App uninstalled or suspended
-#                     status = 'active' if data['action'] == 'unsuspended' else data['action']
-#                     db.session.execute(
-#                         update(GithubInstallation)
-#                         .where(GithubInstallation.installation_id == data['installation']['id'])
-#                         .values(status=status)
-#                     )
-#                     current_app.logger.info(f"Installation {data['installation']['id']} for {data['installation']['account']['login']} is {data['action']}")
+        if existing_installation:
+            existing_installation.status = "active"
+            await db.commit()
+            flash(
+                request, _("GitHub App installation updated successfully!"), "success"
+            )
+        else:
+            github_installation = GithubInstallation(
+                installation_id=installation_id, status="active"
+            )
+            db.add(github_installation)
+            await db.commit()
+            flash(request, _("GitHub App installed successfully!"), "success")
 
-#                 elif data['action'] == "created":
-#                     # App installed
-#                     installation_id = data['installation']['id']
-#                     token_data = current_app.github.get_installation_access_token(installation_id)
-#                     installation = GithubInstallation(
-#                         installation_id=installation_id,
-#                         token=token_data['token'],
-#                         token_expires_at=datetime.fromisoformat(token_data['expires_at'].replace('Z', '+00:00'))
-#                     )
-#                     db.session.merge(installation)
-#                     current_app.logger.info(f'Installation {installation_id} for {data["installation"]["account"]["login"]} created')
+    except Exception:
+        flash(request, _("Error processing GitHub App installation."), "error")
 
-#             case 'installation_target':
-#                 if data['action'] == 'renamed':
-#                     # Installation account is renamed (not used)
-#                     pass
-
-#             case 'installation_repositories':
-#                 if data['action'] == 'removed':
-#                     # Repositories removed from installation
-#                     removed_repos = data['repositories_removed']
-#                     repo_ids = [repo['id'] for repo in removed_repos]
-#                     db.session.execute(
-#                         update(Project)
-#                         .where(Project.repo_id.in_(repo_ids))
-#                         .values(status='removed')
-#                     )
-#                     current_app.logger.info(f"Repos removed from installation {data['installation']['id']} for {data['installation']['account']['login']}: {', '.join(repo_ids)}")
-
-#                 elif data['action'] == 'added':
-#                     # Repositories are added to installation
-#                     added_repos = data['repositories_added']
-#                     repo_ids = [repo['id'] for repo in added_repos]
-#                     db.session.execute(
-#                         update(Project)
-#                         .where(Project.repo_id.in_(repo_ids))
-#                         .values(status='active')
-#                     )
-#                     current_app.logger.info(f"Repos added to installation: {', '.join(repo_ids)}")
-
-#             case 'repository':
-#                 if data['action'] == 'deleted' or data['action'] == 'transferred':
-#                     # Repository is deleted or transferred
-#                     db.session.execute(
-#                         update(Project)
-#                         .where(Project.repo_id == data['repository']['id'])
-#                         .values(repo_status=data['action'])
-#                     )
-#                     current_app.logger.info(f"Repo {data['repository']['id']} is {data['action']}")
-
-#                 if data['action'] == "renamed":
-#                     # Repository is renamed
-#                     db.session.execute(
-#                         update(Project)
-#                         .where(Project.repo_id == data['repository']['id'])
-#                         .values(repo_full_name=data['repository']['full_name'])
-#                     )
-#                     current_app.logger.info(f"Repo {data['repository']['id']} renamed to {data['repository']['full_name']}")
-
-#             case 'push':
-#                 # Code pushed to a repository
-#                 projects = db.session.scalars(
-#                     select(Project)
-#                     .where(
-#                         Project.repo_id == data['repository']['id'],
-#                         Project.status == 'active'
-#                     )
-#                 ).all()
-
-#                 if not projects:
-#                     current_app.logger.info(f"No projects found for repo {data['repository']['id']}")
-#                     return '', 200
-
-#                 branch = data['ref'].replace('refs/heads/', '')  # Convert refs/heads/main to main
-
-#                 for project in projects:
-#                     # Check if branch matches any environment
-#                     matched_env = get_environment_for_branch(branch, project.active_environments)
-#                     if not matched_env:
-#                         current_app.logger.info(
-#                             f"Skipping deployment for project {project.name}: "
-#                             f"branch '{branch}' doesn't match any environment"
-#                         )
-#                         continue
-
-#                     deployment = Deployment(
-#                         project=project,
-#                         environment_id=matched_env['id'],
-#                         trigger='webhook',
-#                         branch=branch,
-#                         commit_sha=data['after'],
-#                         commit_meta={
-#                             'author': data['pusher']['name'],
-#                             'message': data['head_commit']['message'],
-#                             'date': datetime.fromisoformat(data['head_commit']['timestamp'].replace('Z', '+00:00')).isoformat()
-#                         },
-#                     )
-#                     db.session.add(deployment)
-#                     db.session.commit()
-
-#                     current_app.deployment_queue.enqueue(deploy, deployment.id)
-#                     current_app.logger.info(
-#                         f'Deployment {deployment.id} created and queued for '
-#                         f'project {project.name} ({project.id}) to environment {matched_env.get('slug')}'
-#                     )
-
-#             case 'pull_request':
-#                 # TODO: Add logic for PRs
-#                 pass
+    return RedirectResponse(redirect_url, status_code=303)
 
 
-#         return '', 200
+@router.get("/manage", name="github_app_manage")
+async def github_app_manage(
+    request: Request,
+    next: str | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Manage existing GitHub App installations"""
+    from config import get_settings
 
-#     except Exception as e:
-#         import traceback
-#         current_app.logger.error(f'Error processing GitHub webhook: {str(e)}', exc_info=True)
-#         db.session.rollback()
-#         return '', 500
+    settings = get_settings()
+
+    if not settings.github_app_name:
+        flash(request, _("GitHub App not configured."), "error")
+        redirect_url = next or request.headers.get("Referer", "/")
+        return RedirectResponse(redirect_url, status_code=303)
+
+    return RedirectResponse(
+        f"https://github.com/settings/installations/{settings.github_app_id}",
+        status_code=303,
+    )

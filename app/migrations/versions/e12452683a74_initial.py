@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 9e8b54d031ee
+Revision ID: e12452683a74
 Revises: 
-Create Date: 2025-07-10 19:21:22.539590
+Create Date: 2025-07-11 23:55:49.720407
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '9e8b54d031ee'
+revision: str = 'e12452683a74'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,8 +34,10 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=40), nullable=True),
     sa.Column('has_avatar', sa.Boolean(), nullable=False),
     sa.Column('status', sa.Enum('active', 'deleted', name='team_status'), nullable=False),
+    sa.Column('created_by_user_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['created_by_user_id'], ['user.id'], use_alter=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('slug')
     )
@@ -54,10 +56,12 @@ def upgrade() -> None:
     sa.Column('env_vars', sa.Text(), nullable=False),
     sa.Column('slug', sa.String(length=40), nullable=True),
     sa.Column('config', sa.JSON(), nullable=False),
+    sa.Column('created_by_user_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('status', sa.Enum('active', 'paused', 'deleted', name='project_status'), nullable=False),
     sa.Column('team_id', sa.String(length=32), nullable=False),
+    sa.ForeignKeyConstraint(['created_by_user_id'], ['user.id'], use_alter=True),
     sa.ForeignKeyConstraint(['github_installation_id'], ['github_installation.installation_id'], ),
     sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -106,9 +110,11 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('queued', 'in_progress', 'completed', name='deployment_status'), nullable=False),
     sa.Column('conclusion', sa.Enum('succeeded', 'failed', 'canceled', 'skipped', name='deployment_conclusion'), nullable=True),
     sa.Column('trigger', sa.Enum('webhook', 'user', 'api', name='deployment_trigger'), nullable=False),
+    sa.Column('created_by_user_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('concluded_at', sa.DateTime(), nullable=True),
     sa.Column('build_logs', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['created_by_user_id'], ['user.id'], use_alter=True),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -119,11 +125,28 @@ def upgrade() -> None:
     op.create_index(op.f('ix_deployment_project_id'), 'deployment', ['project_id'], unique=False)
     op.create_index(op.f('ix_deployment_repo_full_name'), 'deployment', ['repo_full_name'], unique=False)
     op.create_index(op.f('ix_deployment_repo_id'), 'deployment', ['repo_id'], unique=False)
+    op.create_table('team_invite',
+    sa.Column('id', sa.String(length=32), nullable=False),
+    sa.Column('team_id', sa.String(length=32), nullable=False),
+    sa.Column('email', sa.String(length=320), nullable=False),
+    sa.Column('role', sa.Enum('owner', 'admin', 'member', name='team_invite_role'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'accepted', 'revoked', name='team_invite_status'), nullable=False),
+    sa.Column('inviter_id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('expires_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['inviter_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('team_id', 'email', name='uq_team_invite_email')
+    )
+    op.create_index(op.f('ix_team_invite_email'), 'team_invite', ['email'], unique=False)
+    op.create_index(op.f('ix_team_invite_inviter_id'), 'team_invite', ['inviter_id'], unique=False)
+    op.create_index(op.f('ix_team_invite_team_id'), 'team_invite', ['team_id'], unique=False)
     op.create_table('team_member',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('team_id', sa.String(length=32), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('role', sa.Enum('owner', 'member', name='team_member_role'), nullable=False),
+    sa.Column('role', sa.Enum('owner', 'admin', 'member', name='team_member_role'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['team_id'], ['team.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
@@ -183,6 +206,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_team_member_user_id'), table_name='team_member')
     op.drop_index(op.f('ix_team_member_team_id'), table_name='team_member')
     op.drop_table('team_member')
+    op.drop_index(op.f('ix_team_invite_team_id'), table_name='team_invite')
+    op.drop_index(op.f('ix_team_invite_inviter_id'), table_name='team_invite')
+    op.drop_index(op.f('ix_team_invite_email'), table_name='team_invite')
+    op.drop_table('team_invite')
     op.drop_index(op.f('ix_deployment_repo_id'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_repo_full_name'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_project_id'), table_name='deployment')

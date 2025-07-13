@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 from secrets import token_hex
 from cryptography.fernet import Fernet
@@ -24,7 +24,7 @@ from typing import override
 
 from db import Base
 from config import get_settings
-from utils.colors import get_color
+from utils.color import get_color
 
 
 def utc_now() -> datetime:
@@ -43,10 +43,10 @@ class User(Base):
     __tablename__: str = "user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str | None] = mapped_column(
+    email: Mapped[str] = mapped_column(
         String(320), index=True, unique=True, nullable=False
     )
-    username: Mapped[str | None] = mapped_column(
+    username: Mapped[str] = mapped_column(
         String(50), index=True, unique=True, nullable=False
     )
     name: Mapped[str | None] = mapped_column(String(256), index=True, nullable=True)
@@ -161,6 +161,9 @@ class Team(Base):
         nullable=False,
         default="active",
     )
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", use_alter=True)
+    )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
     )
@@ -170,6 +173,7 @@ class Team(Base):
 
     # Relationships
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
+    created_by_user: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
 
     @property
     def color(self) -> str:
@@ -202,10 +206,10 @@ class TeamMember(Base):
     __tablename__ = "team_member"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), index=True)
+    team_id: Mapped[str] = mapped_column(ForeignKey("team.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
     role: Mapped[str] = mapped_column(
-        SQLAEnum("owner", "member", name="team_member_role"),
+        SQLAEnum("owner", "admin", "member", name="team_member_role"),
         nullable=False,
         default="member",
     )
@@ -214,6 +218,39 @@ class TeamMember(Base):
     # Relationships
     team: Mapped[Team] = relationship()
     user: Mapped[User] = relationship()
+
+
+class TeamInvite(Base):
+    __tablename__ = "team_invite"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    team_id: Mapped[str] = mapped_column(ForeignKey("team.id"), index=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    role: Mapped[str] = mapped_column(
+        SQLAEnum("owner", "admin", "member", name="team_invite_role"),
+        nullable=False,
+        default="member",
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("pending", "accepted", "revoked", name="team_invite_status"),
+        nullable=False,
+        default="pending",
+    )
+    inviter_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(
+        default=lambda: utc_now() + timedelta(days=30)
+    )
+
+    # Relationships
+    team: Mapped[Team] = relationship()
+    inviter: Mapped[User] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "email", name="uq_team_invite_email"),
+    )
 
 
 class GithubInstallation(Base):
@@ -281,6 +318,9 @@ class Project(Base):
     config: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", use_alter=True)
+    )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
     )
@@ -292,7 +332,7 @@ class Project(Base):
         nullable=False,
         default="active",
     )
-    team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), index=True)
+    team_id: Mapped[str] = mapped_column(ForeignKey("team.id"), index=True)
 
     # Relationships
     github_installation: Mapped[GithubInstallation] = relationship(
@@ -300,6 +340,7 @@ class Project(Base):
     )
     deployments: Mapped[list["Deployment"]] = relationship(back_populates="project")
     team: Mapped[Team] = relationship(back_populates="projects")
+    created_by_user: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
 
     __table_args__ = (UniqueConstraint("team_id", "name", name="uq_project_team_name"),)
 
@@ -560,6 +601,9 @@ class Deployment(Base):
         SQLAEnum("webhook", "user", "api", name="deployment_trigger"),
         nullable=False,
         default="user",
+    )
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", use_alter=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 import re
 import secrets
@@ -41,7 +41,7 @@ async def create_user_with_team(
                 unique_username = f"{base_username[:45]}-{random_suffix}"
 
             user = User(
-                email=email,
+                email=email.strip().lower(),
                 name=name,
                 username=unique_username,
                 email_verified=True,
@@ -58,7 +58,7 @@ async def create_user_with_team(
     if not user or not user.id:
         raise RuntimeError("Failed to create user after maximum retries")
 
-    team = Team(name=user.name or user.username)
+    team = Team(name=user.name or user.username, created_by_user_id=user.id)
     db.add(team)
     await db.flush()
 
@@ -69,7 +69,9 @@ async def create_user_with_team(
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    result = await db.execute(select(User).where(User.email == email))
+    result = await db.execute(
+        select(User).where(func.lower(User.email) == func.lower(email.strip()))
+    )
     return result.scalar_one_or_none()
 
 

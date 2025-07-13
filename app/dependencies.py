@@ -1,5 +1,10 @@
 from fastapi import Request, Depends, HTTPException, status
+from fastapi.responses import (
+    RedirectResponse as FastAPIRedirect,
+    Response as FastAPIResponse,
+)
 from starlette.background import BackgroundTask
+from authlib.integrations.starlette_client import OAuth
 from fastapi.templating import Jinja2Templates
 from jinja2 import pass_context
 from sqlalchemy import select
@@ -28,6 +33,39 @@ def get_github_client() -> GitHub:
         app_id=settings.github_app_id,
         private_key=settings.github_app_private_key,
     )
+
+
+@lru_cache
+def get_github_oauth_client() -> OAuth:
+    settings = get_settings()
+    oauth = OAuth()
+    oauth.register(
+        "github",
+        client_id=settings.github_app_client_id,
+        client_secret=settings.github_app_client_secret,
+        access_token_url="https://github.com/login/oauth/access_token",
+        authorize_url="https://github.com/login/oauth/authorize",
+        api_base_url="https://api.github.com/",
+        client_kwargs={"scope": "user:email"},
+    )
+    return oauth
+
+
+async def get_github_primary_email(oauth_client: OAuth, token: dict) -> str | None:
+    """Get user's primary verified email from GitHub."""
+    try:
+        if not oauth_client.github:
+            return None
+
+        response = await oauth_client.github.get("user/emails", token=token)
+        emails = response.json()
+
+        primary_email = next(
+            (e for e in emails if e.get("primary") and e.get("verified")), None
+        )
+        return primary_email["email"] if primary_email else None
+    except Exception:
+        return None
 
 
 @lru_cache
@@ -174,6 +212,17 @@ async def get_project_by_name(
     return project
 
 
+async def get_optional_project_by_name(
+    project_name: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+) -> Project | None:
+    if not project_name:
+        return None
+
+    return await get_project_by_name(project_name, db, team_and_membership)
+
+
 async def get_project_by_id(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -211,6 +260,47 @@ async def get_deployment_by_id(
     return deployment
 
 
+async def get_role(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    current_user: User = Depends(get_current_user),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    project: Project | None = Depends(get_optional_project_by_name),
+) -> str:
+    """Get the role of the current user for the given team and project."""
+    team, membership = team_and_membership
+
+    if (
+        membership.role == "member"
+        and project
+        and project.created_by_user_id == current_user.id
+    ):
+        return "creator"
+
+    return membership.role
+
+
+def get_access(
+    role: str,
+    permission: str,
+) -> bool:
+    if not (
+        role in ("owner", "admin", "creator", "member")
+        and permission in ("owner", "admin", "creator", "member")
+    ):
+        return False
+
+    LEVELS = {
+        "owner": 0,
+        "admin": 1,
+        "creator": 2,
+        "member": 3,
+    }
+
+    return LEVELS[role] <= LEVELS[permission]
+
+
 def timeago_filter(value):
     """Convert a datetime or ISO string to a human readable time ago."""
     if isinstance(value, str):
@@ -218,11 +308,33 @@ def timeago_filter(value):
     return humanize.naturaltime(value)
 
 
-templates = Jinja2Templates(directory="templates")
+def RedirectResponseX(
+    url: str,
+    status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
+    headers: dict[str, str] | None = None,
+    request: Request | None = None,  # extra kw-only, keeps calls compatible
+):
+    """
+    Drop-in replacement for FastAPI RedirectResponse.
+    • If `request` is an HTMX call ⇒ send HX-Redirect header.
+    • Otherwise ⇒ delegate to FastAPI's RedirectResponse.
+    """
+    if request is not None and request.headers.get("HX-Request"):
+        return FastAPIResponse(
+            status_code=200,
+            headers={"HX-Redirect": str(url), **(headers or {})},
+        )
+    return FastAPIRedirect(url=url, status_code=status_code, headers=headers)
+
+
+templates = Jinja2Templates(
+    directory="templates", auto_reload=get_settings().templates_auto_reload
+)
 templates.env.globals["_"] = get_translation
 templates.env.globals["settings"] = get_settings()
 templates.env.globals["get_flashed_messages"] = get_flashed_messages
 templates.env.filters["timeago"] = timeago_filter
+templates.env.globals["get_access"] = get_access
 
 
 def TemplateResponse(
@@ -257,7 +369,7 @@ def TemplateResponse(
         return templates.TemplateResponse(
             request=request,
             name=name,
-            context=context,
+            context=context or {},
             status_code=status_code,
             headers=headers,
             media_type=media_type,

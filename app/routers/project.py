@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Query
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import Response, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,6 +21,9 @@ from dependencies import (
     flash,
     get_translation as _,
     TemplateResponse,
+    RedirectResponseX,
+    get_role,
+    get_access,
 )
 from models import (
     Project,
@@ -44,11 +47,11 @@ from config import get_settings, Settings
 from db import get_db
 from services.github import GitHub
 from utils.github import get_installation_instance
-from utils.projects import get_latest_projects, get_latest_deployments
-from utils.teams import get_latest_teams
+from utils.project import get_latest_projects, get_latest_deployments
+from utils.team import get_latest_teams
 from utils.pagination import paginate
-from utils.environments import group_branches_by_environment
-from utils.colors import COLORS
+from utils.environment import group_branches_by_environment
+from utils.color import COLORS
 from utils.user import get_user_github_token
 
 logger = logging.getLogger(__name__)
@@ -96,7 +99,7 @@ async def new_project_details(
     if not all([repo_id, repo_owner, repo_name, repo_default_branch]):
         flash(request, _("Missing repository details."), "error")
         return RedirectResponse(
-            request.url_for("project_new", team_slug=team.slug), status_code=303
+            request.url_for("new_project", team_slug=team.slug), status_code=303
         )
 
     form: Any = await NewProjectForm.from_formdata(request, db=db, team=team)
@@ -108,20 +111,20 @@ async def new_project_details(
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
-            github_token = await get_user_github_token(db, current_user)
-            if not github_token:
-                raise ValueError("GitHub token missing.")
+            github_oauth_token = await get_user_github_token(db, current_user)
+            if not github_oauth_token:
+                raise ValueError("GitHub OAuth token missing.")
 
             if not form.repo_id.data:
                 raise ValueError("Repository ID missing.")
 
             repo = await github_client.get_repository(
-                github_token, int(form.repo_id.data)
+                github_oauth_token, int(form.repo_id.data)
             )
         except Exception:
             flash(request, "You do not have access to this repository.", "error")
             return RedirectResponse(
-                request.url_for("project_new", team_slug=team.slug), status_code=303
+                request.url_for("new_project", team_slug=team.slug), status_code=303
             )
 
         installation = await github_client.get_repository_installation(
@@ -173,21 +176,27 @@ async def new_project_details(
                 }
             ],
             team=team,
+            created_by_user_id=current_user.id,
         )
 
         db.add(project)
         await db.commit()
         flash(request, _("Project added."), "success")
-        return RedirectResponse(
-            request.url_for(
-                "project_index", team_slug=team.slug, project_name=project.name
+
+        return RedirectResponseX(
+            url=str(
+                request.url_for(
+                    "project_index", team_slug=team.slug, project_name=project.name
+                )
             ),
-            status_code=303,
+            request=request,
         )
 
     return TemplateResponse(
         request=request,
-        name="project/pages/new-details.html",
+        name="project/partials/_form-new-project.html"
+        if request.headers.get("HX-Request")
+        else "project/pages/new-details.html",
         context={
             "current_user": current_user,
             "team": team,
@@ -210,6 +219,7 @@ async def project_index(
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    role: str = Depends(get_role),
 ):
     team, membership = team_and_membership
     fragment = request.query_params.get("fragment")
@@ -228,7 +238,7 @@ async def project_index(
     if request.headers.get("HX-Request") and fragment == "deployments":
         return TemplateResponse(
             request=request,
-            name="project/partials/_index_deployments.html",
+            name="project/partials/_index-deployments.html",
             context={
                 "current_user": current_user,
                 "team": team,
@@ -238,14 +248,19 @@ async def project_index(
             },
         )
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
-    latest_projects = await get_latest_projects(db=db, current_project=project, limit=5)
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
+    latest_projects = await get_latest_projects(
+        db=db, team=team, current_project=project, limit=5
+    )
 
     return TemplateResponse(
         request=request,
         name="project/pages/index.html",
         context={
             "current_user": current_user,
+            "role": role,
             "team": team,
             "project": project,
             "deployments": deployments,
@@ -271,6 +286,7 @@ async def project_deployments(
     page: int = Query(1, ge=1),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
+    role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
 ):
@@ -342,14 +358,19 @@ async def project_deployments(
             },
         )
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
-    latest_projects = await get_latest_projects(db=db, current_project=project, limit=5)
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
+    latest_projects = await get_latest_projects(
+        db=db, team=team, current_project=project, limit=5
+    )
 
     return TemplateResponse(
         request=request,
         name="project/pages/deployments.html",
         context={
             "current_user": current_user,
+            "role": role,
             "team": team,
             "project": project,
             "deployments": pagination.get("items"),
@@ -407,16 +428,18 @@ async def project_deploy(
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
-            github_token = await get_user_github_token(db, current_user)
-            if not github_token:
-                raise ValueError("GitHub token missing.")
-
             if not form.commit.data:
                 raise ValueError("Commit missing.")
 
+            github_installation = await get_installation_instance(
+                project.github_installation_id, db, github_client
+            )
+            if not github_installation.token:
+                raise ValueError("GitHub installation token missing.")
+
             branch, commit_sha = form.commit.data.split(":")
             commit = await github_client.get_repository_commit(
-                user_access_token=github_token,
+                user_access_token=github_installation.token,
                 repo_id=project.repo_id,
                 commit_sha=commit_sha,
                 branch=branch,
@@ -435,6 +458,7 @@ async def project_deploy(
                         commit["commit"]["author"]["date"].replace("Z", "+00:00")
                     ).isoformat(),
                 },
+                created_by_user_id=current_user.id,
             )
             db.add(deployment)
             await db.commit()
@@ -492,12 +516,14 @@ async def project_deploy(
     branch_names = []
     commits = []
     try:
-        github_token = await get_user_github_token(db, current_user)
-        if not github_token:
-            raise ValueError("GitHub token missing.")
+        github_installation = await get_installation_instance(
+            project.github_installation_id, db, github_client
+        )
+        if not github_installation.token:
+            raise ValueError("GitHub installation token missing.")
 
         branches = await github_client.get_repository_branches(
-            github_token, project.repo_id
+            github_installation.token, project.repo_id
         )
         branch_names = [branch["name"] for branch in branches]
     except Exception as e:
@@ -515,11 +541,11 @@ async def project_deploy(
         if matching_branches:
             for branch in matching_branches:
                 try:
-                    if not github_token:
-                        raise ValueError("GitHub token missing.")
+                    if not github_installation.token:
+                        raise ValueError("GitHub installation token missing.")
 
                     branch_commits = await github_client.get_repository_commits(
-                        github_token, project.repo_id, branch, per_page=5
+                        github_installation.token, project.repo_id, branch, per_page=5
                     )
 
                     # Add branch information to each commit
@@ -560,57 +586,75 @@ async def project_settings(
     fragment: str = Query(None),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
+    role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     team, membership = team_and_membership
 
-    # Delete
-    delete_project_form: Any = await ProjectDeleteForm.from_formdata(
-        request, project=project
-    )
-    if request.method == "POST" and fragment == "danger":
-        if await delete_project_form.validate_on_submit():
-            try:
-                project.status = "deleted"
-                await db.commit()
-
-                # Project is marked as deleted, actual cleanup is delegated to a job
-                # TODO: job_timeout='1h'
-                deployment_queue = await get_deployment_queue()
-                await deployment_queue.enqueue_job("cleanup_project", project.id)
-
-                flash(
-                    request,
-                    _('Project "%(name)s" has been marked for deletion.')
-                    % {"name": project.name},
-                    "success",
-                )
-                return RedirectResponse("/", status_code=303)
-            except Exception as e:
-                await db.rollback()
-                logger.error(
-                    f"Error marking project {project.name} as deleted: {str(e)}"
-                )
-                flash(
-                    request,
-                    _("An error occurred while marking the project for deletion."),
-                    "error",
-                )
-
-        for error in delete_project_form.confirm.errors:
-            flash(request, error, "error")
-
-        return RedirectResponse(
-            url=str(
-                request.url_for(
-                    "project_settings", team_slug=team.slug, project_name=project.name
-                )
-            )
-            + "#danger",
-            status_code=303,
+    if not get_access(role, "creator"):
+        flash(
+            request,
+            _("You don't have permission to access project settings."),
+            "warning",
         )
+        return RedirectResponse(
+            request.url_for(
+                "project_index", team_slug=team.slug, project_name=project.name
+            ),
+            status_code=302,
+        )
+
+    # Delete
+    delete_project_form = None
+    if get_access(role, "admin"):
+        delete_project_form: Any = await ProjectDeleteForm.from_formdata(
+            request, project=project
+        )
+        if request.method == "POST" and fragment == "danger":
+            if await delete_project_form.validate_on_submit():
+                try:
+                    project.status = "deleted"
+                    await db.commit()
+
+                    # Project is marked as deleted, actual cleanup is delegated to a job
+                    # TODO: job_timeout='1h'
+                    deployment_queue = await get_deployment_queue()
+                    await deployment_queue.enqueue_job("cleanup_project", project.id)
+
+                    flash(
+                        request,
+                        _('Project "%(name)s" has been marked for deletion.')
+                        % {"name": project.name},
+                        "success",
+                    )
+                    return RedirectResponse("/", status_code=303)
+                except Exception as e:
+                    await db.rollback()
+                    logger.error(
+                        f"Error marking project {project.name} as deleted: {str(e)}"
+                    )
+                    flash(
+                        request,
+                        _("An error occurred while marking the project for deletion."),
+                        "error",
+                    )
+
+            for error in delete_project_form.confirm.errors:
+                flash(request, error, "error")
+
+            return RedirectResponse(
+                url=str(
+                    request.url_for(
+                        "project_settings",
+                        team_slug=team.slug,
+                        project_name=project.name,
+                    )
+                )
+                + "#danger",
+                status_code=303,
+            )
 
     # General
     general_form: Any = await ProjectGeneralForm.from_formdata(
@@ -631,9 +675,9 @@ async def project_settings(
             if general_form.repo_id.data != project.repo_id:
                 try:
                     github_client = get_github_client()
-                    github_token = await get_user_github_token(db, current_user)
+                    github_oauth_token = await get_user_github_token(db, current_user)
                     repo = await github_client.get_repository(
-                        github_token or "", general_form.repo_id.data
+                        github_oauth_token or "", general_form.repo_id.data
                     )
                 except Exception:
                     flash(
@@ -813,7 +857,8 @@ async def project_settings(
                     else:
                         flash(request, _("Failed to create environment."), "error")
             except ValueError as e:
-                flash(request, str(e), "error")
+                logger.error(f"Error creating environment: {str(e)}")
+                flash(request, _("Something went wrong. Please try again."), "error")
 
     if fragment == "delete_environment":
         if await delete_environment_form.validate_on_submit():
@@ -827,7 +872,8 @@ async def project_settings(
                 else:
                     flash(request, _("Environment not found."), "error")
             except ValueError as e:
-                flash(request, str(e), "error")
+                logger.error(f"Error deleting environment: {str(e)}")
+                flash(request, _("Something went wrong. Please try again."), "error")
 
     if fragment in ("environment", "delete_environment") and request.headers.get(
         "HX-Request"
@@ -902,6 +948,7 @@ async def project_settings(
         name="project/pages/settings.html",
         context={
             "current_user": current_user,
+            "role": role,
             "team": team,
             "project": project,
             "general_form": general_form,
@@ -926,6 +973,7 @@ async def project_deployment(
     fragment: str = Query(None),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
+    role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     deployment: Deployment = Depends(get_deployment_by_id),
@@ -947,10 +995,14 @@ async def project_deployment(
             },
         )
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
-    latest_projects = await get_latest_projects(db=db, current_project=project, limit=5)
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
+    latest_projects = await get_latest_projects(
+        db=db, team=team, current_project=project, limit=5
+    )
     latest_deployments = await get_latest_deployments(
-        db=db, project_id=project.id, current_deployment=deployment, limit=5
+        db=db, project=project, current_deployment=deployment, limit=5
     )
 
     return TemplateResponse(
@@ -958,6 +1010,7 @@ async def project_deployment(
         name="deployment/pages/index.html",
         context={
             "current_user": current_user,
+            "role": role,
             "team": team,
             "project": project,
             "deployment": deployment,

@@ -1,4 +1,4 @@
-<form method="POST"
+<form method="post"
   action="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='build_and_deploy') }}"
   hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='build_and_deploy') }}"
   hx-swap="outerHTML" x-data="{ changed: false }" @input="changed = true" @change="changed = true"
@@ -15,10 +15,10 @@
   </section>
 
   <footer class="flex justify-end gap-x-2">
-    <button type="button" class="btn-ghost"
+    <button type="button" class="btn-sm-ghost"
       hx-get="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='build_and_deploy') }}"
       hx-target="closest form" hx-swap="outerHTML" :disabled="!changed">{{ _('Cancel') }}</button>
-    <button class="btn" :disabled="!changed">{{ _('Save') }}</button>
+    <button class="btn-sm" :disabled="!changed">{{ _('Save') }}</button>
   </footer>
 </form>
 

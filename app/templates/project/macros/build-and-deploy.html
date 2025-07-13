@@ -220,7 +220,7 @@
     <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
-      {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') }}
+      {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') | safe }}
     </p>
   </div>
 </div>

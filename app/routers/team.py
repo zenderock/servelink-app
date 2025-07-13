@@ -1,13 +1,16 @@
 import os
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import RedirectResponse, Response
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 import logging
 from typing import Any
+from authlib.jose import jwt
+from datetime import timedelta
+import resend
 
-from models import Project, Deployment, User, Team, TeamMember, utc_now
+from models import Project, Deployment, User, Team, TeamMember, utc_now, TeamInvite
 from dependencies import (
     get_current_user,
     get_team_by_slug,
@@ -15,12 +18,22 @@ from dependencies import (
     flash,
     get_translation as _,
     TemplateResponse,
+    templates,
+    get_role,
+    get_access,
 )
 from config import get_settings, Settings
 from db import get_db
 from utils.pagination import paginate
-from utils.teams import get_latest_teams
-from forms.team import TeamDeleteForm, TeamGeneralForm, NewTeamForm
+from utils.team import get_latest_teams
+from forms.team import (
+    TeamDeleteForm,
+    TeamGeneralForm,
+    NewTeamForm,
+    TeamAddMemberForm,
+    TeamDeleteMemberForm,
+    TeamMemberRoleForm,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +48,12 @@ async def new_team(
 ):
     form: Any = await NewTeamForm.from_formdata(request)
 
-    print(request.method)
-    print(form.name.data)
     if request.method == "POST" and await form.validate_on_submit():
-        team = Team(name=form.name.data)
+        team = Team(name=form.name.data, created_by_user_id=current_user.id)
         db.add(team)
         await db.flush()
         db.add(TeamMember(team_id=team.id, user_id=current_user.id, role="owner"))
         await db.commit()
-
         return Response(
             status_code=200,
             headers={
@@ -54,9 +64,7 @@ async def new_team(
     return TemplateResponse(
         request=request,
         name="team/partials/_dialog-new-team.html",
-        context={
-            "form": form,
-        },
+        context={"form": form},
     )
 
 
@@ -66,6 +74,7 @@ async def team_index(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    role: str = Depends(get_role),
 ):
     team, membership = team_and_membership
 
@@ -87,7 +96,9 @@ async def team_index(
     )
     deployments = deployments_result.scalars().all()
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
 
     return TemplateResponse(
         request=request,
@@ -95,6 +106,7 @@ async def team_index(
         context={
             "current_user": current_user,
             "team": team,
+            "role": role,
             "projects": projects,
             "deployments": deployments,
             "latest_teams": latest_teams,
@@ -107,6 +119,7 @@ async def team_projects(
     request: Request,
     page: int = Query(1, ge=1),
     current_user: User = Depends(get_current_user),
+    role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
 ):
@@ -122,7 +135,9 @@ async def team_projects(
 
     pagination = await paginate(db, query, page, per_page)
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
 
     return TemplateResponse(
         request=request,
@@ -130,6 +145,7 @@ async def team_projects(
         context={
             "current_user": current_user,
             "team": team,
+            "role": role,
             "projects": pagination.get("items"),
             "pagination": pagination,
             "latest_teams": latest_teams,
@@ -144,11 +160,23 @@ async def team_settings(
     request: Request,
     fragment: str | None = Query(None),
     current_user: User = Depends(get_current_user),
+    role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     team, membership = team_and_membership
+
+    if not get_access(role, "admin"):
+        flash(
+            request,
+            _("You don't have permission to access team settings."),
+            "warning",
+        )
+        return RedirectResponse(
+            url=str(request.url_for("team_index", team_slug=team.slug)),
+            status_code=302,
+        )
 
     # Delete
     delete_team_form = None
@@ -165,9 +193,7 @@ async def team_settings(
 
                     # Team is marked as deleted, actual cleanup is delegated to a job
                     deployment_queue = await get_deployment_queue()
-                    await deployment_queue.enqueue_job(
-                        "cleanup_team", team.id, job_timeout=300
-                    )
+                    await deployment_queue.enqueue_job("cleanup_team", team.id)
 
                     flash(
                         request,
@@ -289,6 +315,109 @@ async def team_settings(
             )
 
     # Members
+    add_member_form: Any = await TeamAddMemberForm.from_formdata(
+        request, db=db, team=team
+    )
+
+    if fragment == "add_member":
+        if await add_member_form.validate_on_submit():
+            invite = TeamInvite(
+                team_id=team.id,
+                email=add_member_form.email.data.strip().lower(),
+                role=add_member_form.role.data,
+                inviter_id=current_user.id,
+            )
+            db.add(invite)
+            await db.commit()
+            _send_member_invite(request, invite, team, current_user, settings)
+
+    delete_member_form: Any = await TeamDeleteMemberForm.from_formdata(request)
+
+    if fragment == "delete_member":
+        if await delete_member_form.validate_on_submit():
+            try:
+                user = await db.scalar(
+                    select(User).where(User.email == delete_member_form.email.data)
+                )
+                if not user:
+                    flash(request, _("User not found."), "error")
+                else:
+                    member = await db.scalar(
+                        select(TeamMember).where(
+                            TeamMember.team_id == team.id,
+                            TeamMember.user_id
+                            == user.id,  # Compare with user.id, not email
+                        )
+                    )
+                    if member:
+                        await db.delete(member)
+                        await db.commit()
+                        flash(
+                            request,
+                            _(
+                                'Member "%(name)s" removed.',
+                                name=user.name or user.username,
+                            ),
+                            "success",
+                        )
+                    else:
+                        flash(request, _("Member not found."), "error")
+            except ValueError as e:
+                flash(request, str(e), "error")
+
+    member_role_form: Any = await TeamMemberRoleForm.from_formdata(
+        request, db=db, team=team
+    )
+
+    if fragment == "member_role":
+        if await member_role_form.validate_on_submit():
+            member = await db.scalar(
+                select(TeamMember).where(
+                    TeamMember.team_id == team.id,
+                    TeamMember.user_id == int(member_role_form.user_id.data),  # type: ignore
+                )
+            )
+            if member:
+                member.role = member_role_form.role.data
+                await db.commit()
+                flash(request, _("Member role updated."), "success")
+            else:
+                flash(request, _("Member not found."), "error")
+
+    if fragment == "resend_member_invite":
+        invite_id = request.query_params.get("invite_id")
+        invite = await db.scalar(
+            select(TeamInvite).where(
+                TeamInvite.id == invite_id, TeamInvite.team_id == team.id
+            )
+        )
+        if not invite:
+            flash(request, _("Invite not found."), "error")
+            return Response(status_code=400, content="Invite not found.")
+
+        _send_member_invite(request, invite, team, current_user, settings)
+        return templates.TemplateResponse(
+            request=request,
+            name="layouts/fragment.html",
+            context={"content": ""},
+            status_code=200,
+        )
+
+    if fragment == "revoke_member_invite":
+        invite_id = request.query_params.get("invite_id")
+        invite = await db.scalar(
+            select(TeamInvite).where(
+                TeamInvite.id == invite_id, TeamInvite.team_id == team.id
+            )
+        )
+        if not invite:
+            flash(request, _("Invite not found."), "error")
+            return Response(status_code=400, content="Invite not found.")
+
+        await db.delete(invite)
+        await db.commit()
+        flash(request, _("Invite to %(email)s revoked.", email=invite.email), "success")
+
     members = await db.execute(
         select(TeamMember)
         .where(TeamMember.team_id == team.id)
@@ -296,7 +425,46 @@ async def team_settings(
     )
     members = members.scalars().all()
 
-    latest_teams = await get_latest_teams(db=db, current_team=team, limit=5)
+    member_invites = await db.execute(
+        select(TeamInvite).where(
+            TeamInvite.team_id == team.id,
+            TeamInvite.expires_at > utc_now(),
+            TeamInvite.status == "pending",
+        )
+    )
+    member_invites = member_invites.scalars().all()
+
+    owner_count = await db.scalar(
+        select(func.count(TeamMember.id)).where(
+            TeamMember.team_id == team.id,
+            TeamMember.role == "owner",
+        )
+    )
+
+    if fragment in (
+        "add_member",
+        "delete_member",
+        "revoke_member_invite",
+        "member_role",
+    ) and request.headers.get("HX-Request"):
+        return TemplateResponse(
+            request=request,
+            name="team/partials/_settings-members.html",
+            context={
+                "current_user": current_user,
+                "team": team,
+                "members": members,
+                "member_invites": member_invites,
+                "add_member_form": add_member_form,
+                "delete_member_form": delete_member_form,
+                "member_role_form": member_role_form,
+                "owner_count": owner_count,
+            },
+        )
+
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team, limit=5
+    )
 
     return TemplateResponse(
         request=request,
@@ -304,9 +472,91 @@ async def team_settings(
         context={
             "current_user": current_user,
             "team": team,
+            "role": role,
             "delete_team_form": delete_team_form,
             "general_form": general_form,
             "members": members,
+            "add_member_form": add_member_form,
+            "delete_member_form": delete_member_form,
+            "member_role_form": member_role_form,
+            "member_invites": member_invites,
+            "owner_count": owner_count,
             "latest_teams": latest_teams,
         },
     )
+
+
+def _send_member_invite(
+    request: Request,
+    invite: TeamInvite,
+    team: Team,
+    current_user: User,
+    settings: Settings,
+):
+    expires_at = utc_now() + timedelta(days=30)
+    token_payload = {
+        "email": invite.email,
+        "invite_id": invite.id,
+        "team_id": team.id,
+        "exp": int(expires_at.timestamp()),
+        "type": "team_invite",
+    }
+    invite_token = jwt.encode({"alg": "HS256"}, token_payload, settings.secret_key)
+    invite_token_str = (
+        invite_token.decode("utf-8")
+        if isinstance(invite_token, bytes)
+        else invite_token
+    )
+    invite_link = str(
+        request.url_for("auth_email_verify").include_query_params(
+            token=invite_token_str
+        )
+    )
+
+    resend.api_key = settings.resend_api_key
+
+    try:
+        resend.Emails.send(
+            {
+                "from": f"{settings.email_sender_name} <{settings.email_sender_address}>",
+                "to": [invite.email],
+                "subject": _(
+                    'You have been invited to join the "%(team_name)s" team',
+                    team_name=team.name,
+                ),
+                "html": templates.get_template("email/team-invite.html").render(
+                    {
+                        "request": request,
+                        "email": invite.email,
+                        "invite_link": invite_link,
+                        "inviter_name": current_user.name,
+                        "team_name": team.name,
+                        "email_logo": settings.email_logo
+                        or request.url_for("static", path="logo-email.png"),
+                        "app_name": settings.app_name,
+                        "app_description": settings.app_description,
+                        "app_url": f"{settings.url_scheme}://app.{settings.base_domain}",
+                    }
+                ),
+            }
+        )
+        flash(
+            request,
+            _(
+                'Email invitation to join the "%(team_name)s" team sent to %(email)s.',
+                team_name=team.name,
+                email=invite.email,
+            ),
+            "success",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+        flash(
+            request,
+            _(
+                "Uh oh, something went wrong. We couldn't send an email invitation to %(email)s. Please try again.",
+                email=invite.email,
+            ),
+            "error",
+        )

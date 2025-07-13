@@ -1,0 +1,72 @@
+{% from "macros/dropdown-menu.html" import dropdown_menu %}
+
+<div class="card">
+  <header class="border-b">
+    <h2>{{ _("Authentication") }}</h2>
+    <p>{{ _("Manage the ways you can sign in to your account.") }}</p>
+  </header>
+
+  <section>
+    <ul>
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4">
+          {% include "icons/mail.svg" %}
+          <div class="font-medium">{{ _('Email') }}</div>
+          <div class="text-muted-foreground">{{ current_user.email }}</div>
+        </form>
+      </li>
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not github_username %}[&>svg]:grayscale{% endif %}">
+        {% include "icons/github.svg" %}
+        <div class="font-medium {% if not github_username %}text-muted-foreground{% endif %}">{{ _('GitHub') }}</div>
+        {% if github_username %}
+          <div class="text-muted-foreground">{{ github_username }}</div>
+        {% endif %}
+        {% set trigger %}
+          {% include "icons/ellipsis.svg" %}
+        {% endset %}
+        {% if github_username %}
+          {% call dropdown_menu(
+            trigger=trigger,
+            main_attrs={"class": "ml-auto"},
+            trigger_attrs={"class": "btn-sm-icon-ghost"},
+            popover_attrs={"data-align": "end"}
+          ) %}
+            <button role="menuitem">
+              {{ _('Manage on GitHub') }}
+            </button>
+            <button role="menuitem">
+              {{ _('Disconnect') }}
+            </button>
+          {% endcall %}
+        {% else %}
+          <button class="btn-sm-ghost ml-auto">
+            {{ _('Connect') }}
+          </button>
+        {% endif %}
+      </li>
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not google_email %}[&>svg]:grayscale{% endif %}">
+        {% include "icons/google.svg" %}
+        <div class="font-medium {% if not google_email %}text-muted-foreground{% endif %}">{{ _('Google') }}</div>
+        {% if google_email %}
+          <div class="text-muted-foreground">{{ google_email }}</div>
+        {% endif %}
+        {% if google_email %}
+          {% set trigger %}
+            {% include "icons/ellipsis.svg" %}
+          {% endset %}
+          {% call dropdown_menu(
+            trigger=trigger,
+            main_attrs={"class": "ml-auto"},
+            trigger_attrs={"class": "btn-sm-icon-ghost"},
+            popover_attrs={"data-align": "end"}
+          ) %}
+            SOmethig
+          {% endcall %}
+        {% else %}
+          <button class="btn-sm-outline ml-auto">
+            {{ _('Connect') }}
+          </button>
+        {% endif %}
+      </li>
+    </ul>
+  </section>
+</div>

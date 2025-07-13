@@ -1,14 +1,22 @@
-<form method="POST" enctype="multipart/form-data"
+<form
+  method="post"
+  enctype="multipart/form-data"
   action="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
   hx-post="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
-  hx-indicator="next .htmx-indicator" hx-swap="outerHTML" x-data="{
+  hx-indicator="next .htmx-indicator"
+  hx-swap="outerHTML"
+  x-data="{
     changed: false,
     deleteAvatar: false
-  }" @input="changed = true" @change="changed = true" class="card">
+  }"
+  @input="changed = true"
+  @change="changed = true"
+  class="card"
+>
   {{ general_form.csrf_token() }}
   <header class="border-b">
-    <h2>{{ _('General') }}</h2>
-    <p>{{ _('General settings for the team.') }}</p>
+    <h2>{{ _("General") }}</h2>
+    <p>{{ _("General settings for the team.") }}</p>
   </header>
 
   <section class="space-y-6">
@@ -29,38 +37,43 @@
     </div>
 
     <div class="space-y-3">
-      <label for="name" class="label">{{ _('Avatar') }}</label>
+      <label for="name" class="label">{{ _("Avatar") }}</label>
       {% from "macros/image-upload.html" import image_upload %}
 
       {% from "macros/avatar.html" import avatar with context %}
       {% set current_avatar %}
-      {{ avatar(item=team, prefix="team", name=team.name, size="md") }}
+        {{ avatar(item=team, prefix="team", name=team.name, size="md") }}
       {% endset %}
       {% set default_avatar %}
-      {{ avatar(item=team, prefix="team", name=team.name, size="md", use_fallback=True) }}
+        {{ avatar(item=team, prefix="team", name=team.name, size="md", use_fallback=True) }}
       {% endset %}
       {{ image_upload(
-      field=general_form.avatar,
-      delete_field=general_form.delete_avatar,
-      has_image=team.has_avatar,
-      current_image=current_avatar,
-      default_image=default_avatar,
-      extensions=["jpg", "jpeg", "png", "gif", "webp"]
+        field=general_form.avatar,
+        delete_field=general_form.delete_avatar,
+        has_image=team.has_avatar,
+        current_image=current_avatar,
+        default_image=default_avatar,
+        extensions=["jpg", "jpeg", "png", "gif", "webp"]
       ) }}
     </div>
   </section>
 
   <footer class="flex justify-end gap-x-2">
-    <button type="button" class="btn-sm-ghost"
+    <button
+      type="button"
+      class="btn-sm-ghost"
       hx-get="{{ url_for('team_settings', team_slug=team.slug).include_query_params(fragment='general') }}"
-      hx-target="closest form" hx-swap="outerHTML" :disabled="!changed">{{ _('Cancel') }}</button>
-    <button class="btn-sm" :disabled="!changed">{{ _('Save') }}</button>
+      hx-target="closest form"
+      hx-swap="outerHTML"
+      :disabled="!changed"
+    >{{ _("Cancel") }}</button>
+    <button class="btn-sm" :disabled="!changed">{{ _("Save") }}</button>
   </footer>
 </form>
 
 <div class="htmx-indicator flex items-center justify-center inset-0 absolute bg-background/80 rounded-xl">
   <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
     {% include "icons/loader.svg" %}
-    {{ _('Saving') }}
+    {{ _("Saving") }}
   </div>
 </div>

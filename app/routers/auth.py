@@ -2,58 +2,32 @@ from typing import Annotated
 import logging
 from fastapi import APIRouter, Request, Depends, HTTPException
 from starlette.responses import RedirectResponse, Response
-from authlib.integrations.starlette_client import OAuth
 from authlib.jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 import resend
 from datetime import timedelta
 from typing import Any
-from functools import lru_cache
 
 from config import Settings, get_settings
-from dependencies import get_translation as _, flash, TemplateResponse, templates
+from dependencies import (
+    get_translation as _,
+    flash,
+    TemplateResponse,
+    templates,
+    get_current_user,
+    get_github_oauth_client,
+    get_github_primary_email,
+)
 from db import get_db
-from models import User, UserIdentity, utc_now
+from models import User, UserIdentity, TeamInvite, TeamMember, utc_now
 from forms.auth import EmailLoginForm
 from utils.user import create_user_with_team, get_user_by_email, get_user_by_provider
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth")
-
-
-@lru_cache
-def get_github_oauth_client():
-    settings = get_settings()
-    oauth = OAuth()
-    oauth.register(
-        "github",
-        client_id=settings.github_app_client_id,
-        client_secret=settings.github_app_client_secret,
-        access_token_url="https://github.com/login/oauth/access_token",
-        authorize_url="https://github.com/login/oauth/authorize",
-        api_base_url="https://api.github.com/",
-        client_kwargs={"scope": "user:email"},
-    )
-    return oauth
-
-
-async def get_github_primary_email(oauth_client: OAuth, token: dict) -> str | None:
-    """Get user's primary verified email from GitHub."""
-    try:
-        if not oauth_client.github:
-            return None
-
-        response = await oauth_client.github.get("user/emails", token=token)
-        emails = response.json()
-
-        primary_email = next(
-            (e for e in emails if e.get("primary") and e.get("verified")), None
-        )
-        return primary_email["email"] if primary_email else None
-    except Exception:
-        return None
 
 
 def create_session_cookie(user: User, settings: Settings) -> RedirectResponse:
@@ -77,7 +51,15 @@ def create_session_cookie(user: User, settings: Settings) -> RedirectResponse:
 async def auth_login(
     request: Request,
     settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
 ):
+    try:
+        current_user = await get_current_user(request, db, settings)
+        if current_user:
+            return RedirectResponse("/", status_code=303)
+    except HTTPException:
+        pass
+
     form: Any = await EmailLoginForm.from_formdata(request)
 
     if request.method == "POST" and await form.validate_on_submit():
@@ -114,7 +96,7 @@ async def auth_login(
                             "request": request,
                             "email": email,
                             "verify_link": verify_link,
-                            "email_logo": f"{settings.email_logo}?sdfdsfs"
+                            "email_logo": settings.email_logo
                             or request.url_for("static", path="logo-email.png"),
                             "app_name": settings.app_name,
                             "app_description": settings.app_description,
@@ -126,7 +108,7 @@ async def auth_login(
             flash(
                 request,
                 _(
-                    "We just sent a login link to {email}, please check your inbox.",
+                    "We just sent a login link to %(email)s, please check your inbox.",
                     email=email,
                 ),
                 "success",
@@ -167,13 +149,36 @@ async def auth_email_verify(
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        current_user = None
+        try:
+            current_user = await get_current_user(request, db, settings)
+        except HTTPException:
+            pass
+
         payload = jwt.decode(token, settings.secret_key)
         token_type = payload.get("type")
 
         if token_type == "email_login":
+            if current_user:
+                flash(
+                    request,
+                    _(
+                        'You are already logged in as "%(name)s" (%(email)s). Please log out first to sign in with %(login_email)s.',
+                        name=current_user.name or current_user.username,
+                        email=current_user.email,
+                        login_email=payload.get("email"),
+                    ),
+                    "warning",
+                )
+                return RedirectResponse("/", status_code=303)
+
             email = payload.get("email")
             if not email:
-                raise HTTPException(status_code=400, detail="Invalid token")
+                if current_user:
+                    flash(request, _("Invalid or expired invitation."), "error")
+                    return RedirectResponse("/", status_code=303)
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid token")
 
             user = await get_user_by_email(db, email)
             if not user:
@@ -198,11 +203,94 @@ async def auth_email_verify(
             flash(request, _("Email address updated successfully."), "success")
             return RedirectResponse("/settings", status_code=303)
 
+        elif token_type == "team_invite":
+            invite_id = payload.get("invite_id")
+            email = payload.get("email", "")
+
+            invite = await db.scalar(
+                select(TeamInvite)
+                .options(selectinload(TeamInvite.team))
+                .where(TeamInvite.id == invite_id, TeamInvite.status == "pending")
+            )
+
+            if not invite or invite.expires_at < utc_now():
+                if current_user:
+                    flash(request, _("Invalid or expired invitation."), "error")
+                    return RedirectResponse("/", status_code=303)
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid token")
+
+            if current_user:
+                if current_user.email.lower() != email.lower():
+                    flash(
+                        request,
+                        _(
+                            'This invitation is for "%(email)s". Please log out and sign in with that email to accept the invitation.',
+                            email=email,
+                        ),
+                        "error",
+                    )
+                    return RedirectResponse("/", status_code=303)
+
+                existing_member = await db.scalar(
+                    select(TeamMember).where(
+                        TeamMember.team_id == invite.team_id,
+                        TeamMember.user_id == current_user.id,
+                    )
+                )
+                if existing_member:
+                    flash(request, _("You are already a member of this team."), "info")
+                    return RedirectResponse(f"/{invite.team.slug}", status_code=303)
+
+                invite.status = "accepted"
+                db.add(
+                    TeamMember(
+                        team_id=invite.team_id,
+                        user_id=current_user.id,
+                        role=invite.role,
+                    )
+                )
+                await db.commit()
+
+                flash(
+                    request,
+                    _(
+                        'You have accepted the invitation to join "%(team_name)s".',
+                        team_name=invite.team.name,
+                    ),
+                    "success",
+                )
+                return RedirectResponse(f"/{invite.team.slug}", status_code=303)
+            else:
+                user = await get_user_by_email(db, email)
+                if not user:
+                    user = await create_user_with_team(db, email)
+
+                invite.status = "accepted"
+                db.add(
+                    TeamMember(
+                        team_id=invite.team_id, user_id=user.id, role=invite.role
+                    )
+                )
+                await db.commit()
+
+                flash(
+                    request,
+                    _(
+                        'You have accepted the invitation to join "%(team_name)s".',
+                        team_name=invite.team.name,
+                    ),
+                    "success",
+                )
+                response = create_session_cookie(user, settings)
+                response.headers["location"] = f"/{invite.team.slug}"
+                return response
+
         else:
             raise HTTPException(status_code=400, detail="Invalid token type")
 
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        raise HTTPException(status_code=500, detail="Invalid or expired token")
 
 
 @router.get("/github", name="auth_github_login")

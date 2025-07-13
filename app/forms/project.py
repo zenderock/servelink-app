@@ -18,8 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import get_translation as _, get_lazy_translation as _l
 from models import Project, Team
-from utils.colors import COLORS
-from utils.environments import get_environment_for_branch
+from utils.color import COLORS
+from utils.environment import get_environment_for_branch
 import re
 
 

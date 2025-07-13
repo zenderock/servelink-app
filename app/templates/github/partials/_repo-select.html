@@ -1,4 +1,17 @@
-{% if accounts %}
+{% if not has_github_oauth_token %}
+<section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+  <div class="max-w-sm">
+    <div class="text-center">
+      <h2 class="h4">{{ _('Connect your GitHub account') }}</h2>
+      <p class="text-muted-foreground mt-1">{{ _('Connect your GitHub account to search for repositories.') }}</p>
+      <a class="btn-sm mt-4" href="{{ url_for('github_oauth_authorize') }}">
+        {% include "icons/github.svg" %}
+        {{ _('Connect account') }}
+      </a>
+    </div>
+  </div>
+</section>
+{% elif accounts %}
 <section class="space-y-4 w-full">
   <form class="form flex gap-x-2 items-center" hx-trigger="
       keyup changed delay:500ms from:input[name='query'],
@@ -47,11 +60,11 @@
 <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
   <div class="max-w-sm">
     <div class="text-center">
-      <h2 class="h4">{{ _('No accounts connected') }}</h2>
-      <p class="text-muted-foreground mt-1">{{ _('Connect your GitHub accounts and start adding projects.') }}</p>
+      <h2 class="h4">{{ _('Install the GitHub app') }}</h2>
+      <p class="text-muted-foreground mt-1">{{ _('Install the GitHub application for the accounts you want to select repositories from.') }}</p>
       <a class="btn-sm mt-4" href="{{ url_for('github_app_install') }}">
         {% include "icons/github.svg" %}
-        {{ _('Add a GitHub account') }}
+        {{ _('Install app') }}
       </a>
     </div>
   </div>

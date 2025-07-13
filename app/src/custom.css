@@ -38,3 +38,17 @@
 .h6 {
   @apply text-base;
 }
+
+.toast {
+  &[data-category="success"] .toast-content svg {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  &[data-category="error"] .toast-content svg {
+    @apply text-destructive;
+  }
+
+  &[data-category="warning"] .toast-content svg {
+    @apply text-orange-600 dark:text-orange-400;
+  }
+}

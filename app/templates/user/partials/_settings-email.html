@@ -1,14 +1,21 @@
-<form method="POST" enctype="multipart/form-data"
+<form
+  method="post"
+  enctype="multipart/form-data"
   action="{{ url_for('user_settings').include_query_params(fragment='email') }}"
   hx-post="{{ url_for('user_settings').include_query_params(fragment='email') }}" hx-indicator="next .htmx-indicator"
-  hx-swap="outerHTML" x-data="{
+  hx-swap="outerHTML"
+  x-data="{
     changed: false,
     deleteAvatar: false
-  }" @input="changed = true" @change="changed = true" class="card">
+  }"
+  @input="changed = true"
+  @change="changed = true"
+  class="card"
+>
   {{ email_form.csrf_token() }}
   <header class="border-b">
-    <h2>{{ _('Email') }}</h2>
-    <p>{{ _('The email address used for authentication and notifications.') }}</p>
+    <h2>{{ _("Email") }}</h2>
+    <p>{{ _("The email address used for authentication and notifications.") }}</p>
   </header>
 
   <section class="space-y-6">
@@ -22,9 +29,13 @@
   </section>
 
   <footer class="flex justify-end gap-x-2">
-    <button type="button" class="btn-sm-ghost"
+    <button
+      type="button"
+      class="btn-sm-ghost"
       hx-get="{{ url_for('user_settings').include_query_params(fragment='email') }}" hx-target="closest form"
-      hx-swap="outerHTML" :disabled="!changed">{{ _('Cancel') }}</button>
+      hx-swap="outerHTML"
+      :disabled="!changed"
+    >{{ _('Cancel') }}</button>
     <button class="btn-sm" :disabled="!changed">{{ _('Save') }}</button>
   </footer>
 </form>

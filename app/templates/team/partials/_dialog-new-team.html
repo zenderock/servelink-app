@@ -1,6 +1,11 @@
-<form method="POST" action="{{ url_for('new_team') }}" hx-post="{{ url_for('new_team') }}" hx-swap="outerHTML"
-  class="space-y-4" x-data="{ name: '' }">
-  <!-- hx-indicator="next .htmx-indicator"  -->
+<form
+  method="post"
+  action="{{ url_for('new_team') }}"
+  hx-post="{{ url_for('new_team') }}"
+  hx-swap="outerHTML"
+  class="space-y-4"
+  x-data="{ name: '' }"
+>
   {{ form.csrf_token() }}
   <div class="space-y-3">
     {{ form.name.label(class="label") }}
@@ -10,8 +15,11 @@
     {% endfor %}
   </div>
   <footer class="flex justify-end gap-x-2">
-    <button type="button" class="btn-ghost" onclick="document.getElementById('dialog-new-team').close()">{{ _('Cancel')
-      }}</button>
+    <button
+      type="button"
+      class="btn-ghost"
+      onclick="document.getElementById('dialog-new-team').close()"
+    >{{ _("Cancel") }}</button>
     {{ form.submit(class_="btn-primary", **{":disabled": "!name.trim()"}) }}
   </footer>
 </form>

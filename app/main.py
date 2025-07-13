@@ -44,7 +44,7 @@ async def handle_404(request: Request, exc: HTTPException):
 
 
 @app.exception_handler(500)
-async def handle_500(request: Request, exc: Exception):
+async def handle_500(request: Request, exc: HTTPException):
     return TemplateResponse(
         request=request, name="error/500.html", status_code=500, context={}
     )
