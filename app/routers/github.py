@@ -1,24 +1,35 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import RedirectResponse
+import logging
+import hmac
+import hashlib
+from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
+from redis.asyncio import Redis
+from arq.connections import ArqRedis
 import httpx
+from datetime import datetime
 
 from dependencies import (
     get_current_user,
-    get_github_client,
+    get_github_service,
     get_github_oauth_client,
     TemplateResponse,
     flash,
     get_db,
     get_translation as _,
+    get_redis_client,
+    get_deployment_queue,
 )
-from models import User, UserIdentity, GithubInstallation
-from services.github import GitHub
+from models import User, UserIdentity, GithubInstallation, Project
+from services.github import GitHubService
+from services.deployment import DeploymentService
 from utils.user import get_user_github_token
 from config import get_settings, Settings
 
 router = APIRouter(prefix="/api/github")
+
+logger = logging.getLogger(__name__)
 
 
 @router.get("/repo-select", name="github_repo_select")
@@ -26,7 +37,7 @@ async def github_repo_select(
     request: Request,
     account: str | None = None,
     current_user: User = Depends(get_current_user),
-    github_client: GitHub = Depends(get_github_client),
+    github_service: GitHubService = Depends(get_github_service),
     db: AsyncSession = Depends(get_db),
 ):
     accounts = []
@@ -39,7 +50,7 @@ async def github_repo_select(
             has_github_oauth_token = False
         else:
             has_github_oauth_token = True
-            installations = await github_client.get_user_installations(
+            installations = await github_service.get_user_installations(
                 github_oauth_token
             )
             accounts = [
@@ -79,7 +90,7 @@ async def github_repo_select(
 async def github_repo_list(
     request: Request,
     current_user: User = Depends(get_current_user),
-    github: GitHub = Depends(get_github_client),
+    github: GitHubService = Depends(get_github_service),
     account: str | None = None,
     query: str | None = None,
     db: AsyncSession = Depends(get_db),
@@ -121,7 +132,7 @@ async def github_authorize_callback(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    github_client: GitHub = Depends(get_github_client),
+    github_service: GitHubService = Depends(get_github_service),
     oauth_client=Depends(get_github_oauth_client),
 ):
     """Handle GitHub OAuth callback for account linking"""
@@ -203,7 +214,7 @@ async def github_install_callback(
     installation_id: int,
     setup_action: str,
     current_user: User = Depends(get_current_user),
-    github_client: GitHub = Depends(get_github_client),
+    github_service: GitHubService = Depends(get_github_service),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle GitHub App installation callback"""
@@ -215,7 +226,7 @@ async def github_install_callback(
 
     try:
         # Make sure installation exists
-        await github_client.get_installation(str(installation_id))
+        await github_service.get_installation(str(installation_id))
 
         result = await db.execute(
             select(GithubInstallation).where(
@@ -273,7 +284,7 @@ async def github_manage_installation(
     current_user: User = Depends(get_current_user),
 ):
     """Manage installed GitHub Apps"""
-    
+
     if not settings.github_app_name:
         flash(request, _("GitHub App not configured."), "error")
         redirect_url = next or request.headers.get("Referer", "/")
@@ -285,3 +296,204 @@ async def github_manage_installation(
         url = "https://github.com/settings/installations"
 
     return RedirectResponse(url, status_code=303)
+
+
+async def _verify_github_webhook(
+    request: Request, settings: Settings = Depends(get_settings)
+) -> tuple[dict, str]:
+    """Dependency to verify GitHub webhook signature and return parsed JSON data."""
+
+    signature = request.headers.get("X-Hub-Signature-256")
+    event = request.headers.get("X-GitHub-Event")
+
+    if not signature:
+        raise HTTPException(status_code=401, detail="Missing signature")
+
+    if not event:
+        raise HTTPException(status_code=400, detail="Missing event type")
+
+    payload = await request.body()
+    secret = settings.github_app_webhook_secret.encode()
+    hash_obj = hmac.new(secret, msg=payload, digestmod=hashlib.sha256)
+    expected_signature = f"sha256={hash_obj.hexdigest()}"
+
+    if not hmac.compare_digest(signature, expected_signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    data = await request.json()
+
+    return data, event
+
+
+@router.post("/webhook", name="github_webhook")
+async def github_webhook(
+    request: Request,
+    webhook_data: tuple[dict, str] = Depends(_verify_github_webhook),
+    db: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
+):
+    try:
+        data, event = webhook_data
+
+        logger.info(f"Received GitHub webhook event: {event}")
+
+        match event:
+            case "installation":
+                if data["action"] in ["deleted", "suspended", "unsuspended"]:
+                    # App uninstalled or suspended
+                    status = (
+                        "active" if data["action"] == "unsuspended" else data["action"]
+                    )
+                    await db.execute(
+                        update(GithubInstallation)
+                        .where(
+                            GithubInstallation.installation_id
+                            == data["installation"]["id"]
+                        )
+                        .values(status=status)
+                    )
+                    await db.commit()
+                    logger.info(
+                        f"Installation {data['installation']['id']} for {data['installation']['account']['login']} is {data['action']}"
+                    )
+
+                elif data["action"] == "created":
+                    # App installed
+                    installation_id = data["installation"]["id"]
+                    github_service = get_github_service()
+                    token_data = await github_service.get_installation_access_token(
+                        installation_id
+                    )
+                    installation = GithubInstallation(
+                        installation_id=installation_id,
+                        token=token_data["token"],
+                        token_expires_at=datetime.fromisoformat(
+                            token_data["expires_at"].replace("Z", "+00:00")
+                        ),
+                    )
+                    await db.merge(installation)
+                    await db.commit()
+                    logger.info(
+                        f"Installation {installation_id} for {data['installation']['account']['login']} created"
+                    )
+
+            case "installation_target":
+                if data["action"] == "renamed":
+                    # Installation account is renamed (not used)
+                    pass
+
+            case "installation_repositories":
+                if data["action"] == "removed":
+                    # Repositories removed from installation
+                    removed_repos = data["repositories_removed"]
+                    repo_ids = [repo["id"] for repo in removed_repos]
+                    await db.execute(
+                        update(Project)
+                        .where(Project.repo_id.in_(repo_ids))
+                        .values(repo_status="removed")
+                    )
+                    await db.commit()
+                    logger.info(
+                        f"Repos removed from installation {data['installation']['id']} for {data['installation']['account']['login']}: {', '.join(map(str, repo_ids))}"
+                    )
+
+                elif data["action"] == "added":
+                    # Repositories are added to installation
+                    added_repos = data["repositories_added"]
+                    repo_ids = [repo["id"] for repo in added_repos]
+                    await db.execute(
+                        update(Project)
+                        .where(Project.repo_id.in_(repo_ids))
+                        .values(repo_status="active")
+                    )
+                    await db.commit()
+                    logger.info(
+                        f"Repos added to installation: {', '.join(map(str, repo_ids))}"
+                    )
+
+            case "repository":
+                if data["action"] in ["deleted", "transferred"]:
+                    # Repository is deleted or transferred
+                    await db.execute(
+                        update(Project)
+                        .where(Project.repo_id == data["repository"]["id"])
+                        .values(repo_status=data["action"])
+                    )
+                    await db.commit()
+                    logger.info(f"Repo {data['repository']['id']} is {data['action']}")
+
+                if data["action"] == "renamed":
+                    # Repository is renamed
+                    await db.execute(
+                        update(Project)
+                        .where(Project.repo_id == data["repository"]["id"])
+                        .values(repo_full_name=data["repository"]["full_name"])
+                    )
+                    await db.commit()
+                    logger.info(
+                        f"Repo {data['repository']['id']} renamed to {data['repository']['full_name']}"
+                    )
+
+            case "push":
+                # Code pushed to a repository
+                result = await db.execute(
+                    select(Project).where(
+                        Project.repo_id == data["repository"]["id"],
+                        Project.status == "active",
+                    )
+                )
+                projects = result.scalars().all()
+
+                if not projects:
+                    logger.info(
+                        f"No projects found for repo {data['repository']['id']}"
+                    )
+                    return Response(status_code=200)
+
+                branch = data["ref"].replace(
+                    "refs/heads/", ""
+                )  # Convert refs/heads/main to main
+                commit_data = {
+                    "sha": data["after"],
+                    "author": {"login": data["pusher"]["name"]},
+                    "commit": {
+                        "message": data["head_commit"]["message"],
+                        "author": {"date": data["head_commit"]["timestamp"]},
+                    },
+                }
+
+                deployment_service = DeploymentService()
+
+                for project in projects:
+                    try:
+                        deployment = await deployment_service.create_deployment(
+                            project=project,
+                            branch=branch,
+                            commit=commit_data,
+                            db=db,
+                            redis_client=redis_client,
+                            deployment_queue=deployment_queue,
+                            trigger="webhook",
+                        )
+
+                        logger.info(
+                            f"Deployment {deployment.id} created for commit {commit_data['sha']} on project {project.name}"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to create deployment for project {project.name}: {str(e)}",
+                            exc_info=True,
+                        )
+                        continue
+
+            case "pull_request":
+                # TODO: Add logic for PRs
+                pass
+
+        return Response(status_code=200)
+
+    except Exception as e:
+        logger.error(f"Error processing GitHub webhook: {str(e)}", exc_info=True)
+        await db.rollback()
+        return Response(status_code=500)

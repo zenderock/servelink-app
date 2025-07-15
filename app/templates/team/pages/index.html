@@ -51,7 +51,7 @@
       <h2 class="h4">{{ _('Latest deployments') }}</h2>
       <div id="deployments">
         {% from "deployment/macros/list.html" import list with context %}
-        {{ list(deployments=deployments, display_project=True) }}
+        {{ list(deployments=deployments, display_project=True, team=team) }}
       </div>
     </section>
   {% endif %}

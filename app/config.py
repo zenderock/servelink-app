@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     app_name: str = "/dev/push"
     app_description: str = "Build and deploy your Python app without touching a server."
     url_scheme: str = "http"
-    base_domain: str = "localhost"
+    hostname: str = "localhost"
+    deploy_domain: str = "localhost"
     github_app_id: str = ""
     github_app_name: str = ""
     github_app_private_key: str = ""
@@ -33,7 +34,6 @@ class Settings(BaseSettings):
     traefik_config_dir: str = "/data/traefik"
     frameworks: list[dict] = []
     deployment_timeout: int = 90
-    templates_auto_reload: bool = False
     db_echo: bool = False
     env: str = "development"
 

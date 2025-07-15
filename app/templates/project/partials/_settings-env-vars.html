@@ -1,11 +1,20 @@
 <div
   hx-get="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='env_vars') }}"
-  hx-trigger="environments:updated from:window" hx-swap="outerHTML" hx-indicator=".htmx-indicator">
+  hx-trigger="environments:updated from:window"
+  hx-swap="outerHTML"
+  hx-indicator=".htmx-indicator"
+>
   <form method="POST"
     action="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='env_vars') }}"
     hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='env_vars') }}"
-    hx-indicator="next .htmx-indicator" hx-target="closest div" hx-swap="outerHTML" x-data="{ changed: false }"
-    @input="changed = true" @change="changed = true" class="card">
+    hx-indicator="next .htmx-indicator"
+    hx-target="closest div"
+    hx-swap="outerHTML"
+    x-data="{ changed: false }"
+    @input="changed = true"
+    @change="changed = true"
+    class="card"
+  >
     {{ env_vars_form.csrf_token() }}
     <header class="border-b">
       <h2>{{ _('Environment variables') }}</h2>

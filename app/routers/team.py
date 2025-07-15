@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from arq.connections import ArqRedis
 import logging
 from typing import Any
 from authlib.jose import jwt
@@ -163,6 +164,7 @@ async def team_settings(
     role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
     settings: Settings = Depends(get_settings),
 ):
     team, membership = team_and_membership
@@ -192,7 +194,6 @@ async def team_settings(
                     await db.commit()
 
                     # Team is marked as deleted, actual cleanup is delegated to a job
-                    deployment_queue = await get_deployment_queue()
                     await deployment_queue.enqueue_job("cleanup_team", team.id)
 
                     flash(
@@ -535,7 +536,7 @@ def _send_member_invite(
                         or request.url_for("static", path="logo-email.png"),
                         "app_name": settings.app_name,
                         "app_description": settings.app_description,
-                        "app_url": f"{settings.url_scheme}://app.{settings.base_domain}",
+                        "app_url": f"{settings.url_scheme}://{settings.hostname}",
                     }
                 ),
             }

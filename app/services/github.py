@@ -4,7 +4,7 @@ import time
 from typing import Any
 
 
-class GitHub:
+class GitHubService:
     def __init__(
         self, client_id: str, client_secret: str, app_id: str, private_key: str
     ):

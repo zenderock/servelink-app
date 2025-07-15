@@ -3,7 +3,7 @@ from fastapi.responses import Response, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from datetime import datetime, timezone
+from datetime import datetime
 from redis.asyncio import Redis
 from arq.connections import ArqRedis
 import logging
@@ -15,7 +15,7 @@ from dependencies import (
     get_project_by_name,
     get_deployment_by_id,
     get_team_by_slug,
-    get_github_client,
+    get_github_service,
     get_redis_client,
     get_deployment_queue,
     flash,
@@ -24,6 +24,7 @@ from dependencies import (
     RedirectResponseX,
     get_role,
     get_access,
+    get_github_installation_service,
 )
 from models import (
     Project,
@@ -42,15 +43,17 @@ from forms.project import (
     ProjectEnvironmentForm,
     ProjectDeleteEnvironmentForm,
     ProjectBuildAndProjectDeployForm,
+    ProjectRollbackForm,
 )
 from config import get_settings, Settings
 from db import get_db
-from services.github import GitHub
-from utils.github import get_installation_instance
+from services.github import GitHubService
+from services.github_installation import GitHubInstallationService
+from services.deployment import DeploymentService
 from utils.project import get_latest_projects, get_latest_deployments
 from utils.team import get_latest_teams
 from utils.pagination import paginate
-from utils.environment import group_branches_by_environment
+from utils.environment import group_branches_by_environment, get_environment_for_branch
 from utils.color import COLORS
 from utils.user import get_user_github_token
 
@@ -92,7 +95,10 @@ async def new_project_details(
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     settings: Settings = Depends(get_settings),
     db: AsyncSession = Depends(get_db),
-    github_client: GitHub = Depends(get_github_client),
+    github_service: GitHubService = Depends(get_github_service),
+    github_installation_service: GitHubInstallationService = Depends(
+        get_github_installation_service
+    ),
 ):
     team, membership = team_and_membership
 
@@ -118,7 +124,7 @@ async def new_project_details(
             if not form.repo_id.data:
                 raise ValueError("Repository ID missing.")
 
-            repo = await github_client.get_repository(
+            repo = await github_service.get_repository(
                 github_oauth_token, int(form.repo_id.data)
             )
         except Exception:
@@ -127,11 +133,13 @@ async def new_project_details(
                 request.url_for("new_project", team_slug=team.slug), status_code=303
             )
 
-        installation = await github_client.get_repository_installation(
+        installation = await github_service.get_repository_installation(
             repo["full_name"]
         )
-        github_installation = await get_installation_instance(
-            installation["id"], db, github_client
+        github_installation = (
+            await github_installation_service.get_or_refresh_installation(
+                installation["id"], db
+            )
         )
 
         env_vars = [
@@ -264,7 +272,7 @@ async def project_index(
             "team": team,
             "project": project,
             "deployments": deployments,
-            "apps_base_domain": settings.base_domain,
+            "deploy_domain": settings.deploy_domain,
             "env_aliases": env_aliases,
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,
@@ -319,7 +327,7 @@ async def project_deployments(
     # Filter by status (conclusion)
     if status:
         if status == "in_progress":
-            query = query.where(Deployment.conclusion == None)
+            query = query.where(Deployment.conclusion.is_(None))
         else:
             query = query.where(Deployment.conclusion == status)
 
@@ -396,113 +404,63 @@ async def project_deploy(
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
-    github_client: GitHub = Depends(get_github_client),
+    github_service: GitHubService = Depends(get_github_service),
     redis_client: Redis = Depends(get_redis_client),
     deployment_queue: ArqRedis = Depends(get_deployment_queue),
+    github_installation_service: GitHubInstallationService = Depends(
+        get_github_installation_service
+    ),
 ):
     team, membership = team_and_membership
 
-    form: Any = await ProjectDeployForm.from_formdata(request, project=project)
-
-    environment_choices = []
-    for env in project.active_environments:
-        environment_choices.append((env["id"], env["name"]))
-    form.environment_id.choices = environment_choices
-
-    if not form.environment_id.data:
-        form.environment_id.data = environment_id
-    environment = project.get_environment_by_id(form.environment_id.data)
-
-    if not environment:
-        error_message = _("Error deploying %(project)s: Environment not found") % {
-            "project": project.name
-        }
-        logger.error(error_message)
-        flash(request, error_message, "error")
-        return RedirectResponse(
-            request.url_for(
-                "project_deploy", team_slug=team.slug, project_name=project.name
-            ),
-            status_code=303,
-        )
+    form: Any = await ProjectDeployForm.from_formdata(request=request)
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
-            if not form.commit.data:
-                raise ValueError("Commit missing.")
+            branch, commit_sha = form.commit.data.split(":")
 
-            github_installation = await get_installation_instance(
-                project.github_installation_id, db, github_client
+            github_installation = (
+                await github_installation_service.get_or_refresh_installation(
+                    project.github_installation_id, db
+                )
             )
             if not github_installation.token:
                 raise ValueError("GitHub installation token missing.")
 
-            branch, commit_sha = form.commit.data.split(":")
-            commit = await github_client.get_repository_commit(
+            commit = await github_service.get_repository_commit(
                 user_access_token=github_installation.token,
                 repo_id=project.repo_id,
                 commit_sha=commit_sha,
                 branch=branch,
             )
 
-            deployment = Deployment(
+            deployment = await DeploymentService().create_deployment(
                 project=project,
-                environment_id=environment.get("id", ""),
-                trigger="user",
                 branch=branch,
-                commit_sha=commit["sha"],
-                commit_meta={
-                    "author": commit["author"]["login"],
-                    "message": commit["commit"]["message"],
-                    "date": datetime.fromisoformat(
-                        commit["commit"]["author"]["date"].replace("Z", "+00:00")
-                    ).isoformat(),
-                },
-                created_by_user_id=current_user.id,
-            )
-            db.add(deployment)
-            await db.commit()
-
-            await redis_client.xadd(
-                f"stream:project:{project.id}:updates",
-                fields={
-                    "event_type": "deployment_created",
-                    "project_id": project.id,
-                    "deployment_id": deployment.id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                },
+                commit=commit,
+                current_user=current_user,
+                db=db,
+                redis_client=redis_client,
+                deployment_queue=deployment_queue,
             )
 
-            await deployment_queue.enqueue_job("deploy", deployment.id)
-            logger.info(
-                f"Deployment {deployment.id} created and queued for "
-                f"project {project.name} ({project.id}) to environment {environment.get('name')} ({environment.get('id')})"
+            flash(
+                request,
+                _("Deployment %(deployment_id)s created.", deployment_id=deployment.id),
+                "success",
             )
 
-            if request.headers.get("HX-Request"):
-                return Response(
-                    status_code=200,
-                    headers={
-                        "HX-Redirect": str(
-                            request.url_for(
-                                "project_deployment",
-                                team_slug=team.slug,
-                                project_name=project.name,
-                                deployment_id=deployment.id,
-                            )
-                        )
-                    },
-                )
-            else:
-                return RedirectResponse(
-                    url=request.url_for(
+            return RedirectResponseX(
+                url=str(
+                    request.url_for(
                         "project_deployment",
                         team_slug=team.slug,
                         project_name=project.name,
                         deployment_id=deployment.id,
-                    ),
-                    status_code=303,
-                )
+                    )
+                ),
+                request=request,
+            )
 
         except Exception as e:
             error_message = _("Error deploying %(project)s: %(error)s") % {
@@ -516,13 +474,15 @@ async def project_deploy(
     branch_names = []
     commits = []
     try:
-        github_installation = await get_installation_instance(
-            project.github_installation_id, db, github_client
+        github_installation = (
+            await github_installation_service.get_or_refresh_installation(
+                project.github_installation_id, db
+            )
         )
         if not github_installation.token:
             raise ValueError("GitHub installation token missing.")
 
-        branches = await github_client.get_repository_branches(
+        branches = await github_service.get_repository_branches(
             github_installation.token, project.repo_id
         )
         branch_names = [branch["name"] for branch in branches]
@@ -535,6 +495,9 @@ async def project_deploy(
         branches_by_environment = group_branches_by_environment(
             project.active_environments, branch_names
         )
+        environment = project.get_environment_by_id(environment_id)
+        if not environment:
+            raise ValueError("Environment not found.")
         matching_branches = branches_by_environment.get(environment["slug"])
 
         # Get the latest 5 commits for each matching branch
@@ -544,7 +507,7 @@ async def project_deploy(
                     if not github_installation.token:
                         raise ValueError("GitHub installation token missing.")
 
-                    branch_commits = await github_client.get_repository_commits(
+                    branch_commits = await github_service.get_repository_commits(
                         github_installation.token, project.repo_id, branch, per_page=5
                     )
 
@@ -577,6 +540,162 @@ async def project_deploy(
 
 
 @router.api_route(
+    "/{team_slug}/projects/{project_name}/deplyments/{deployment_id}/rollback",
+    methods=["GET", "POST"],
+    name="project_redeploy",
+)
+async def project_redeploy(
+    request: Request,
+    project: Project = Depends(get_project_by_name),
+    current_user: User = Depends(get_current_user),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    deployment: Deployment = Depends(get_deployment_by_id),
+    db: AsyncSession = Depends(get_db),
+    github_service: GitHubService = Depends(get_github_service),
+    redis_client: Redis = Depends(get_redis_client),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
+    github_installation_service: GitHubInstallationService = Depends(
+        get_github_installation_service
+    ),
+):
+    team, membership = team_and_membership
+
+    form: Any = await ProjectDeployForm.from_formdata(request)
+
+    environment = get_environment_for_branch(
+        deployment.branch, project.active_environments
+    )
+
+    if environment and request.method == "POST" and await form.validate_on_submit():
+        try:
+            github_installation = (
+                await github_installation_service.get_or_refresh_installation(
+                    project.github_installation_id, db
+                )
+            )
+            if not github_installation.token:
+                raise ValueError("GitHub installation token missing.")
+
+            commit = await github_service.get_repository_commit(
+                user_access_token=github_installation.token,
+                repo_id=project.repo_id,
+                commit_sha=deployment.commit_sha,
+                branch=deployment.branch,
+            )
+
+            new_deployment = await DeploymentService().create_deployment(
+                project=project,
+                branch=deployment.branch,
+                commit=commit,
+                current_user=current_user,
+                db=db,
+                redis_client=redis_client,
+                deployment_queue=deployment_queue,
+            )
+
+            flash(
+                request,
+                _(
+                    "Deployment %(new_deployment_id)s created.",
+                    new_deployment_id=new_deployment.id,
+                ),
+                "success",
+            )
+
+            return RedirectResponseX(
+                url=str(
+                    request.url_for(
+                        "project_deployment",
+                        team_slug=team.slug,
+                        project_name=project.name,
+                        deployment_id=new_deployment.id,
+                    )
+                ),
+                request=request,
+            )
+
+        except Exception as e:
+            logger.error(f"Error redeploying project: {str(e)}")
+            flash(request, _("Error redeploying project."), "error")
+
+    return TemplateResponse(
+        request=request,
+        name="project/partials/_dialog-redeploy-form.html",
+        context={
+            "current_user": current_user,
+            "team": team,
+            "project": project,
+            "form": form,
+            "deployment": deployment,
+            "environment": environment,
+        },
+    )
+
+
+@router.api_route(
+    "/{team_slug}/projects/{project_name}/deployments/{deployment_id}/rollback",
+    methods=["GET", "POST"],
+    name="project_rollback",
+)
+async def project_rollback(
+    request: Request,
+    project: Project = Depends(get_project_by_name),
+    current_user: User = Depends(get_current_user),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    deployment: Deployment = Depends(get_deployment_by_id),
+    db: AsyncSession = Depends(get_db),
+    redis_client: Redis = Depends(get_redis_client),
+    settings: Settings = Depends(get_settings),
+):
+    team, membership = team_and_membership
+
+    form: Any = await ProjectRollbackForm.from_formdata(request)
+
+    if request.method == "POST" and await form.validate_on_submit():
+        try:
+            environment = project.get_environment_by_id(form.environment_id.data)
+            if not environment:
+                raise ValueError("Environment not found.")
+
+            await DeploymentService().rollback(
+                environment=environment,
+                project=project,
+                db=db,
+                redis_client=redis_client,
+                settings=settings,
+            )
+
+            flash(
+                request,
+                _(
+                    "Deployment %(deployment_id)s rolled back.",
+                    deployment_id=deployment.id,
+                ),
+                "success",
+            )
+
+        except Exception as e:
+            logger.error(f"Error rolling back project: {str(e)}")
+            flash(request, _("Error rolling back project."), "error")
+    else:
+        for error in form.errors.values():
+            for e in error:
+                flash(request, _("Rollback failed: %(error)s", error=e), "error")
+
+    return TemplateResponse(
+        request=request,
+        name="project/partials/_dialog-rollback-form.html",
+        context={
+            "current_user": current_user,
+            "team": team,
+            "project": project,
+            "form": form,
+            "deployment": deployment,
+        },
+    )
+
+
+@router.api_route(
     "/{team_slug}/projects/{project_name}/settings",
     methods=["GET", "POST"],
     name="project_settings",
@@ -590,6 +709,7 @@ async def project_settings(
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
 ):
     team, membership = team_and_membership
 
@@ -620,7 +740,6 @@ async def project_settings(
 
                     # Project is marked as deleted, actual cleanup is delegated to a job
                     # TODO: job_timeout='1h'
-                    deployment_queue = await get_deployment_queue()
                     await deployment_queue.enqueue_job("cleanup_project", project.id)
 
                     flash(
@@ -674,9 +793,9 @@ async def project_settings(
             # Repo
             if general_form.repo_id.data != project.repo_id:
                 try:
-                    github_client = get_github_client()
+                    github_service = get_github_service()
                     github_oauth_token = await get_user_github_token(db, current_user)
-                    repo = await github_client.get_repository(
+                    repo = await github_service.get_repository(
                         github_oauth_token or "", general_form.repo_id.data
                     )
                 except Exception:

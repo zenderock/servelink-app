@@ -35,17 +35,17 @@
             </a>
 
             <a href="{{ project.url }}" target="_blank"
-              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
+              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 min-w-0"
               data-tooltip="{{ _('URL') }}">
               {% include "icons/link-2.svg" %}
-              {{ project.hostname }}
+              <span class="truncate">{{ project.hostname }}</span>
             </a>
 
             <a href="https://github.com/{{ project.repo_full_name }}" target="_blank"
-              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
+              class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 min-w-0"
               data-tooltip="{{ _('GitHub') }}">
               {% include "icons/github.svg" %}
-              {{ project.repo_full_name }}
+              <span class="truncate">{{ project.repo_full_name }}</span>
             </a>
 
             <div class="flex items-center ml-auto">

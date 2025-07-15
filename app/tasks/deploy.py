@@ -13,9 +13,12 @@ from sqlalchemy.orm import joinedload
 from typing import Any
 
 from models import Deployment, Alias, Project
-from utils.github import get_installation_instance
-from dependencies import get_redis_client, get_github_client, get_deployment_queue
+from dependencies import (
+    get_redis_client,
+    get_github_installation_service,
+)
 from config import get_settings
+from arq.connections import ArqRedis
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +67,8 @@ async def deploy(ctx, deployment_id: str):
     """Deploy a project to its environment."""
     settings = get_settings()
     redis_client = get_redis_client()
-    github_client = get_github_client()
+
+    github_installation_service = get_github_installation_service()
 
     database_url = f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}"
     engine = create_async_engine(database_url, echo=settings.db_echo)
@@ -98,8 +102,6 @@ async def deploy(ctx, deployment_id: str):
                 error_message = f"Environment {deployment.environment_id} not found"
                 logger.error(error_message)
                 raise Exception(error_message)
-
-            apps_base_domain = settings.base_domain
 
             # Check project status
             if project.status != "active":
@@ -154,8 +156,10 @@ async def deploy(ctx, deployment_id: str):
                     commands.append(
                         f"echo 'Cloning {deployment.repo_full_name} (Branch: {deployment.branch}, Commit: {deployment.commit_sha[:7]})'"
                     )
-                    github_installation = await get_installation_instance(
-                        project.github_installation_id, db, github_client
+                    github_installation = (
+                        await github_installation_service.get_or_refresh_installation(
+                            project.github_installation_id, db
+                        )
                     )
                     commands.append(
                         "git init -q && "
@@ -196,7 +200,7 @@ async def deploy(ctx, deployment_id: str):
 
                     labels = {
                         "traefik.enable": "true",
-                        f"traefik.http.routers.{router}.rule": f"Host(`{deployment.slug}.{apps_base_domain}`)",
+                        f"traefik.http.routers.{router}.rule": f"Host(`{deployment.slug}.{settings.deploy_domain}`)",
                         f"traefik.http.routers.{router}.service": f"{router}@docker",
                         f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
                         "traefik.docker.network": "devpush_default",
@@ -343,7 +347,7 @@ async def deploy(ctx, deployment_id: str):
                         for alias_obj in project_aliases:
                             router_name = f"router-alias-{alias_obj.id}"
                             routers_config[router_name] = {
-                                "rule": f"Host(`{alias_obj.subdomain}.{apps_base_domain}`)",
+                                "rule": f"Host(`{alias_obj.subdomain}.{settings.deploy_domain}`)",
                                 "service": f"deployment-{alias_obj.deployment_id}@docker",
                             }
 
@@ -376,18 +380,13 @@ async def deploy(ctx, deployment_id: str):
                         )
 
                     # Cleanup inactive deployments
-                    try:
-                        deployment_queue = await get_deployment_queue()
-                        await deployment_queue.enqueue_job(
-                            "cleanup_inactive_deployments", project.id
-                        )
-                        logger.info(
-                            f"Inactive deployments cleanup job queued for project {project.id}."
-                        )
-                    except Exception as e_enqueue:
-                        logger.error(
-                            f"Failed to queue inactive deployments cleanup job for project {project.id}: {e_enqueue}"
-                        )
+                    deployment_queue: ArqRedis = ctx["redis"]
+                    await deployment_queue.enqueue_job(
+                        "cleanup_inactive_deployments", project.id
+                    )
+                    logger.info(
+                        f"Inactive deployments cleanup job queued for project {project.id}."
+                    )
 
                     # Success message
                     success_message = f"Deployment succeeded. Visit {deployment.url}"

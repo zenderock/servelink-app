@@ -5,10 +5,12 @@ from starlette.responses import RedirectResponse, Response
 from authlib.jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 import resend
 from datetime import timedelta
 from typing import Any
+import secrets
 
 from config import Settings, get_settings
 from dependencies import (
@@ -19,18 +21,68 @@ from dependencies import (
     get_current_user,
     get_github_oauth_client,
     get_github_primary_email,
+    get_google_oauth_client,
+    get_google_user_info,
 )
 from db import get_db
-from models import User, UserIdentity, TeamInvite, TeamMember, utc_now
+from models import User, UserIdentity, TeamInvite, TeamMember, Team, utc_now
 from forms.auth import EmailLoginForm
-from utils.user import create_user_with_team, get_user_by_email, get_user_by_provider
+from utils.user import sanitize_username, get_user_by_email, get_user_by_provider
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth")
 
 
-def create_session_cookie(user: User, settings: Settings) -> RedirectResponse:
+async def _create_user_with_team(
+    db: AsyncSession,
+    email: str,
+    name: str | None = None,
+    username: str | None = None,
+) -> User:
+    if not username:
+        username = email.split("@")[0]
+
+    base_username = sanitize_username(username)
+
+    user = None
+    for attempt in range(5):
+        try:
+            if attempt == 0:
+                unique_username = base_username[:50]
+            else:
+                random_suffix = secrets.token_hex(2)
+                unique_username = f"{base_username[:45]}-{random_suffix}"
+
+            user = User(
+                email=email.strip().lower(),
+                name=name,
+                username=unique_username,
+                email_verified=True,
+            )
+            db.add(user)
+            await db.flush()
+            break
+
+        except IntegrityError as e:
+            await db.rollback()
+            if "username" not in str(e):
+                raise
+
+    if not user or not user.id:
+        raise RuntimeError("Failed to create user after maximum retries")
+
+    team = Team(name=user.name or user.username, created_by_user_id=user.id)
+    db.add(team)
+    await db.flush()
+
+    user.default_team_id = team.id
+    db.add(TeamMember(team_id=team.id, user_id=user.id, role="owner"))
+
+    return user
+
+
+def _create_session_cookie(user: User, settings: Settings) -> RedirectResponse:
     jwt_token = jwt.encode({"alg": "HS256"}, {"sub": user.id}, settings.secret_key)
     jwt_token_str = (
         jwt_token.decode("utf-8") if isinstance(jwt_token, bytes) else jwt_token
@@ -100,7 +152,7 @@ async def auth_login(
                             or request.url_for("static", path="logo-email.png"),
                             "app_name": settings.app_name,
                             "app_description": settings.app_description,
-                            "app_url": f"{settings.url_scheme}://app.{settings.base_domain}",
+                            "app_url": f"{settings.url_scheme}://{settings.hostname}",
                         }
                     ),
                 }
@@ -174,19 +226,15 @@ async def auth_email_verify(
 
             email = payload.get("email")
             if not email:
-                if current_user:
-                    flash(request, _("Invalid or expired invitation."), "error")
-                    return RedirectResponse("/", status_code=303)
-                else:
-                    raise HTTPException(status_code=400, detail="Invalid token")
+                raise HTTPException(status_code=400, detail="Invalid token")
 
             user = await get_user_by_email(db, email)
             if not user:
-                user = await create_user_with_team(db, email)
+                user = await _create_user_with_team(db, email)
                 await db.commit()
                 await db.refresh(user)
 
-            return create_session_cookie(user, settings)
+            return _create_session_cookie(user, settings)
 
         elif token_type == "email_change":
             user_id = payload.get("user_id")
@@ -214,11 +262,7 @@ async def auth_email_verify(
             )
 
             if not invite or invite.expires_at < utc_now():
-                if current_user:
-                    flash(request, _("Invalid or expired invitation."), "error")
-                    return RedirectResponse("/", status_code=303)
-                else:
-                    raise HTTPException(status_code=400, detail="Invalid token")
+                raise HTTPException(status_code=400, detail="Invalid token")
 
             if current_user:
                 if current_user.email.lower() != email.lower():
@@ -264,7 +308,7 @@ async def auth_email_verify(
             else:
                 user = await get_user_by_email(db, email)
                 if not user:
-                    user = await create_user_with_team(db, email)
+                    user = await _create_user_with_team(db, email)
 
                 invite.status = "accepted"
                 db.add(
@@ -282,7 +326,7 @@ async def auth_email_verify(
                     ),
                     "success",
                 )
-                response = create_session_cookie(user, settings)
+                response = _create_session_cookie(user, settings)
                 response.headers["location"] = f"/{invite.team.slug}"
                 return response
 
@@ -290,7 +334,8 @@ async def auth_email_verify(
             raise HTTPException(status_code=400, detail="Invalid token type")
 
     except Exception:
-        raise HTTPException(status_code=500, detail="Invalid or expired token")
+        flash(request, _("Invalid or expired invitation."), "error")
+        return RedirectResponse("/", status_code=303)
 
 
 @router.get("/github", name="auth_github_login")
@@ -344,7 +389,7 @@ async def auth_github_callback(
             user = await get_user_by_email(db, email)
 
         if not user:
-            user = await create_user_with_team(
+            user = await _create_user_with_team(
                 db,
                 email=email or f"{gh_user['login']}@github.local",
                 name=gh_user.get("name"),
@@ -365,7 +410,89 @@ async def auth_github_callback(
 
     await db.commit()
     await db.refresh(user)
-    return create_session_cookie(user, settings)
+    return _create_session_cookie(user, settings)
+
+
+@router.get("/google", name="auth_google_login")
+async def auth_google_login(
+    request: Request,
+    oauth_client=Depends(get_google_oauth_client),
+):
+    if not oauth_client.google:
+        raise HTTPException(
+            status_code=500, detail="Google OAuth client not configured"
+        )
+    return await oauth_client.google.authorize_redirect(
+        request, request.url_for("auth_google_callback")
+    )
+
+
+@router.get("/google/callback", name="auth_google_callback")
+async def auth_google_callback(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+    db: AsyncSession = Depends(get_db),
+    oauth_client=Depends(get_google_oauth_client),
+):
+    try:
+        if not oauth_client.google:
+            raise HTTPException(
+                status_code=500, detail="Google OAuth client not configured"
+            )
+
+        token = await oauth_client.google.authorize_access_token(request)
+        google_user_info = await get_google_user_info(oauth_client, token)
+
+        if not google_user_info:
+            flash(request, _("Failed to get user info from Google"), "error")
+            return RedirectResponse("/auth/login", status_code=303)
+
+        user = await get_user_by_provider(db, "google", google_user_info["id"])
+
+        if user:
+            result = await db.execute(
+                select(UserIdentity).where(
+                    UserIdentity.user_id == user.id, UserIdentity.provider == "google"
+                )
+            )
+            google_identity = result.scalar_one_or_none()
+            if google_identity:
+                google_identity.access_token = token["access_token"]
+                google_identity.provider_metadata = {
+                    "email": google_user_info["email"],
+                    "name": google_user_info.get("name"),
+                    "picture": google_user_info.get("picture"),
+                }
+        else:
+            email = google_user_info["email"]
+            user = await get_user_by_email(db, email)
+
+            if not user:
+                user = await _create_user_with_team(
+                    db,
+                    email=email,
+                    name=google_user_info.get("name"),
+                )
+
+            google_identity = UserIdentity(
+                user_id=user.id,
+                provider="google",
+                provider_user_id=google_user_info["id"],
+                access_token=token["access_token"],
+                provider_metadata={
+                    "email": google_user_info["email"],
+                    "name": google_user_info.get("name"),
+                    "picture": google_user_info.get("picture"),
+                },
+            )
+            db.add(google_identity)
+
+        await db.commit()
+        await db.refresh(user)
+        return _create_session_cookie(user, settings)
+    except Exception:
+        flash(request, _("Google login failed"), "error")
+        return RedirectResponse("/auth/login", status_code=303)
 
 
 @router.get("/logout", name="auth_logout")

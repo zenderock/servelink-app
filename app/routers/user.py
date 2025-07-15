@@ -1,9 +1,11 @@
 import logging
 import os
 from fastapi import APIRouter, Request, Depends, Query
+from sqlalchemy.orm import joinedload
 from starlette.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete, insert
+from arq.connections import ArqRedis
 from typing import Any
 from authlib.jose import jwt
 from datetime import timedelta
@@ -17,15 +19,21 @@ from dependencies import (
     templates,
     get_current_user,
     get_deployment_queue,
+    RedirectResponseX,
 )
 from db import get_db
-from models import User, UserIdentity, utc_now
-from forms.user import UserDeleteForm, UserGeneralForm, UserEmailForm
-from utils.github import revoke_oauth_access
+from models import User, UserIdentity, Team, TeamMember, TeamInvite, utc_now
+from forms.user import (
+    UserDeleteForm,
+    UserGeneralForm,
+    UserEmailForm,
+    UserRevokeOAuthAccessForm,
+)
+from forms.team import TeamLeaveForm, TeamInviteAcceptForm
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/user")
 
 
 @router.api_route("/settings", methods=["GET", "POST"], name="user_settings")
@@ -35,6 +43,7 @@ async def user_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
 ):
     # Delete
     delete_form: Any = await UserDeleteForm.from_formdata(request, user=current_user)
@@ -45,7 +54,6 @@ async def user_settings(
                 await db.commit()
 
                 # User is marked as deleted, actual cleanup is delegated to a job
-                deployment_queue = await get_deployment_queue()
                 await deployment_queue.enqueue_job("cleanup_user", current_user.id)
 
                 flash(
@@ -214,7 +222,7 @@ async def user_settings(
                                 or request.url_for("static", path="logo-email.png"),
                                 "app_name": settings.app_name,
                                 "app_description": settings.app_description,
-                                "app_url": f"{settings.url_scheme}://app.{settings.base_domain}",
+                                "app_url": f"{settings.url_scheme}://{settings.hostname}",
                             }
                         ),
                     }
@@ -248,6 +256,75 @@ async def user_settings(
                 },
             )
 
+    # Teams
+    leave_team_form: Any = await TeamLeaveForm.from_formdata(request)
+
+    if request.method == "POST" and fragment == "teams":
+        if await leave_team_form.validate_on_submit():
+            is_allowed_to_leave = True
+            if leave_team_form.team_id.data == current_user.default_team_id:
+                flash(request, _("You cannot leave your default team."), "error")
+                is_allowed_to_leave = False
+            else:
+                result = await db.execute(
+                    select(TeamMember).where(
+                        TeamMember.team_id == leave_team_form.team_id.data,
+                        TeamMember.user_id != current_user.id,
+                        TeamMember.role == "owner",
+                    )
+                )
+                other_owners = result.scalars().all()
+                if len(other_owners) == 0:
+                    flash(
+                        request,
+                        _(
+                            "You cannot leave the team because you are the only member or the only owner. You can assign a new owner and leave, or delete the team."
+                        ),
+                        "error",
+                    )
+                    is_allowed_to_leave = False
+
+            if is_allowed_to_leave:
+                team = await db.get(Team, leave_team_form.team_id.data)
+                if not team:
+                    flash(request, _("Team not found."), "error")
+                else:
+                    result = await db.execute(
+                        delete(TeamMember).where(
+                            TeamMember.user_id == current_user.id,
+                            TeamMember.team_id == leave_team_form.team_id.data,
+                        )
+                    )
+                    await db.commit()
+
+                    flash(
+                        request,
+                        _(
+                            'You have left the "%(team)s" team.',
+                            team=team.name,
+                        ),
+                        "success",
+                    )
+
+    result = await db.execute(
+        select(Team, TeamMember.role)
+        .join(TeamMember, Team.id == TeamMember.team_id)
+        .where(Team.status != "deleted", TeamMember.user_id == current_user.id)
+        .order_by(Team.updated_at.desc())
+    )
+    teams_and_roles = result.all()
+
+    if request.headers.get("HX-Request") and fragment == "teams":
+        return TemplateResponse(
+            request=request,
+            name="user/partials/_settings-teams.html",
+            context={
+                "current_user": current_user,
+                "teams_and_roles": teams_and_roles,
+                "leave_team_form": leave_team_form,
+            },
+        )
+
     # Authentication
     result = await db.execute(
         select(UserIdentity).where(UserIdentity.user_id == current_user.id)
@@ -263,16 +340,60 @@ async def user_settings(
         elif identity.provider == "google" and identity.provider_metadata:
             google_email = identity.provider_metadata.get("email")
 
-    if request.method == "POST" and fragment == "github_revoke_oauth_access":
-        revoked = await revoke_oauth_access(request, current_user, db)
-        if revoked:
-            github_username = None
-        
+    revoke_oauth_access_form: Any = await UserRevokeOAuthAccessForm.from_formdata(
+        request
+    )
+
+    if request.method == "POST" and fragment == "revoke_oauth_access":
+        if await revoke_oauth_access_form.validate_on_submit():
+            provider = revoke_oauth_access_form.provider.data
+            provider_name = "Google" if provider == "google" else "GitHub"
+
+            try:
+                result = await db.execute(
+                    delete(UserIdentity).where(
+                        UserIdentity.user_id == current_user.id,
+                        UserIdentity.provider == provider,
+                    )
+                )
+                await db.commit()
+
+                if result.rowcount > 0:
+                    flash(
+                        request,
+                        _(
+                            "%(provider)s account disconnected successfully.",
+                            provider=provider_name,
+                        ),
+                        "success",
+                    )
+                    # Update the appropriate variable
+                    if provider == "github":
+                        github_username = None
+                    else:
+                        google_email = None
+                else:
+                    flash(
+                        request,
+                        _("No %(provider)s account connected.", provider=provider_name),
+                        "warning",
+                    )
+            except Exception:
+                flash(
+                    request,
+                    _(
+                        "Error disconnecting %(provider)s account.",
+                        provider=provider_name,
+                    ),
+                    "error",
+                )
+
         if request.headers.get("HX-Request"):
             return TemplateResponse(
                 request=request,
                 name="user/partials/_settings-authentication.html",
                 context={
+                    "revoke_oauth_access_form": revoke_oauth_access_form,
                     "current_user": current_user,
                     "github_username": github_username,
                     "google_email": google_email,
@@ -289,5 +410,97 @@ async def user_settings(
             "email_form": email_form,
             "github_username": github_username,
             "google_email": google_email,
+            "teams_and_roles": teams_and_roles,
+            "leave_team_form": leave_team_form,
+            "revoke_oauth_access_form": revoke_oauth_access_form,
+        },
+    )
+
+
+@router.api_route("/notifications", methods=["GET", "POST"], name="user_notifications")
+async def user_notifications(
+    request: Request,
+    fragment: str | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    accept_invite_form: Any = await TeamInviteAcceptForm.from_formdata(request)
+
+    if request.method == "POST" and fragment == "accept_invite":
+        if await accept_invite_form.validate_on_submit():
+            try:
+                invite = await db.scalar(
+                    select(TeamInvite)
+                    .options(joinedload(TeamInvite.team))
+                    .where(
+                        TeamInvite.id == accept_invite_form.invite_id.data,
+                        TeamInvite.status == "pending",
+                        TeamInvite.email == current_user.email,
+                    )
+                )
+                if not invite or invite.expires_at < utc_now():
+                    flash(request, _("Invalid or expired invitation."), "error")
+                    return templates.TemplateResponse(
+                        request=request,
+                        name="layouts/fragment.html",
+                        context={"content": ""},
+                        status_code=200,
+                    )
+
+                invite.status = "accepted"
+                await db.execute(
+                    insert(TeamMember).values(
+                        team_id=invite.team_id,
+                        user_id=current_user.id,
+                        role=invite.role,
+                    )
+                )
+                await db.commit()
+
+                flash(
+                    request,
+                    _(
+                        'You have accepted the invitation to join "%(team_name)s".',
+                        team_name=invite.team.name,
+                    ),
+                    "success",
+                )
+
+                return RedirectResponseX(
+                    str(request.url_for("team_index", team_slug=invite.team.slug)),
+                    status_code=303,
+                    request=request,
+                )
+            except Exception as e:
+                logger.error(f"Error accepting invitation: {str(e)}")
+                flash(
+                    request,
+                    _("An error occurred while accepting the invitation."),
+                    "error",
+                )
+                await db.rollback()
+
+    result = await db.execute(
+        select(TeamInvite)
+        .where(
+            TeamInvite.email == current_user.email,
+            TeamInvite.status == "pending",
+        )
+        .options(joinedload(TeamInvite.team))
+        .options(joinedload(TeamInvite.inviter))
+    )
+    invites = result.scalars().all()
+
+    if len(invites) == 0:
+        return Response(status_code=204)
+
+    return TemplateResponse(
+        request=request,
+        name="user/partials/_notifications.html",
+        context={
+            "current_user": current_user,
+            "invites": invites,
+            "accept_invite_form": accept_invite_form,
         },
     )

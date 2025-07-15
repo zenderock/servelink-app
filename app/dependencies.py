@@ -15,24 +15,29 @@ from functools import lru_cache
 import humanize
 from datetime import datetime
 from redis.asyncio import Redis
-from arq import create_pool
-from arq.connections import ArqRedis, RedisSettings
+from arq.connections import ArqRedis
 
 from config import get_settings, Settings
 from db import get_db
 from models import User, Project, Deployment, Team, TeamMember
-from services.github import GitHub
+from services.github import GitHubService
+from services.github_installation import GitHubInstallationService
 
 
 @lru_cache
-def get_github_client() -> GitHub:
+def get_github_service() -> GitHubService:
     settings = get_settings()
-    return GitHub(
+    return GitHubService(
         client_id=settings.github_app_client_id,
         client_secret=settings.github_app_client_secret,
         app_id=settings.github_app_id,
         private_key=settings.github_app_private_key,
     )
+
+
+@lru_cache
+def get_github_installation_service() -> GitHubInstallationService:
+    return GitHubInstallationService(get_github_service())
 
 
 @lru_cache
@@ -69,15 +74,41 @@ async def get_github_primary_email(oauth_client: OAuth, token: dict) -> str | No
 
 
 @lru_cache
+def get_google_oauth_client() -> OAuth:
+    settings = get_settings()
+    oauth = OAuth()
+    oauth.register(
+        "google",
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+    return oauth
+
+
+async def get_google_user_info(oauth_client: OAuth, token: dict) -> dict | None:
+    """Get user info from Google."""
+    try:
+        if not oauth_client.google:
+            return None
+
+        response = await oauth_client.google.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo", token=token
+        )
+        return response.json()
+    except Exception:
+        return None
+
+
+@lru_cache
 def get_redis_client() -> Redis:
     settings = get_settings()
     return Redis.from_url(settings.redis_url, decode_responses=True)
 
 
-async def get_deployment_queue() -> ArqRedis:
-    settings = get_settings()
-    redis_settings = RedisSettings.from_dsn(settings.redis_url)
-    return await create_pool(redis_settings)
+def get_deployment_queue(request: Request) -> ArqRedis:
+    return request.app.state.redis_pool
 
 
 async def get_current_user(
@@ -312,23 +343,26 @@ def RedirectResponseX(
     url: str,
     status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
     headers: dict[str, str] | None = None,
-    request: Request | None = None,  # extra kw-only, keeps calls compatible
+    request: Request | None = None,
 ):
     """
     Drop-in replacement for FastAPI RedirectResponse.
     • If `request` is an HTMX call ⇒ send HX-Redirect header.
     • Otherwise ⇒ delegate to FastAPI's RedirectResponse.
     """
+
     if request is not None and request.headers.get("HX-Request"):
+        print(request.headers.get("HX-Request"))
         return FastAPIResponse(
             status_code=200,
             headers={"HX-Redirect": str(url), **(headers or {})},
         )
+    print("NOPE")
     return FastAPIRedirect(url=url, status_code=status_code, headers=headers)
 
 
 templates = Jinja2Templates(
-    directory="templates", auto_reload=get_settings().templates_auto_reload
+    directory="templates", auto_reload=get_settings().env == "development"
 )
 templates.env.globals["_"] = get_translation
 templates.env.globals["settings"] = get_settings()

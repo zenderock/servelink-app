@@ -4,20 +4,23 @@
 {% include "deployment/partials/_sse-status.html" %}
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6" x-init>
   <div id="deployment-page-header" class="space-y-6">
-    {% include "deployment/partials/_header.html" %}
+    {% include "deployment/partials/_header.html" with context %}
   </div>
 
   <details open class="w-full rounded-lg border group">
-    <summary
-      class="px-4 py-3 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+    <summary class="px-4 py-3 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
       {% include "icons/chevron-right.svg" %}
       {{ _('Build logs') }}
     </summary>
     {% if not deployment.conclusion %}
-    {% include "deployment/partials/_sse-logs.html" %}
+      {% include "deployment/partials/_sse-logs.html" %}
     {% endif%}
-    <div id="deployment-logs" class="overflow-y-auto h-[500px] relative p-4 border-t scrollbar-thin scrollbar"
-      x-init="$el.scrollTop = $el.scrollHeight" hx-on::after-swap="this.scrollTop = this.scrollHeight" x-data="{
+    <div
+      id="deployment-logs"
+      class="overflow-y-auto h-[500px] relative p-4 border-t scrollbar-thin scrollbar"
+      x-init="$el.scrollTop = $el.scrollHeight"
+      hx-on::after-swap="this.scrollTop = this.scrollHeight"
+      x-data="{
         getTime(timestamp) {
           return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
         },
@@ -29,7 +32,8 @@
           ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
           ':data-side': '\'right\''
         }
-      }">
+      }"
+    >
       <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
         <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
           {% include "icons/loader.svg" %}
@@ -37,15 +41,12 @@
         </div>
       </div>
       {%- for log in deployment.parsed_logs -%}
-      <div
-        class="flex items-start gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono text-[13px]">
-        <time class="text-muted-foreground whitespace-nowrap" datetime="{{ log.timestamp }}" x-bind="$log">{{
-          log.timestamp }}</time>
-        <div class="break-all">{{ log.message }}</div>
-      </div>
+        <div class="flex items-start gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono text-[13px]">
+          <time class="text-muted-foreground whitespace-nowrap" datetime="{{ log.timestamp }}" x-bind="$log">{{ log.timestamp }}</time>
+          <div class="break-all">{{ log.message }}</div>
+        </div>
       {%- endfor -%}
     </div>
   </details>
 </div>
-
 {% endblock %}

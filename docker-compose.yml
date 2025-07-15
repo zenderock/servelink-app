@@ -20,7 +20,7 @@ services:
       - DOCKER_HOST=tcp://docker-proxy:2375
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.app.rule=Host(`${HOSTNAME:-localhost}`)"
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"

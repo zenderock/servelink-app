@@ -1,14 +1,17 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
+from arq import create_pool
+from arq.connections import RedisSettings
 from starlette_wtf import CSRFProtectMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import logging
 
-from routers import auth, project, github, team, api, user
+from routers import auth, project, github, google, team, api, user
 from config import get_settings
 from db import get_db
 from models import User, Team
@@ -16,24 +19,37 @@ from dependencies import get_current_user, TemplateResponse
 
 settings = get_settings()
 
+logging.basicConfig(
+    level=logging.INFO if settings.env == "production" else logging.DEBUG
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    app.state.redis_pool = await create_pool(redis_settings)
+    try:
+        yield
+    finally:
+        await app.state.redis_pool.close()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     middleware=[
         Middleware(SessionMiddleware, secret_key=settings.secret_key),
         Middleware(CSRFProtectMiddleware, csrf_secret=settings.secret_key),
-    ]
+    ],
 )
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(project.router)
 app.include_router(github.router)
+app.include_router(google.router)
 app.include_router(team.router)
 app.include_router(api.router)
-
-
-logging.basicConfig(
-    level=logging.INFO if settings.env == "production" else logging.DEBUG
-)
 
 
 @app.exception_handler(404)

@@ -5,6 +5,7 @@ from wtforms import (
     BooleanField,
     FileField,
     HiddenField,
+    SelectField,
 )
 from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Email
 
@@ -68,3 +69,12 @@ class UserDeleteForm(StarletteForm):
     def validate_confirm(self, field):
         if field.data != self.email.data:  # type: ignore
             raise ValidationError(_("Email confirmation did not match."))
+
+
+class UserRevokeOAuthAccessForm(StarletteForm):
+    provider = SelectField(
+        _l("Provider"),
+        default="",
+        choices=["github","google"],
+    )
+    submit = SubmitField(_l("Disconnect"))

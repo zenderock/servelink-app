@@ -6,7 +6,7 @@ async def paginate(db: AsyncSession, query, page=1, per_page=25):
     
     # Get total count
     count_query = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(count_query)).scalar()
+    total = (await db.execute(count_query)).scalar() or 0
     
     # Get items
     items = (await db.execute(query.offset(offset).limit(per_page))).scalars().all()

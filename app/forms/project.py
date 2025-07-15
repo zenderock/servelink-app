@@ -19,8 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies import get_translation as _, get_lazy_translation as _l
 from models import Project, Team
 from utils.color import COLORS
-from utils.environment import get_environment_for_branch
-import re
 
 
 def validate_root_directory(form, field):
@@ -408,40 +406,10 @@ class ProjectDeleteForm(StarletteForm):
 
 
 class ProjectDeployForm(StarletteForm):
-    environment_id = SelectField(
-        _l("Environment"), choices=[], validators=[DataRequired()]
-    )
     commit = HiddenField(_l("Commit"), validators=[DataRequired()])
     submit = SubmitField(_l("Deploy"))
 
-    def __init__(self, *args, project: Project, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.project = project
 
-    async def async_validate_commit(self, field):
-        branch, sha = field.data.split(":")
-
-        if not branch or not sha:
-            raise ValidationError(_("Invalid commit format."))
-
-        if not branch.strip():
-            raise ValidationError(_("Branch cannot be empty."))
-
-        if not sha.strip():
-            raise ValidationError(_("Commit SHA cannot be empty."))
-
-        if len(sha) != 40:
-            raise ValidationError(_("Commit SHA must be 40 characters long."))
-
-        if not re.match(r"^[0-9a-fA-F]{40}$", sha):
-            raise ValidationError(_("Invalid commit SHA format."))
-
-        environment = get_environment_for_branch(
-            branch, self.project.active_environments
-        )
-
-        if not environment:
-            raise ValidationError(_("Environment not found."))
-
-        if environment["id"] != self.environment_id.data:  # type: ignore
-            raise ValidationError(_("Environment does not match branch."))
+class ProjectRollbackForm(StarletteForm):
+    environment_id = HiddenField(_l("Environment ID"), validators=[DataRequired()])
+    submit = SubmitField(_l("Rollback"))

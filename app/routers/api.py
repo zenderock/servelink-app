@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,17 +8,20 @@ import time
 from typing import Any
 
 from config import get_settings, Settings
-from models import Deployment, Project, Team
+from models import Team, Project, Deployment
 from dependencies import (
     get_deployment_by_id,
-    get_db,
     get_project_by_id,
     get_redis_client,
     get_team_by_slug,
     templates,
+    get_db,
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
+
 
 STREAM_TTL = 900
 

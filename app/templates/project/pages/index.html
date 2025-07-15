@@ -11,8 +11,7 @@
   <section class="space-y-4">
     <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Environments') }}</h2>
-      <a href="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name) }}#environments"
-        class="btn-sm">
+      <a href="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name) }}#environments" class="btn-sm">
         {% include "icons/settings.svg" %}
         {{ _('Manage environments') }}
       </a>
@@ -20,35 +19,38 @@
 
     <ul class="grid grid-cols-4 gap-4">
       {% for environment in project.active_environments %}
-      <li class="bg-card text-card-foreground rounded-xl border shadow-sm p-4">
-        <header class="flex items-center gap-x-2 mb-4 truncate">
-          <a href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name).include_query_params(environment=environment.slug) }}"
-            class="flex items-center gap-x-2 mr-auto h-4 truncate">
-            <span class="w-4 h-4 flex items-center justify-center"><span
-                class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span></span>
-            <span class=" flex-1 truncate font-medium">{{ environment.name }}</span>
-          </a>
-        </header>
-        <ul class="space-y-1">
-          <li>
-            <a href="http://{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}"
-              class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
-              target="_blank" data-tooltip="{{ _('Visit') }}">
-              {% include "icons/link-2.svg" %}
-              <span class="truncate">{{ project.slug }}-env-{{ environment.slug }}.{{ apps_base_domain }}</span>
+        <li class="bg-card text-card-foreground rounded-xl border shadow-sm p-4">
+          <header class="flex items-center gap-x-2 mb-4 truncate">
+            <a href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name).include_query_params(environment=environment.slug) }}" class="flex items-center gap-x-2 h-4 truncate">
+              <span class="w-4 h-4 flex items-center justify-center">
+                <span class="inline-block rounded h-2.5 w-2.5 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600 shrink-0"></span>
+              </span>
+              <span class=" flex-1 truncate font-medium">{{ environment.name }}</span>
             </a>
-          </li>
-          <li>
-            <span
-              class="text-muted-foreground flex items-center gap-x-2 mr-auto [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
-              data-tooltip="{{ _('Branch') }}"
-            >
-              {% include "icons/git-branch.svg" %}
-              <span class="font-mono truncate">{{ environment.branch }}</span>
-            </span>
-          </li>
-        </ul>
-      </li>
+          </header>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="{{ project.get_environment_url(environment.slug) }}"
+                class="text-muted-foreground flex items-center gap-x-2 hover:text-foreground transition-colors [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
+                target="_blank"
+                data-tooltip="{{ _('Visit') }}"
+              >
+                {% include "icons/link-2.svg" %}
+                <span class="truncate">{{ project.get_environment_hostname(environment.slug) }}</span>
+              </a>
+            </li>
+            <li>
+              <span
+                class="text-muted-foreground flex items-center gap-x-2 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0 min-w-0 w-min"
+                data-tooltip="{{ _('Branch') }}"
+              >
+                {% include "icons/git-branch.svg" %}
+                <span class="font-mono truncate">{{ environment.branch }}</span>
+              </span>
+            </li>
+          </ul>
+        </li>
       {% endfor %}
     </ul>
   </section>
@@ -57,15 +59,19 @@
     <header class="flex justify-between items-center gap-x-4 h-8">
       <h2 class="h4">{{ _('Latest deployments') }}</h2>
       {% if deployments %}
-      {% include "project/partials/_dialog-deploy.html" %}
-      <button type="button" class="btn-sm" x-init @click="
+        {% include "project/partials/_dialog-deploy.html" %}
+        <button
+          type="button"
+          class="btn-sm"
+          x-init @click="
             const dialog = document.getElementById('dialog-deploy');
             dialog.dispatchEvent(new Event('dialog:opened'));
             dialog.showModal();
-          ">
-        {% include "icons/cloud-upload.svg" %}
-        {{ _('Deploy') }}
-      </button>
+          "
+        >
+          {% include "icons/cloud-upload.svg" %}
+          {{ _('Deploy') }}
+        </button>
       {% endif %}
     </header>
     <div class="space-y-4">
@@ -76,13 +82,12 @@
       </div>
 
       {% if deployments %}
-      <footer class="flex justify-end">
-        <a href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name) }}"
-          class="btn-sm-outline" aria-label="{{ _('All deployments') }}">
-          {{ _('All deployments') }}
-          {% include "icons/chevron-right.svg" %}
-        </a>
-      </footer>
+        <footer class="flex justify-end">
+          <a href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name) }}" class="btn-sm-outline" aria-label="{{ _('All deployments') }}">
+            {{ _('All deployments') }}
+            {% include "icons/chevron-right.svg" %}
+          </a>
+        </footer>
       {% endif %}
     </div>
   </section>

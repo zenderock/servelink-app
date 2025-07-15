@@ -248,10 +248,6 @@ class TeamInvite(Base):
     team: Mapped[Team] = relationship()
     inviter: Mapped[User] = relationship()
 
-    __table_args__ = (
-        UniqueConstraint("team_id", "email", name="uq_team_invite_email"),
-    )
-
 
 class GithubInstallation(Base):
     __tablename__: str = "github_installation"
@@ -361,8 +357,7 @@ class Project(Base):
     @property
     def hostname(self) -> str:
         settings = get_settings()
-        base_domain = getattr(settings, "apps_base_domain", settings.base_domain)
-        return f"{self.slug}.{base_domain}"
+        return f"{self.slug}.{settings.deploy_domain}"
 
     @property
     def url(self) -> str:
@@ -532,6 +527,30 @@ class Project(Base):
         aliases = result.scalars().all()
         return {alias.value: alias for alias in aliases}
 
+    def get_environment_hostname(self, environment_slug: str) -> str:
+        """Get environment hostname"""
+        settings = get_settings()
+        if environment_slug == "production":
+            return self.hostname
+        return f"{self.slug}-env-{environment_slug}.{settings.deploy_domain}"
+
+    def get_environment_url(self, environment_slug: str) -> str:
+        """Get environment URL"""
+        settings = get_settings()
+        return (
+            f"{settings.url_scheme}://{self.get_environment_hostname(environment_slug)}"
+        )
+
+    def get_branch_hostname(self, branch: str) -> str:
+        """Get branch hostname"""
+        settings = get_settings()
+        return f"{self.slug}-branch-{branch}.{settings.deploy_domain}"
+
+    def get_branch_url(self, branch: str) -> str:
+        """Get branch URL"""
+        settings = get_settings()
+        return f"{settings.url_scheme}://{self.get_branch_hostname(branch)}"
+
 
 @event.listens_for(Project, "after_insert")
 def set_project_slug(mapper, connection, project):
@@ -652,8 +671,7 @@ class Deployment(Base):
     @property
     def hostname(self) -> str:
         settings = get_settings()
-        base_domain = getattr(settings, "apps_base_domain", settings.base_domain)
-        return f"{self.slug}.{base_domain}"
+        return f"{self.slug}.{settings.deploy_domain}"
 
     @property
     def url(self) -> str:
@@ -677,8 +695,7 @@ class Deployment(Base):
         if not self.conclusion:
             return None
         settings = get_settings()
-        base_domain = getattr(settings, "apps_base_domain", settings.base_domain)
-        return f"{self.featured_slug}.{base_domain}"
+        return f"{self.featured_slug}.{settings.deploy_domain}"
 
     @property
     def featured_url(self) -> str | None:
@@ -739,8 +756,7 @@ class Alias(Base):
     @property
     def hostname(self) -> str:
         settings = get_settings()
-        base_domain = getattr(settings, "apps_base_domain", settings.base_domain)
-        return f"{self.subdomain}.{base_domain}"
+        return f"{self.subdomain}.{settings.deploy_domain}"
 
     @property
     def url(self) -> str:

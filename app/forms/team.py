@@ -183,3 +183,13 @@ class TeamMemberRoleForm(StarletteForm):
             )
             if other_owners_count == 0:
                 raise ValidationError(_("There must be at least one owner."))
+
+
+class TeamLeaveForm(StarletteForm):
+    team_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_l("Leave team"))
+
+
+class TeamInviteAcceptForm(StarletteForm):
+    invite_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_l("Accept"))

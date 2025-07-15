@@ -15,6 +15,7 @@
     hx-target="closest .card"
     hx-swap="outerHTML"
     hx-indicator="next .htmx-indicator"
+    @htmx:after-request="$dispatch('environments:updated')"
     x-show="activeForm === {{ index }}"
     x-data="{
       color: '{{ environment_form.color.data if is_active else environment.color if environment else '' }}'
@@ -124,8 +125,7 @@
           const colorIndex = (3 * (index - 1)) % colors.length;
           return colors[colorIndex];
         }
-      }' {% if updated %}x-init='$dispatch("environments:updated", {{ project.active_environments | tojson }});' {%
-      endif %}>
+      }'>
       <div class="flex gap-x-2 border-b border-border/50 pb-2">
         <div class="shrink-0 w-10"></div>
         <div class="flex-1 label">{{ _('Name') }}</div>
@@ -173,6 +173,7 @@
                     hx-swap="outerHTML"
                     hx-target="closest .card"
                     hx-indicator="next .htmx-indicator"
+                    @htmx:after-request="$dispatch('environments:updated')"
                     @submit.prevent="!confirm"
                   >
                     {{ delete_environment_form.csrf_token }}

@@ -20,31 +20,37 @@
         {% if github_username %}
           <div class="text-muted-foreground">{{ github_username }}</div>
         {% endif %}
-        {% set trigger %}
-          {% include "icons/ellipsis.svg" %}
-        {% endset %}
         {% if github_username %}
+          {% set trigger %}
+            {% include "icons/ellipsis.svg" %}
+          {% endset %}
           {% call dropdown_menu(
             trigger=trigger,
             main_attrs={"class": "ml-auto"},
             trigger_attrs={"class": "btn-sm-icon-ghost"},
             popover_attrs={"data-align": "end"}
           ) %}
-            <a role="menuitem" href="{{ url_for('github_manage_authorization') }}">
+            <a role="menuitem" href="{{ url_for('github_manage_authorization') }}" target="_blank">
               {{ _('Manage on GitHub') }}
               <span class="text-muted-foreground ml-auto text-xs tracking-widest [&>svg]:size-3">
                 {% include "icons/external-link.svg" %}
               </span>
             </a>
-            <button
-              role="menuitem"
-              hx-post="{{ url_for('user_settings').include_query_params(fragment='github_revoke_oauth_access') }}"
+            <form
+              method="post"
+              action="{{ url_for('user_settings').include_query_params(fragment='revoke_oauth_access') }}"
+              hx-post="{{ url_for('user_settings').include_query_params(fragment='revoke_oauth_access') }}"
               hx-target="closest .card"
               hx-swap="outerHTML"
               hx-indicator="next .htmx-indicator"
+              hx-confirm="{{ _('Are you sure you want to disconnect your GitHub account?') }}"
             >
-              {{ _('Disconnect') }}
-            </button>
+              {{ revoke_oauth_access_form.csrf_token }}
+              <input type="hidden" name="provider" value="github">
+              <button role="menuitem" class="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">
+                {{ _('Disconnect') }}
+              </button>
+            </form>
           {% endcall %}
         {% else %}
           <a class="btn-sm-outline ml-auto" href="{{ url_for('github_authorize').include_query_params(next='/settings#authentication') }}">
@@ -52,7 +58,7 @@
           </a>
         {% endif %}
       </li>
-      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not google_email %}[&>svg]:grayscale [&>svg]:opacity-50{% endif %}">
+      <li class="flex items-center gap-x-6 border border-border/100 border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors bg-clip-padding [&>svg]:size-4 {% if not google_email %}[&>svg]:grayscale{% endif %}">
         {% include "icons/google.svg" %}
         <div class="font-medium {% if not google_email %}text-muted-foreground{% endif %}">{{ _('Google') }}</div>
         {% if google_email %}
@@ -68,12 +74,32 @@
             trigger_attrs={"class": "btn-sm-icon-ghost"},
             popover_attrs={"data-align": "end"}
           ) %}
-            SOmethig
+            <a role="menuitem" href="{{ url_for('google_manage_authorization') }}" target="_blank">
+              {{ _('Manage on Google') }}
+              <span class="text-muted-foreground ml-auto text-xs tracking-widest [&>svg]:size-3">
+                {% include "icons/external-link.svg" %}
+              </span>
+            </a>
+            <form
+              method="post"
+              action="{{ url_for('user_settings').include_query_params(fragment='revoke_oauth_access') }}"
+              hx-post="{{ url_for('user_settings').include_query_params(fragment='revoke_oauth_access') }}"
+              hx-target="closest .card"
+              hx-swap="outerHTML"
+              hx-indicator="next .htmx-indicator"
+              hx-confirm="{{ _('Are you sure you want to disconnect your Google account?') }}"
+            >
+              {{ revoke_oauth_access_form.csrf_token }}
+              <input type="hidden" name="provider" value="google">
+              <button role="menuitem" class="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">
+                {{ _('Disconnect') }}
+              </button>
+            </form>
           {% endcall %}
         {% else %}
-          <button class="btn-sm-outline ml-auto">
+          <a class="btn-sm-outline ml-auto" href="{{ url_for('google_authorize').include_query_params(next='/settings#authentication') }}">
             {{ _('Connect') }}
-          </button>
+          </a>
         {% endif %}
       </li>
     </ul>
