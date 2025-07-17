@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     db_echo: bool = False
     env: str = "development"
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 @lru_cache
