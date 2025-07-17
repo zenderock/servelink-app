@@ -26,7 +26,7 @@
 
     - name: Copy .env file for app container
       ansible.builtin.copy:
-        src: ../../.env.app
+        src: ../../../.env.prod
         dest: "{{ app_dir }}/.env"
         owner: "{{ deploy_user }}"
         group: "{{ deploy_user }}"

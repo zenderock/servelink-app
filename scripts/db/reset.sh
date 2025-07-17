@@ -3,6 +3,10 @@
 
 set -e
 
+if [ -f .env ]; then
+    . .env
+fi
+
 DB_CONTAINER=${DB_CONTAINER:-pgsql}
 DB_USER=${POSTGRES_USER:-devpush}
 DB_NAME=${POSTGRES_DB:-devpush}

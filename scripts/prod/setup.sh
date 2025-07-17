@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if [ -f "$(dirname "$0")/../../devops/.env.devops" ]; then
-    source "$(dirname "$0")/../../devops/.env.devops"
+if [ -f "$(dirname "$0")/../../.env.devops" ]; then
+    source "$(dirname "$0")/../../.env.devops"
 fi
 
 if [ -z "$SERVER_IP" ]; then
