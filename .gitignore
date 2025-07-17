@@ -3,7 +3,7 @@
 !.gitignore
 !.dockerignore
 !.flaskenv
-!.env.example
+!.env.dev.example
 !.env.devops.example
 !.env.app.example
 
@@ -21,10 +21,6 @@ supervisord.pid
 
 # Data (uploads and Traefik)
 /data/
-
-# SQLite
-*.sqlite3
-*.sqlite
 
 # Node
 node_modules/
