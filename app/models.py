@@ -678,32 +678,6 @@ class Deployment(Base):
         settings = get_settings()
         return f"{settings.url_scheme}://{self.hostname}"
 
-    @property
-    def featured_slug(self) -> str | None:
-        if not self.conclusion:
-            return None
-        env_alias = next((a for a in self.aliases if a.type == "environment"), None)
-        if env_alias:
-            return env_alias.subdomain
-        branch_alias = next((a for a in self.aliases if a.type == "branch"), None)
-        if branch_alias:
-            return branch_alias.subdomain
-        return self.slug
-
-    @property
-    def featured_hostname(self) -> str | None:
-        if not self.conclusion:
-            return None
-        settings = get_settings()
-        return f"{self.featured_slug}.{settings.deploy_domain}"
-
-    @property
-    def featured_url(self) -> str | None:
-        if not self.conclusion:
-            return None
-        settings = get_settings()
-        return f"{settings.url_scheme}://{self.featured_hostname}"
-
     def __repr__(self):
         return f"<Deployment {self.id}>"
 

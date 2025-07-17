@@ -75,14 +75,14 @@
   {{ _('Instant rollback') }}
 </button>
 
-<button
+{# <button
   role="menuitem"
   @click="$dispatch('dialog:open', { id: 'dialog-promote', deployment_id: '{{ deployment.id }}' })"
   {% if not can_promote %}disabled{% endif %}
 >
   {% include "icons/chevrons-up.svg" %}
   {{ _('Promote to production') }}
-</button>
+</button> #}
 
 <button
   role="menuitem"

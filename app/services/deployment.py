@@ -18,6 +18,38 @@ class DeploymentService:
     def __init__(self):
         pass
 
+    async def update_traefik_config(
+        self,
+        project: Project,
+        db: AsyncSession,
+        settings: Settings,
+    ) -> None:
+        """Update Traefik config for a project."""
+
+        path = os.path.join(settings.traefik_config_dir, f"project_{project.id}.yml")
+        result = await db.execute(
+            select(Alias)
+            .join(Deployment, Alias.deployment_id == Deployment.id)
+            .filter(
+                Deployment.project_id == project.id,
+                Deployment.conclusion == "succeeded",
+            )
+        )
+        aliases = result.scalars().all()
+        if not aliases and os.path.exists(path):
+            os.remove(path)
+        else:
+            routers = {
+                f"router-alias-{a.id}": {
+                    "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
+                    "service": f"deployment-{a.deployment_id}@docker",
+                }
+                for a in aliases
+            }
+            os.makedirs(settings.traefik_config_dir, exist_ok=True)
+            with open(path, "w") as f:
+                yaml.dump({"http": {"routers": routers}}, f, sort_keys=False, indent=2)
+
     async def create_deployment(
         self,
         project: Project,
@@ -58,7 +90,7 @@ class DeploymentService:
         await redis_client.xadd(
             f"stream:project:{project.id}:updates",
             fields={
-                "event_type": "deployment_created",
+                "event_type": "deployment_creation",
                 "project_id": project.id,
                 "deployment_id": deployment.id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -82,14 +114,14 @@ class DeploymentService:
         settings: Settings,
     ) -> Alias:
         """Rollback an environment to its previous deployment."""
-        sub = (
+        subdomain = (
             project.slug
             if environment["id"] == "prod"
             else f"{project.slug}-env-{environment['slug']}"
         )
 
         alias = (
-            await db.execute(select(Alias).where(Alias.subdomain == sub))
+            await db.execute(select(Alias).where(Alias.subdomain == subdomain))
         ).scalar_one_or_none()
 
         if not alias or not alias.previous_deployment_id:
@@ -101,40 +133,61 @@ class DeploymentService:
         )
         await db.commit()
 
-        # Update Traefik config
-        path = os.path.join(settings.traefik_config_dir, f"project_{project.id}.yml")
-        result = await db.execute(
-            select(Alias)
-            .join(Deployment, Alias.deployment_id == Deployment.id)
-            .filter(
-                Deployment.project_id == project.id,
-                Deployment.conclusion == "succeeded",
-            )
-        )
-        aliases = result.scalars().all()
-        if not aliases:
-            if os.path.exists(path):
-                os.remove(path)
-            return alias
-
-        routers = {
-            f"router-alias-{a.id}": {
-                "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
-                "service": f"deployment-{a.deployment_id}@docker",
-            }
-            for a in aliases
-        }
-        os.makedirs(settings.traefik_config_dir, exist_ok=True)
-        with open(path, "w") as f:
-            yaml.dump({"http": {"routers": routers}}, f, sort_keys=False, indent=2)
+        await self.update_traefik_config(project, db, settings)
 
         await redis_client.xadd(
             f"stream:project:{project.id}:updates",
             fields={
-                "event_type": "rollback",
+                "event_type": "deployment_rollback",
                 "environment_id": environment["id"],
+                "deployment_id": alias.deployment_id,
+                "previous_deployment_id": alias.previous_deployment_id or "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
 
         return alias
+
+    # async def promote(
+    #     self,
+    #     environment: dict,
+    #     deployment: Deployment,
+    #     project: Project,
+    #     db: AsyncSession,
+    #     redis_client: Redis,
+    #     settings: Settings,
+    # ) -> Alias:
+    #     """Promote a deployment as current for an environment."""
+    #     subdomain = (
+    #         project.slug
+    #         if environment["id"] == "prod"
+    #         else f"{project.slug}-env-{environment['slug']}"
+    #     )
+
+    #     alias = (
+    #         await db.execute(select(Alias).where(Alias.subdomain == subdomain))
+    #     ).scalar_one_or_none()
+
+    #     if not alias:
+    #         raise ValueError("No alias found for this environment.")
+
+    #     alias.deployment_id, alias.previous_deployment_id = (
+    #         deployment.id,
+    #         alias.deployment_id,
+    #     )
+    #     await db.commit()
+
+    #     await self.update_traefik_config(project, db, settings)
+
+    #     await redis_client.xadd(
+    #         f"stream:project:{project.id}:updates",
+    #         fields={
+    #             "event_type": "deployment_promotion",
+    #             "environment_id": environment["id"],
+    #             "deployment_id": alias.deployment_id,
+    #             "previous_deployment_id": alias.previous_deployment_id or "",
+    #             "timestamp": datetime.now(timezone.utc).isoformat(),
+    #         },
+    #     )
+
+    #     return alias

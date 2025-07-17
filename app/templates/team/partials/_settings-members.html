@@ -14,7 +14,7 @@
   </header>
 
   <section class="space-y-6">
-    <div class="rounded-xl border relative overflow-x-auto">
+    <div class="rounded-xl border relative overflow-x-auto scrollbar">
       <table class="table">
         <thead>
           <tr>
@@ -199,7 +199,7 @@
     {% if member_invites %}
       <div class="space-y-4">
         <h3 class="font-medium">{{ _('%(count)s pending invite(s)', count=member_invites|length) }}</h3>
-        <div class="rounded-xl border relative overflow-x-auto">
+        <div class="rounded-xl border relative overflow-x-auto scrollbar">
           <table class="table">
             <thead>
               <tr>

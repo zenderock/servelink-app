@@ -22,7 +22,7 @@
         {{ status(
           conclusion=deployment.conclusion,
           compact=True,
-          tooltip=True,
+          tooltip=False,
           attrs={ 'data-deployment-status': deployment.id }
         ) }}
 
@@ -65,7 +65,7 @@
         </a>
 
         <a
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
           href="https://github.com/{{ deployment.repo_full_name }}/commit/{{ deployment.commit_sha }}"
           target="_blank"
           data-tooltip="{{ _('Commit ({sha})', sha=deployment.commit_sha[:7]) }}"
@@ -74,15 +74,24 @@
           <span class="truncate">{{ deployment.commit_meta.message }}</span>
         </a>
 
-        {% if env_aliases and env_aliases.get(deployment.environment.id).deployment_id == deployment.id %}
-          <span class="badge">{{ _('Current') }}</span>
-        {% elif env_aliases and env_aliases.get(deployment.environment.id).previous_deployment_id == deployment.id %}
-          <span class="badge-secondary">{{ _('Previous') }}</span>
+        
+        {% set is_current = env_aliases and env_aliases.get(deployment.environment.id).deployment_id == deployment.id %}
+        {% set is_previous = env_aliases and env_aliases.get(deployment.environment.id).previous_deployment_id == deployment.id %}
+
+        {% if is_current %}
+          <span class="badge-secondary">
+            {% include "icons/sparkle.svg" %}
+            {{ _('Current') }}
+          </span>
+        {% elif is_previous %}
+          <span class="badge-secondary text-muted-foreground">
+            {{ _('Previous') }}
+          </span>
         {% endif %}
 
         <div class="flex items-center ml-auto">
           {% if deployment.conclusion == 'succeeded' %}
-            <a href="{{ deployment.featured_url }}" class="btn-sm-icon-ghost [&>svg]:shrink-0" target="_blank" data-tooltip="{{ _('Visit') }}">
+            <a href="{{ deployment.url }}" class="btn-sm-icon-ghost [&>svg]:shrink-0" target="_blank" data-tooltip="{{ _('Visit') }}">
               {% include "icons/link-2.svg" %}
             </a>
           {% else %}

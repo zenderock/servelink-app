@@ -76,9 +76,9 @@
 							class="btn-sm-ghost">
 							{% from "deployment/macros/status.html" import status %}
 							{{ status(
-							conclusion=deployment.conclusion,
-							compact=True,
-							attrs={ 'data-deployment-status': deployment.id }
+								conclusion=deployment.conclusion,
+								compact=True,
+								attrs={ 'data-deployment-status': deployment.id }
 							) }}
 							<span class="font-mono">{{ deployment.id[:7] }}</span>
 						</a>
@@ -95,36 +95,46 @@
 		</nav>
 
 		<nav class="flex items-center gap-x-2" aria-label="User menu">
-		  <div
-				hx-get="{{ url_for('user_notifications') }}"
-				hx-trigger="load"
-				hx-swap="outerHTML"
-			>
-				<button type="button" class="btn-sm-icon-ghost rounded-full" disabled>
-					{% include "icons/bell.svg" %}
-				</button>
-			</div>
-			<button
-				type="button"
-				aria-label="Toggle dark mode"
-				onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
-				class="btn-sm-icon-ghost rounded-full"
-			>
-				<span class="hidden dark:block">{% include "icons/sun.svg" %}</span>
-				<span class="block dark:hidden">{% include "icons/moon.svg" %}</span>
-			</button>
-
+			{% set trigger %}
+				{% include "icons/message-circle-question-mark.svg" %}
+			{% endset %}
+			{% call dropdown_menu(
+				trigger=trigger,
+				trigger_attrs={"class": "btn-sm-icon-outline rounded-full"},
+				popover_attrs={"data-align": "end"}
+			) %}
+				<a href="https://devpu.sh/docs" target="_blank" role="menuitem">
+					{{ _('Documentation') }}
+					<span class="ml-auto text-muted-foreground [&>svg]:size-3">
+						{% include "icons/external-link.svg" %}
+					</span>
+				</a>
+				<a href="https://devpu.sh/chat" target="_blank" role="menuitem">
+					{{ _('Chat') }}
+					<span class="ml-auto text-muted-foreground [&>svg]:size-3">
+						{% include "icons/external-link.svg" %}
+					</span>
+				</a>
+			{% endcall %}
 			{% if current_user %}
+				<div
+					hx-get="{{ url_for('user_notifications') }}"
+					hx-trigger="load"
+					hx-swap="outerHTML"
+				>
+					{% from "user/macros/notifications.html" import notifications with context %}
+					{{ notifications() }}
+				</div>
 				{% set trigger %}
 					{% set fallback %}
 						<img src="https://unavatar.io/{{ current_user.email }}?fallback=https://avatar.vercel.sh/{{ current_user.email }}?size=120" alt="{{ current_user.email }}" class="size-8 rounded-full shrink-0" />
 					{% endset %}
-					{{ avatar(item=current_user, prefix="user", name=current_user.name if current_user.name else current_user.username, class="!rounded-full", fallback=fallback) }}
+					{{ avatar(item=current_user, prefix="user", name=current_user.name if current_user.name else current_user.username, class="!rounded-full shrink-0", fallback=fallback) }}
 				{% endset %}
 				{% call dropdown_menu(
 					trigger=trigger,
-					trigger_attrs={'class': 'block'},
-					popover_attrs={'data-align': 'end'}
+					trigger_attrs={"class": "btn-icon-sm-ghost rounded-full p-0 border-0"},
+					popover_attrs={"data-align": "end"}
 				) %}
 					<header class="px-2.5 py-1.5">
 						<div class="font-medium">{{ current_user.name if current_user.name else current_user.username }}</div>
@@ -132,6 +142,19 @@
 					</header>
 					<hr role="separator" />
 					<a href="{{ url_for('user_settings') }}" role="menuitem">{{ _('Account settings') }}</a>
+					<a href="/" role="menuitem">{{ _('Default team') }}</a>
+					<hr role="separator" />
+					<button
+						type="button"
+						role="menuitem"
+						onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
+					>
+						<span class="hidden dark:block">{{ _('Theme: Light') }}</span>
+						<span class="block dark:hidden">{{ _('Theme: Dark') }}</span>
+						<span class="hidden dark:block ml-auto text-muted-foreground">{% include "icons/sun.svg" %}</span>
+						<span class="block dark:hidden ml-auto text-muted-foreground">{% include "icons/moon.svg" %}</span>
+					</button>
+
 					<hr role="separator" />
 					<a href="{{ url_for('auth_logout') }}" role="menuitem">
 						{{ _('Sign out') }}

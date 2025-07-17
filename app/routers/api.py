@@ -160,7 +160,7 @@ async def api_project_events(
                     for message_id, message_fields in stream_messages:
                         yield f"id: {message_id}\n"
                         yield f"event: {message_fields.get('event_type')}\n"
-                        if message_fields.get("event_type") == "deployment_created":
+                        if message_fields.get("event_type") == "deployment_creation":
                             yield f"data: {message_fields.get('deployment_id')}\n\n"
                         else:
                             status_html = status_template.module.status(

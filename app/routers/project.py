@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime
 from redis.asyncio import Redis
 from arq.connections import ArqRedis
+from urllib.parse import urlparse, parse_qs
 import logging
 import os
 from typing import Any
@@ -316,6 +317,32 @@ async def project_deployments(
         .order_by(Deployment.created_at.desc())
     )
 
+    if request.headers.get("HX-Request") and fragment == "sse":
+        # This is for the SSE updates. We get the search params from the
+        # referer as the state may have changed via the HTMX filters.
+        environment = ""
+        status = ""
+        date_from = ""
+        date_to = ""
+        branch = ""
+        page = 1
+
+        referer_url = urlparse(request.headers["Referer"])
+        referer_params = parse_qs(referer_url.query)
+
+        if "environment" in referer_params:
+            environment = referer_params["environment"][0]
+        if "status" in referer_params:
+            status = referer_params["status"][0]
+        if "date_from" in referer_params:
+            date_from = referer_params["date_from"][0]
+        if "date_to" in referer_params:
+            date_to = referer_params["date_to"][0]
+        if "branch" in referer_params:
+            branch = referer_params["branch"][0]
+        if "page" in referer_params:
+            page = int(referer_params["page"][0])
+
     # Filter by environment
     if environment:
         environment_object = project.get_environment_by_slug(environment)
@@ -352,7 +379,7 @@ async def project_deployments(
 
     pagination = await paginate(db, query, page, per_page)
 
-    if request.headers.get("HX-Request") and fragment == "deployments":
+    if request.headers.get("HX-Request"):
         return TemplateResponse(
             request=request,
             name="project/partials/_deployments.html",
@@ -668,7 +695,8 @@ async def project_rollback(
             flash(
                 request,
                 _(
-                    "Deployment %(deployment_id)s rolled back.",
+                    'Environment "%(environment_id)s" rolled back to deployment %(deployment_id)s.',
+                    environment_id=environment["id"],
                     deployment_id=deployment.id,
                 ),
                 "success",
@@ -693,6 +721,73 @@ async def project_rollback(
             "deployment": deployment,
         },
     )
+
+
+# @router.api_route(
+#     "/{team_slug}/projects/{project_name}/deployments/{deployment_id}/promote",
+#     methods=["GET", "POST"],
+#     name="project_promote",
+# )
+# async def project_promote(
+#     request: Request,
+#     project: Project = Depends(get_project_by_name),
+#     current_user: User = Depends(get_current_user),
+#     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+#     deployment: Deployment = Depends(get_deployment_by_id),
+#     db: AsyncSession = Depends(get_db),
+#     redis_client: Redis = Depends(get_redis_client),
+#     settings: Settings = Depends(get_settings),
+# ):
+#     team, membership = team_and_membership
+
+#     form: Any = await ProjectRollbackForm.from_formdata(request)
+
+#     if request.method == "POST" and await form.validate_on_submit():
+#         try:
+#             environment = project.get_environment_by_id(form.environment_id.data)
+#             if not environment:
+#                 raise ValueError("Environment not found.")
+
+#             deployment = await get_deployment_by_id(form.deployment_id.data, db)
+
+#             await DeploymentService().promote(
+#                 environment=environment,
+#                 deployment=deployment,
+#                 project=project,
+#                 db=db,
+#                 redis_client=redis_client,
+#                 settings=settings,
+#             )
+
+#             flash(
+#                 request,
+#                 _(
+#                     'Deployment %(deployment_id)s promoted to "%(environment_id)s".',
+#                     deployment_id=deployment.id,
+#                     environment_id=environment["id"],
+#                 ),
+#                 "success",
+#             )
+
+#         except Exception as e:
+#             logger.error(f"Error rolling back project: {str(e)}")
+#             flash(request, _("Error rolling back project."), "error")
+#     else:
+#         for error in form.errors.values():
+#             for e in error:
+#                 flash(request, _("Rollback failed: %(error)s", error=e), "error")
+
+#     return TemplateResponse(
+#         request=request,
+#         name="project/partials/_dialog-rollback-form.html",
+#         context={
+#             "current_user": current_user,
+#             "team": team,
+#             "project": project,
+#             "form": form,
+#             "deployment": deployment,
+#         },
+#     )
 
 
 @router.api_route(
