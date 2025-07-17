@@ -3,7 +3,7 @@
 !.gitignore
 !.dockerignore
 !.flaskenv
-!.env.dev.example
+!.env.example
 !.env.devops.example
 !.env.prod.example
 
