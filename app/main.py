@@ -62,11 +62,14 @@ async def profiler_middleware(request: Request, call_next):
 
     profiler.stop()
 
-    # Only log if request took more than 100ms
+    # Only log if request took more than 50ms
     output = profiler.output_text(show_all=True)
-    if "0.1" in output:
-        print(f"\n=== Profile for {request.method} {request.url.path} ===")
+    if "0.05" in output:
+        print("\n" + "*" * 80)
+        print(f"PROFILE: {request.method} {request.url.path}")
+        print("*" * 80)
         print(output)
+        print("*" * 80 + "\n")
 
     return response
 
