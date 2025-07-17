@@ -1,3 +1,4 @@
+from pyinstrument import Profiler
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -50,6 +51,24 @@ app.include_router(github.router)
 app.include_router(google.router)
 app.include_router(team.router)
 app.include_router(api.router)
+
+
+@app.middleware("http")
+async def profiler_middleware(request: Request, call_next):
+    profiler = Profiler()
+    profiler.start()
+
+    response = await call_next(request)
+
+    profiler.stop()
+
+    # Only log if request took more than 500ms
+    output = profiler.output_text(show_all=True)
+    if "0.5" in output:
+        print(f"\n=== Profile for {request.method} {request.url.path} ===")
+        print(output)
+
+    return response
 
 
 @app.exception_handler(404)
