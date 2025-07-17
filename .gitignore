@@ -5,7 +5,7 @@
 !.flaskenv
 !.env.dev.example
 !.env.devops.example
-!.env.app.example
+!.env.prod.example
 
 # Python
 __pycache__/
