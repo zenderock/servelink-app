@@ -1,11 +1,9 @@
 import re
-import os
 import time
 import asyncio
 from datetime import datetime, timezone
 import aiodocker
 import httpx
-import yaml
 import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -19,6 +17,7 @@ from dependencies import (
 )
 from config import get_settings
 from arq.connections import ArqRedis
+from services.deployment import DeploymentService
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +207,7 @@ async def deploy(ctx, deployment_id: str):
                         "app.project_id": project.id,
                     }
 
-                    if settings.env == "production":
+                    if settings.url_scheme == "https":
                         labels.update(
                             {
                                 f"traefik.http.routers.{router}.entrypoints": "websecure",
@@ -325,59 +324,10 @@ async def deploy(ctx, deployment_id: str):
 
                     await db.commit()
 
-                    # Update Traefik config
-                    project_config_file_path = os.path.join(
-                        settings.traefik_config_dir, f"project_{project.id}.yml"
+                    # Update Traefik dynamic config
+                    await DeploymentService().update_traefik_config(
+                        project, db, settings
                     )
-                    write_config = False
-                    traefik_config = None
-
-                    # 1. Fetch all deployment aliases for the project
-                    result = await db.execute(
-                        select(Alias)
-                        .join(Deployment, Alias.deployment_id == Deployment.id)
-                        .filter(Deployment.project_id == project.id)
-                        .filter(Deployment.conclusion == "succeeded")
-                    )
-                    project_aliases = result.scalars().all()
-
-                    # 2. Generate the Traefik config file content
-                    if project_aliases:
-                        routers_config = {}
-                        for alias_obj in project_aliases:
-                            router_name = f"router-alias-{alias_obj.id}"
-                            routers_config[router_name] = {
-                                "rule": f"Host(`{alias_obj.subdomain}.{settings.deploy_domain}`)",
-                                "service": f"deployment-{alias_obj.deployment_id}@docker",
-                            }
-
-                        traefik_config = {"http": {"routers": routers_config}}
-                        write_config = True
-
-                    # 3. Write or delete Traefik config file
-                    try:
-                        if write_config and traefik_config:
-                            os.makedirs(settings.traefik_config_dir, exist_ok=True)
-                            with open(project_config_file_path, "w") as f:
-                                yaml.dump(traefik_config, f, sort_keys=False, indent=2)
-                            logger.info(
-                                f"Traefik dynamic config updated for project {project.id} at {project_config_file_path}"
-                            )
-                        else:
-                            if os.path.exists(project_config_file_path):
-                                os.remove(project_config_file_path)
-                                logger.info(
-                                    f"Removed Traefik config for project {project.id} from {project_config_file_path} (no active/valid aliases)."
-                                )
-                            else:
-                                logger.info(
-                                    f"No Traefik config to remove for project {project.id} (no active/valid aliases and file doesn't exist)."
-                                )
-                    except Exception as e_file_op:
-                        logger.error(
-                            f"Error during Traefik config file operation for project {project.id}: {e_file_op}",
-                            exc_info=True,
-                        )
 
                     # Cleanup inactive deployments
                     deployment_queue: ArqRedis = ctx["redis"]

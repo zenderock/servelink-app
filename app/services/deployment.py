@@ -39,13 +39,19 @@ class DeploymentService:
         if not aliases and os.path.exists(path):
             os.remove(path)
         else:
-            routers = {
-                f"router-alias-{a.id}": {
+            routers = {}
+            for a in aliases:
+                router_cfg = {
                     "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
                     "service": f"deployment-{a.deployment_id}@docker",
+                    "entryPoints": [
+                        "websecure" if settings.url_scheme == "https" else "web"
+                    ],
                 }
-                for a in aliases
-            }
+                if settings.url_scheme == "https":
+                    router_cfg["tls"] = {"certResolver": "le"}
+
+                routers[f"router-alias-{a.id}"] = router_cfg
             os.makedirs(settings.traefik_config_dir, exist_ok=True)
             with open(path, "w") as f:
                 yaml.dump({"http": {"routers": routers}}, f, sort_keys=False, indent=2)
