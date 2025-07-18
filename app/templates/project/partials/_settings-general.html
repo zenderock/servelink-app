@@ -9,7 +9,7 @@
       "x-init": ""
     }
   ) %}
-    <div hx-get="{{ request.url_for('github_repo_select').include_query_params(account=repo_owner) }}"
+    <div hx-get="{{ url_for('github_repo_select').include_query_params(account=repo_owner) }}"
       hx-trigger="dialog:opened from:closest dialog once" class="flex items-start justify-center h-[296px]">
       <div class="space-y-4 w-full">
         <div class="flex items-center gap-x-2">
