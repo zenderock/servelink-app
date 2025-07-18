@@ -5,7 +5,7 @@ services:
       - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=le
     volumes:
-      - devpush-upload:/app/static/upload
+      - devpush-upload:/app/upload
       - devpush-traefik:/data/traefik
 
   traefik:

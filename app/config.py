@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     postgres_db: str = "devpush"
     redis_url: str = "redis://redis:6379"
     docker_host: str = "tcp://docker-proxy:2375"
-    upload_dir: str = "/static/upload"
+    upload_dir: str = "/upload"
     traefik_config_dir: str = "/data/traefik"
     frameworks: list[dict] = []
     deployment_timeout: int = 90

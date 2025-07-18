@@ -18,7 +18,7 @@
         class="btn-outline w-full"
         @click="
           loading = 'github';
-          window.location.href = '{{ url_for('auth_google_login') }}';
+          window.location.href = '{{ url_for('auth_github_login') }}';
         "
         :disabled="loading"
       >
@@ -29,7 +29,6 @@
         </span>
       </button>
       <button
-        href="{{ url_for('auth_google_login') }}"
         class="btn-outline w-full"
         @click="
           loading = 'google';

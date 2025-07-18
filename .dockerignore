@@ -26,4 +26,4 @@ package.json
 tailwind.config.js
 
 # Static assets and uploads
-static/uploads/
+upload/

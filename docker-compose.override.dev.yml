@@ -4,7 +4,7 @@ services:
       dockerfile: Docker/Dockerfile.app.dev
     volumes:
       - ./app:/app
-      - ./data/upload:/app/static/upload
+      - ./data/upload:/app/upload
       - ./data/traefik:/data/traefik
   
   pgsql:

@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware import Middleware
@@ -16,6 +16,14 @@ from config import get_settings
 from db import get_db
 from models import User, Team
 from dependencies import get_current_user, TemplateResponse
+
+
+class CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
 
 settings = get_settings()
 
@@ -43,7 +51,9 @@ app = FastAPI(
     ],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", CachedStaticFiles(directory="static"), name="static")
+app.mount("/upload", StaticFiles(directory="upload"), name="upload")
+
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(project.router)
