@@ -1,7 +1,8 @@
 FROM python:3.13-slim
 
 # Create non-root user
-RUN addgroup --system appgroup && adduser --system --group --home /app appuser
+RUN addgroup --system appgroup \
+ && adduser --system --group --home /app --shell /bin/sh appuser
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
