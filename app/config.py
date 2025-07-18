@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     deployment_timeout: int = 90
     db_echo: bool = False
     env: str = "development"
-    log_level: str = "INFO"
+    log_level: str = "WARNING"
 
     model_config = SettingsConfigDict(extra="ignore")
 
