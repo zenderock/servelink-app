@@ -54,6 +54,14 @@ app.include_router(team.router)
 app.include_router(api.router)
 
 
+@app.middleware("http")
+async def _fix_scheme(request: Request, call_next):
+    proto = request.headers.get("x-forwarded-proto")
+    if proto:
+        request.scope["scheme"] = proto
+    return await call_next(request)
+
+
 # TODO: REMOVE
 @app.middleware("http")
 async def debug_middleware(request: Request, call_next):
