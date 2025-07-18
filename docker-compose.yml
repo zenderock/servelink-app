@@ -15,7 +15,7 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
-      - UPLOAD_DIR=/app/static/upload
+      - UPLOAD_DIR=/app/upload
       - TRAEFIK_CONFIG_DIR=/data/traefik
       - DOCKER_HOST=tcp://docker-proxy:2375
     labels:
