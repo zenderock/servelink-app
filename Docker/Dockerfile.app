@@ -22,11 +22,8 @@ RUN chown -R appuser:appgroup /app
 RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
 ENV UV_CACHE_DIR=/app/.cache/uv
 
-# Switch to non-root user
-USER appuser
-
 EXPOSE 8000
 
 # Run migrations then start FastAPI
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-CMD ["sh", "-c", "uv run alembic upgrade head && exec supervisord -c /etc/supervisord.conf"]
+CMD ["sh", "-c", "chown -R appuser:appgroup /data/traefik /app/upload && exec su appuser -c 'uv run alembic upgrade head && supervisord -c /etc/supervisord.conf'"]
