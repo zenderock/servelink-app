@@ -56,6 +56,15 @@ app.include_router(api.router)
 
 # TODO: REMOVE
 @app.middleware("http")
+async def debug_middleware(request: Request, call_next):
+    print("\nDEBUG REQUEST HEADERS:")
+    for k, v in request.headers.items():
+        print(f"{k}: {v}")
+    return await call_next(request)
+
+
+# TODO: REMOVE
+@app.middleware("http")
 async def timing_middleware(request: Request, call_next):
     # Overall timing
     start = time.time()
