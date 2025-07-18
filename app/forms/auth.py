@@ -1,5 +1,5 @@
 from starlette_wtf import StarletteForm
-from wtforms import StringField, SubmitField, SelectField
+from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
 
 from dependencies import get_lazy_translation as _l
