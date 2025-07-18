@@ -39,10 +39,10 @@
   </ol>
 
   <div
-    hx-get="{{ url_for('github_repo_select') }}"
+    hx-get="{{ url_path_for('github_repo_select') }}"
     hx-trigger="load"
     hx-swap="outerHTML"
-    hx-target="#repo-select"
+    
     class="flex items-center justify-center h-[292px] w-full"
   >
     {% include "github/partials/_repo-select-skeleton.html" %}
