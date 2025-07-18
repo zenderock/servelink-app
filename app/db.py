@@ -9,7 +9,11 @@ database_url = f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgre
 engine = create_async_engine(database_url, echo=settings.db_echo)
 
 AsyncSessionLocal = async_sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    pool_size=20,
+    pool_pre_ping=True,
 )
 
 

@@ -1,4 +1,4 @@
-from pyinstrument import Profiler
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -20,9 +20,10 @@ from dependencies import get_current_user, TemplateResponse
 
 settings = get_settings()
 
-logging.basicConfig(
-    level=logging.INFO if settings.env == "production" else logging.DEBUG
-)
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+logging.basicConfig(level=log_level)
+if log_level > logging.DEBUG:
+    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
@@ -53,23 +54,41 @@ app.include_router(team.router)
 app.include_router(api.router)
 
 
+# TODO: REMOVE
 @app.middleware("http")
-async def profiler_middleware(request: Request, call_next):
-    profiler = Profiler()
-    profiler.start()
+async def timing_middleware(request: Request, call_next):
+    # Overall timing
+    start = time.time()
 
+    # Track DB queries timing
+    queries_start = time.time()
     response = await call_next(request)
+    queries_duration = time.time() - queries_start
 
-    profiler.stop()
+    # Total duration
+    duration = time.time() - start
 
-    # Only log if request took more than 50ms
-    output = profiler.output_text(show_all=True)
-    if "0.05" in output:
-        print("\n" + "*" * 80)
-        print(f"PROFILE: {request.method} {request.url.path}")
-        print("*" * 80)
-        print(output)
-        print("*" * 80 + "\n")
+    # Categorize request type
+    if request.url.path.startswith("/static"):
+        category = "STATIC"
+        threshold = 0.05
+    else:
+        category = "API" if request.url.path.startswith("/api") else "PAGE"
+        threshold = 0.1
+
+    status = "SLOW" if duration > threshold else "OK"
+
+    # Only show detailed timing for slow page loads
+    if status == "SLOW" and category == "PAGE":
+        template_time = duration - queries_duration
+        print(f"{status} {category}: {request.method} {request.url.path}")
+        print(f"├─ DB Queries: {queries_duration:.3f}s")
+        print(f"└─ Template:   {template_time:.3f}s")
+        print(f"   TOTAL:      {duration:.3f}s")
+    else:
+        print(
+            f"{status} {category}: {request.method} {request.url.path} - {duration:.3f}s"
+        )
 
     return response
 
