@@ -27,4 +27,4 @@ EXPOSE 8000
 
 # Run migrations then start FastAPI
 COPY Docker/supervisord.app.conf /etc/supervisord.conf
-CMD ["sh", "-c", "chown -R appuser:appgroup /data/traefik /app/upload && exec su appuser -c 'uv run alembic upgrade head && supervisord -c /etc/supervisord.conf'"]
+CMD ["sh", "-c", "uv run alembic upgrade head && exec supervisord -c /etc/supervisord.conf"]
