@@ -111,11 +111,11 @@
       {% from "macros/popover.html" import popover %}
       {% set date_range_trigger %}
         <span class="truncate">
-          <span x-show="dateFrom">
+          <span x-show="dateFrom" x-cloak>
             {{ _('From') }}
             <span x-text="dateFrom ? new Date(dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
           </span>
-          <span x-show="dateTo">
+          <span x-show="dateTo" x-cloak>
             <span x-text="dateFrom ? '{{ _('to') }}' : '{{ _('Until') }}'"></span>
             <span x-text="dateTo ? new Date(dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
           </span>

@@ -5,8 +5,8 @@ services:
       - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=le
     volumes:
-      - /srv/devpush/traefik:/data/traefik
-      - /srv/devpush/upload:/app/static/upload
+      - devpush-upload:/app/static/upload
+      - devpush-traefik:/data/traefik
 
   traefik:
     command:
@@ -27,4 +27,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /srv/devpush/traefik:/etc/traefik/dynamic_conf
+      - devpush-traefik:/etc/traefik/dynamic_conf
+
+volumes:
+  devpush-upload:
+  devpush-traefik:

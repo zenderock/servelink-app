@@ -118,18 +118,6 @@
       debug:
         msg: "GitHub Deploy Key: {{ github_public_key.content | b64decode | trim }}"
 
-    - name: Create data directories
-      become: yes
-      loop:
-        - /srv/devpush/traefik
-        - /srv/devpush/upload
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: 1000
-        group: 1000
-        mode: "0755"
-
   handlers:
     - name: restart ssh
       service: name=ssh state=restarted 
