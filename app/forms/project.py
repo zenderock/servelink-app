@@ -345,7 +345,11 @@ class NewProjectForm(StarletteForm):
     )
     runtime = SelectField(
         _l("Runtime"),
-        choices=[("python-3", "Python 3"), ("python-2", "Python 2"), ("pypy", "PyPy")],
+        choices=[
+            ("python-3", "Python 3"),
+            ("python-2", "Python 2", {"disabled": True}),
+            ("pypy", "PyPy", {"disabled": True}),
+        ],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     use_custom_root_directory = BooleanField(_l("Custom root directory"), default=False)
