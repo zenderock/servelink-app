@@ -32,6 +32,17 @@
         group: "{{ deploy_user }}"
         mode: "0600"
 
+    - name: ensure writable dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: "0755"
+      loop:
+        - /srv/devpush/traefik
+        - /srv/devpush/upload
+
     - name: Prune builder cache
       command: docker builder prune -af
       when: docker_prune | default(false) | bool
