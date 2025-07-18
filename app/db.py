@@ -12,8 +12,6 @@ AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    pool_size=20,
-    pool_pre_ping=True,
 )
 
 
