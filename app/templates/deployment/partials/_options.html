@@ -15,13 +15,22 @@
     <div
       class="space-y-4"
       hx-get="{{ url_for('project_redeploy', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id) }}"
-      hx-trigger="dialog:opened from:closest dialog"
+      {# hx-trigger="dialog:opened from:closest dialog" #}
     >
-      <div class="flex gap-x-6 items-center border px-4 h-12 rounded-lg">
-        <span class="bg-accent animate-pulse h-4 flex-1 rounded max-w-3/5"></span>
-        <button class="btn-sm-icon-ghost ml-auto" disabled>
-          {% include "icons/arrow-up-right.svg" %}
-        </button>
+      <div class="space-y-2">
+        <h3 class="font-medium">{{ _('Deploy to:') }}</h3>
+        <div class="flex items-center border px-4 h-12 rounded-lg">
+          <span class="bg-accent animate-pulse h-4 flex-1 rounded max-w-3/5"></span>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <h3 class="font-medium">{{ _('Commit info:') }}</h3>
+        <div class="flex gap-x-6 items-center border px-4 h-12 rounded-lg">
+          <span class="bg-accent animate-pulse h-4 flex-1 rounded max-w-3/5"></span>
+          <button class="btn-sm-icon-ghost ml-auto" disabled>
+            {% include "icons/arrow-up-right.svg" %}
+          </button>
+        </div>
       </div>
       <footer class="flex justify-end gap-x-2">
         <button type="button" class="btn-ghost" onclick="this.closest('dialog').close()">{{ _('Cancel') }}</button>
@@ -29,7 +38,6 @@
       </footer>
     </div>
 {% endcall %}
-
 
 {% if can_rollback %}
   {% call dialog(

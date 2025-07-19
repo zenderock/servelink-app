@@ -6,11 +6,11 @@ import aiodocker
 import httpx
 import logging
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import joinedload
 from typing import Any
 
 from models import Deployment, Alias, Project
+from db import AsyncSessionLocal
 from dependencies import (
     get_redis_client,
     get_github_installation_service,
@@ -68,12 +68,6 @@ async def deploy(ctx, deployment_id: str):
     redis_client = get_redis_client()
 
     github_installation_service = get_github_installation_service()
-
-    database_url = f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}"
-    engine = create_async_engine(database_url, echo=settings.db_echo)
-    AsyncSessionLocal = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
 
     async with AsyncSessionLocal() as db:
         try:
