@@ -53,7 +53,12 @@
           <ul class="space-y-2">
             <li class="space-y-1">
               <div class="text-muted-foreground text-xs">{{ _('Deployment URL') }}</div>
-              <a href="{{ deployment.url }}" target="_blank" class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground hover:underline min-w-0">
+              <a
+                href="{{ deployment.url }}"
+                title="{{ deployment.hostname }}"
+                target="_blank"
+                class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
+              >
                 <span class="truncate">{{ deployment.hostname }}</span>
                 {% include "icons/external-link.svg" %}
               </a>
@@ -61,7 +66,12 @@
             {% for alias in deployment.aliases %}
               <li class="space-y-1">
                 <div class="text-muted-foreground text-xs">{{ alias_types[alias.type] }}</div>
-                <a href="{{ alias.url }}" target="_blank" class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground hover:underline min-w-0">
+                <a
+                  href="{{ alias.url }}"
+                  title="{{ alias.hostname }}"
+                  target="_blank"
+                  class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
+                >
                   <span class="truncate">{{ alias.hostname }}</span>
                   {% include "icons/external-link.svg" %}
                 </a>

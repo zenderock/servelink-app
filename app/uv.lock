@@ -295,6 +295,7 @@ dependencies = [
     { name = "starlette-wtf" },
     { name = "types-pillow" },
     { name = "uvicorn" },
+    { name = "uvloop" },
     { name = "watchfiles" },
 ]
 
@@ -325,6 +326,7 @@ requires-dist = [
     { name = "starlette-wtf", specifier = ">=0.4.5" },
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
     { name = "uvicorn", specifier = ">=0.34.2" },
+    { name = "uvloop", specifier = ">=0.21.0" },
     { name = "watchfiles", specifier = ">=1.1.0" },
 ]
 

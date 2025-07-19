@@ -35,6 +35,11 @@ if log_level > logging.DEBUG:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import asyncio
+
+    print(
+        f"--- Running with event loop: {type(asyncio.get_event_loop())} ---", flush=True
+    )
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     app.state.redis_pool = await create_pool(redis_settings)
     try:

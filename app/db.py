@@ -6,7 +6,14 @@ from config import get_settings
 settings = get_settings()
 database_url = f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}"
 
-engine = create_async_engine(database_url, echo=settings.db_echo)
+engine = create_async_engine(
+    database_url,
+    echo=settings.db_echo,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=1800,
+    pool_pre_ping=True,
+)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,
