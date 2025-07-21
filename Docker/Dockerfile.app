@@ -5,9 +5,7 @@ RUN addgroup --gid 1000 appgroup \
     && adduser  --uid 1000 --gid 1000 --system --home /app appuser
 
 # System dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
-    && apt-get install -y curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/

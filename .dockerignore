@@ -4,8 +4,10 @@
 # Docker
 docker-compose*.yml
 Docker/
-!Docker/supervisord.app.conf
-!Docker/supervisord.app.dev.conf
+!Docker/entrypoint.app.sh
+!Docker/entrypoint.app.dev.sh
+!Docker/entrypoint.worker.sh
+!Docker/entrypoint.worker.dev.sh
 
 # Python
 __pycache__/
