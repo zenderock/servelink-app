@@ -1,0 +1,56 @@
+---
+- hosts: all
+  vars:
+    deploy_user: deploy
+    app_dir: /home/deploy/devpush
+
+  tasks:
+    - name: Clone/update repository
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_dir }}"
+        update: yes
+        force: yes
+
+    - name: Copy .env file
+      ansible.builtin.copy:
+        src: ../../../.env.prod
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0600"
+
+    - name: Build app image
+      command: docker compose -p devpush build app
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Update app containers (rolling update)
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --force-recreate --no-deps app
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for app containers to be healthy
+      shell: |
+        for i in {1..30}; do
+          healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
+          expected=$(docker ps --filter "name=devpush-app" -q | wc -l)
+          if [ "$healthy" = "$expected" ] && [ "$healthy" -gt 0 ]; then
+            echo "All app containers are healthy"
+            exit 0
+          fi
+          echo "Waiting for containers to be healthy ($healthy/$expected)..."
+          sleep 10
+        done
+        echo "Timeout waiting for healthy containers"
+        exit 1
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Verify app is responding
+      uri:
+        url: "http://localhost/health"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 10 

@@ -7,6 +7,18 @@ services:
     volumes:
       - /srv/devpush/traefik:/data/traefik
       - /srv/devpush/upload:/app/upload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+
+  worker:
+    deploy:
+      replicas: 2
 
   traefik:
     command:

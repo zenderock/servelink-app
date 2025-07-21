@@ -7,3 +7,5 @@ class WorkerSettings:
     functions = [deploy, cleanup_project, cleanup_team, cleanup_inactive_deployments]
     redis_settings = RedisSettings.from_dsn("redis://redis:6379")
     max_jobs = 8
+    job_timeout = 120
+    job_completion_wait = 120

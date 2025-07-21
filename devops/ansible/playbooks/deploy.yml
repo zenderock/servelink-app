@@ -49,12 +49,12 @@
 
     - name: Build images
       command: >
-        docker compose --profile build-only build
+        docker compose -p devpush --profile build-only build
         {% if docker_no_cache | default(true) | bool %} --no-cache {% endif %}
       args:
         chdir: "{{ app_dir }}"
 
     - name: Start services
-      command: docker compose -f docker-compose.yml -f docker-compose.override.prod.yml up -d --pull always --remove-orphans
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --pull always --remove-orphans
       args:
         chdir: "{{ app_dir }}"

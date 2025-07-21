@@ -6,6 +6,7 @@ RUN addgroup --gid 1000 appgroup \
 
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
+    && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
@@ -28,6 +29,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Run migrations then start FastAPI
-COPY Docker/supervisord.app.conf /etc/supervisord.conf
-CMD ["sh", "-c", "uv run alembic upgrade head && exec supervisord -c /etc/supervisord.conf"]
+COPY Docker/entrypoint.app.sh /entrypoint.app.sh
+COPY Docker/entrypoint.worker.sh /entrypoint.worker.sh

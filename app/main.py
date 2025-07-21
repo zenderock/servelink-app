@@ -89,3 +89,8 @@ async def root(
     team_slug = result.scalar_one_or_none()
     if team_slug:
         return RedirectResponse(f"/{team_slug}", status_code=302)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

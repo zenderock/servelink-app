@@ -473,7 +473,10 @@ async def project_deploy(
 
             flash(
                 request,
-                _("Deployment %(deployment_id)s created.", deployment_id=deployment.id),
+                _(
+                    "Deployment %(deployment_id)s created.",
+                    deployment_id=deployment.id[:7],
+                ),
                 "success",
             )
 
@@ -834,7 +837,6 @@ async def project_settings(
                     await db.commit()
 
                     # Project is marked as deleted, actual cleanup is delegated to a job
-                    # TODO: job_timeout='1h'
                     await deployment_queue.enqueue_job("cleanup_project", project.id)
 
                     flash(

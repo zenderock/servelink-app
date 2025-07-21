@@ -1,15 +1,13 @@
 services:
   app:
-    container_name: app
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
+    command: ["/entrypoint.app.sh"]
     restart: always
     depends_on:
-      redis:
-        condition: service_healthy
-      pgsql:
-        condition: service_healthy
+      - redis
+      - pgsql
     networks:
       - default
       - internal
@@ -27,37 +25,17 @@ services:
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
       - "traefik.http.routers.app.entrypoints=web"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-        failure_action: rollback
-        monitor: 60s
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
 
   worker:
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
-    command: uv run arq worker.WorkerSettings
+    command: ["/entrypoint.worker.sh"]
     restart: always
+    stop_grace_period: ${JOB_TIMEOUT:-120}s
     depends_on:
-      redis:
-        condition: service_healthy
-      pgsql:
-        condition: service_healthy
+      - redis
+      - pgsql
     networks:
       - default
       - internal
@@ -66,22 +44,16 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - UPLOAD_DIR=/app/upload
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - TRAEFIK_CONFIG_DIR=/data/traefik
+      - DOCKER_HOST=tcp://docker-proxy:2375
 
   redis:
-    container_name: redis
     image: redis:alpine
     restart: always
     networks:
       - internal
 
   docker-proxy:
-    container_name: docker-proxy
     image: tecnativa/docker-socket-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -124,7 +96,6 @@ services:
       - 8.8.4.4
 
   pgsql:
-    container_name: pgsql
     image: postgres:16
     restart: always
     networks:

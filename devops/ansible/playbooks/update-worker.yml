@@ -1,0 +1,82 @@
+---
+- hosts: all
+  vars:
+    deploy_user: deploy
+    app_dir: /home/deploy/devpush
+
+  tasks:
+    - name: Clone/update repository
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_dir }}"
+        update: yes
+        force: yes
+
+    - name: Copy .env file
+      ansible.builtin.copy:
+        src: ../../../.env.prod
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0600"
+
+    - name: Build worker image
+      command: docker compose -p devpush build worker
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Get running worker containers
+      command: docker ps --filter "name=devpush-worker" --format "{{'{{.Names}}'}}"
+      register: running_workers
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Update workers one by one
+      vars:
+        worker_list: "{{ running_workers.stdout_lines }}"
+      loop: "{{ worker_list }}"
+      loop_control:
+        loop_var: worker_name
+      block:
+        - name: Gracefully stop worker
+          command: docker stop {{ worker_name }}
+          args:
+            chdir: "{{ app_dir }}"
+
+        - name: Wait for worker to exit
+          shell: |
+            while docker ps --filter "name={{ worker_name }}" --filter "status=running" | grep -q {{ worker_name }}; do
+              echo "Waiting for {{ worker_name }} to exit..."
+              sleep 5
+            done
+          args:
+            chdir: "{{ app_dir }}"
+
+        - name: Remove stopped worker container
+          command: docker rm {{ worker_name }}
+          args:
+            chdir: "{{ app_dir }}"
+          ignore_errors: yes
+
+        - name: Start new worker container
+          command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps worker
+          args:
+            chdir: "{{ app_dir }}"
+
+        - name: Wait for new worker to be ready
+          pause:
+            seconds: 30
+
+    - name: Verify all workers are running
+      shell: |
+        expected=2
+        running=$(docker ps --filter "name=devpush-worker" -q | wc -l)
+        if [ "$running" = "$expected" ]; then
+          echo "All $expected workers are running"
+          exit 0
+        else
+          echo "Expected $expected workers, but $running are running"
+          exit 1
+        fi
+      args:
+        chdir: "{{ app_dir }}" 

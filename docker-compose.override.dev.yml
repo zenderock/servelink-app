@@ -2,6 +2,16 @@ services:
   app:
     build:
       dockerfile: Docker/Dockerfile.app.dev
+    command: ["/entrypoint.app.dev.sh"]
+    volumes:
+      - ./app:/app
+      - ./data/upload:/app/upload
+      - ./data/traefik:/data/traefik
+
+  worker:
+    build:
+      dockerfile: Docker/Dockerfile.app.dev
+    command: ["/entrypoint.worker.dev.sh"]
     volumes:
       - ./app:/app
       - ./data/upload:/app/upload

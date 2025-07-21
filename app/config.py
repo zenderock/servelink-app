@@ -33,10 +33,11 @@ class Settings(BaseSettings):
     upload_dir: str = "/upload"
     traefik_config_dir: str = "/data/traefik"
     frameworks: list[dict] = []
+    job_timeout: int = 120
     deployment_timeout: int = 90
     db_echo: bool = False
-    env: str = "development"
     log_level: str = "WARNING"
+    env: str = "development"
 
     model_config = SettingsConfigDict(extra="ignore")
 
