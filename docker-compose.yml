@@ -6,8 +6,10 @@ services:
       dockerfile: Docker/Dockerfile.app
     restart: always
     depends_on:
-      - redis
-      - pgsql
+      redis:
+        condition: service_healthy
+      pgsql:
+        condition: service_healthy
     networks:
       - default
       - internal
@@ -25,6 +27,51 @@ services:
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
       - "traefik.http.routers.app.entrypoints=web"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 60s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.app
+    command: uv run arq worker.WorkerSettings
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      pgsql:
+        condition: service_healthy
+    networks:
+      - default
+      - internal
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - UPLOAD_DIR=/app/upload
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   redis:
     container_name: redis
