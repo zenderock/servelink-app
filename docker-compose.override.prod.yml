@@ -17,6 +17,9 @@ services:
       replicas: 2
 
   worker:
+    volumes:
+      - /srv/devpush/traefik:/data/traefik
+      - /srv/devpush/upload:/app/upload
     deploy:
       replicas: 2
 
