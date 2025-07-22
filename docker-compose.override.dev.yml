@@ -14,7 +14,6 @@ services:
     command: ["/entrypoint.worker.dev.sh"]
     volumes:
       - ./app:/app
-      - ./data/upload:/app/upload
       - ./data/traefik:/data/traefik
   
   pgsql:
