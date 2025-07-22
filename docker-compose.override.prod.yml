@@ -21,6 +21,10 @@ services:
       - /srv/devpush/traefik:/data/traefik
     deploy:
       replicas: 2
+  
+  pgsql:
+    ports:
+      - "127.0.0.1:5432:5432"
 
   traefik:
     command:
