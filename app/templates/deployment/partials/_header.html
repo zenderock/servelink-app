@@ -27,7 +27,7 @@
   </h1>
 
   <div class="flex items-center gap-x-2 ml-auto">
-    {% if deployment.conclusion == 'succeeded' %}
+    {% if deployment.conclusion == 'succeeded' and deployment.container_status == 'running' %}
       <div class="flex items-center">
         <a
           href="{{ deployment.url }}"
@@ -38,50 +38,49 @@
           {{ _('Visit') }}
         </a>
     
-      {% if deployment.aliases %}
-        {% set trigger %}
-          {% include "icons/chevrons-up-down.svg" %}
-        {% endset %}
-        {% call popover(
-          trigger=trigger,
-          trigger_attrs={"class": "btn-icon-outline w-6 border-l-0 rounded-l-none"},
-          popover_attrs={
-            "data-align": "end",
-            "class": "max-w-xs"
-          }
-        ) %}
-          <ul class="space-y-2">
-            <li class="space-y-1">
-              <div class="text-muted-foreground text-xs">{{ _('Deployment URL') }}</div>
-              <a
-                href="{{ deployment.url }}"
-                title="{{ deployment.hostname }}"
-                target="_blank"
-                class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
-              >
-                <span class="truncate">{{ deployment.hostname }}</span>
-                {% include "icons/external-link.svg" %}
-              </a>
-            </li>
-            {% for alias in deployment.aliases %}
+        {% if deployment.aliases %}
+          {% set trigger %}
+            {% include "icons/chevrons-up-down.svg" %}
+          {% endset %}
+          {% call popover(
+            trigger=trigger,
+            trigger_attrs={"class": "btn-icon-outline w-6 border-l-0 rounded-l-none"},
+            popover_attrs={
+              "data-align": "end",
+              "class": "max-w-xs"
+            }
+          ) %}
+            <ul class="space-y-2">
               <li class="space-y-1">
-                <div class="text-muted-foreground text-xs">{{ alias_types[alias.type] }}</div>
+                <div class="text-muted-foreground text-xs">{{ _('Deployment URL') }}</div>
                 <a
-                  href="{{ alias.url }}"
-                  title="{{ alias.hostname }}"
+                  href="{{ deployment.url }}"
+                  title="{{ deployment.hostname }}"
                   target="_blank"
                   class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
                 >
-                  <span class="truncate">{{ alias.hostname }}</span>
+                  <span class="truncate">{{ deployment.hostname }}</span>
                   {% include "icons/external-link.svg" %}
                 </a>
               </li>
-            {% endfor %}
-          </ul>
-        {% endcall %}
-      {% endif %}
-    </div>
-
+              {% for alias in deployment.aliases %}
+                <li class="space-y-1">
+                  <div class="text-muted-foreground text-xs">{{ alias_types[alias.type] }}</div>
+                  <a
+                    href="{{ alias.url }}"
+                    title="{{ alias.hostname }}"
+                    target="_blank"
+                    class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
+                  >
+                    <span class="truncate">{{ alias.hostname }}</span>
+                    {% include "icons/external-link.svg" %}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endcall %}
+        {% endif %}
+      </div>
     {% else %}
       <button type="button" class="btn-outline gap-x-2" disabled>
         {% include "icons/link-2.svg" %}

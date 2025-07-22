@@ -195,6 +195,7 @@ async def deploy(ctx, deployment_id: str):
                         "traefik.enable": "true",
                         f"traefik.http.routers.{router}.rule": f"Host(`{deployment.slug}.{settings.deploy_domain}`)",
                         f"traefik.http.routers.{router}.service": f"{router}@docker",
+                        f"traefik.http.routers.{router}.priority": "10",
                         f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
                         "traefik.docker.network": "devpush_default",
                         "app.deployment_id": deployment.id,
@@ -312,6 +313,7 @@ async def deploy(ctx, deployment_id: str):
                             deployment_id=deployment.id,
                             type="environment",
                             value=deployment.environment_id,
+                            environment_id=deployment.environment_id,
                         )
                     except Exception as e:
                         logger.error(f"Failed to setup environment alias: {e}")

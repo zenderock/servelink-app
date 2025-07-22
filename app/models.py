@@ -745,6 +745,7 @@ class Alias(Base):
         deployment_id: str,
         type: str,
         value: str | None = None,
+        environment_id: str | None = None,
     ) -> dict[str, object]:
         """Update or create alias"""
         result_query = await db.execute(select(cls).where(cls.subdomain == subdomain))
@@ -752,15 +753,16 @@ class Alias(Base):
 
         result = {}
         result["alias"] = None
-        result["demoted_previous_deployment_id"] = None
 
         if alias:
             if alias.deployment_id == deployment_id:
                 result["alias"] = alias
                 return result
 
-            result["demoted_previous_deployment_id"] = alias.previous_deployment_id
-            alias.previous_deployment_id = alias.deployment_id
+            if type == "environment" and environment_id == "prod":
+                alias.previous_deployment_id = alias.deployment_id
+            else:
+                alias.previous_deployment_id = None
             alias.deployment_id = deployment_id
         else:
             alias = cls(

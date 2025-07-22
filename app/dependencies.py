@@ -115,34 +115,44 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    redirect_on_fail: bool = True,
 ) -> User:
     """Get the current user object, redirect to login if not authenticated."""
     session = request.cookies.get("auth_token")
     if not session:
-        raise HTTPException(
-            status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/auth/login"},
-            detail="Authentication required",
-        )
+        if redirect_on_fail:
+            raise HTTPException(
+                status.HTTP_303_SEE_OTHER,
+                headers={"Location": "/auth/login"},
+                detail="Authentication required",
+            )
+        else:
+            return None
 
     try:
         data = jwt.decode(session, settings.secret_key)
         user_id = data["sub"]
     except Exception:
-        raise HTTPException(
-            status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/auth/login"},
-            detail="Authentication required",
-        )
+        if redirect_on_fail:
+            raise HTTPException(
+                status.HTTP_303_SEE_OTHER,
+                headers={"Location": "/auth/login"},
+                detail="Authentication required",
+            )
+        else:
+            return None
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(
-            status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/auth/login"},
-            detail="Authentication required",
-        )
+        if redirect_on_fail:
+            raise HTTPException(
+                status.HTTP_303_SEE_OTHER,
+                headers={"Location": "/auth/login"},
+                detail="Authentication required",
+            )
+        else:
+            return None
     return user
 
 

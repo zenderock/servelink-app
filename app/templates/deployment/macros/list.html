@@ -90,7 +90,7 @@
         {% endif %}
 
         <div class="flex items-center ml-auto">
-          {% if deployment.conclusion == 'succeeded' %}
+          {% if deployment.conclusion == 'succeeded' and deployment.container_status == 'running' %}
             <a href="{{ deployment.url }}" class="btn-sm-icon-ghost [&>svg]:shrink-0" target="_blank" data-tooltip="{{ _('Visit') }}">
               {% include "icons/link-2.svg" %}
             </a>
