@@ -50,45 +50,8 @@ app = FastAPI(
         Middleware(CSRFProtectMiddleware, csrf_secret=settings.secret_key),
     ],
 )
-
 app.mount("/static", CachedStaticFiles(directory="static"), name="static")
 app.mount("/upload", StaticFiles(directory="upload"), name="upload")
-
-app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(project.router)
-app.include_router(github.router)
-app.include_router(google.router)
-app.include_router(team.router)
-app.include_router(api.router)
-
-
-@app.exception_handler(404)
-async def handle_404(request: Request, exc: HTTPException):
-    return TemplateResponse(
-        request=request, name="error/404.html", status_code=404, context={}
-    )
-
-
-@app.exception_handler(500)
-async def handle_500(request: Request, exc: HTTPException):
-    return TemplateResponse(
-        request=request, name="error/500.html", status_code=500, context={}
-    )
-
-
-@app.get("/", name="root")
-async def root(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    result = await db.execute(
-        select(Team.slug).where(Team.id == current_user.default_team_id)
-    )
-    team_slug = result.scalar_one_or_none()
-    if team_slug:
-        return RedirectResponse(f"/{team_slug}", status_code=302)
 
 
 @app.get("/health")
@@ -161,4 +124,41 @@ async def catch_all_missing_container(
         name="error/deployment-not-found.html",
         status_code=404,
         context={},
+    )
+
+
+@app.get("/", name="root")
+async def root(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Team.slug).where(Team.id == current_user.default_team_id)
+    )
+    team_slug = result.scalar_one_or_none()
+    if team_slug:
+        return RedirectResponse(f"/{team_slug}", status_code=302)
+
+
+app.include_router(auth.router)
+app.include_router(user.router)
+app.include_router(project.router)
+app.include_router(github.router)
+app.include_router(google.router)
+app.include_router(team.router)
+app.include_router(api.router)
+
+
+@app.exception_handler(404)
+async def handle_404(request: Request, exc: HTTPException):
+    return TemplateResponse(
+        request=request, name="error/404.html", status_code=404, context={}
+    )
+
+
+@app.exception_handler(500)
+async def handle_500(request: Request, exc: HTTPException):
+    return TemplateResponse(
+        request=request, name="error/500.html", status_code=500, context={}
     )

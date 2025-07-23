@@ -32,7 +32,6 @@ services:
     restart: always
     stop_grace_period: ${JOB_TIMEOUT:-320}s
     depends_on:
-      - app
       - redis
       - pgsql
     networks:
