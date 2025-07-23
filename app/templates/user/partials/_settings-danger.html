@@ -25,11 +25,9 @@
         <form
           method="post"
           action="{{ url_for('user_settings').include_query_params(fragment='danger') }}"
-          hx-post="{{ url_for('user_settings').include_query_params(fragment='danger') }}"
-          hx-indicator="next .htmx-indicator"
-          hx-swap="outerHTML"
         >
           {{ delete_form.csrf_token() }}
+          {{ delete_form.email(value=current_user.email) }}
           {{ delete_form.confirm(
             class_="w-full input",
             placeholder=_('Type your email to confirm'),

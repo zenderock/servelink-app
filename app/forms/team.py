@@ -14,6 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dependencies import get_translation as _, get_lazy_translation as _l
 from models import TeamMember, User, Team, TeamInvite, utc_now
 
+FORBIDDEN_TEAM_SLUGS = [
+    "auth",
+    "api",
+    "health",
+    "static",
+    "upload",
+    "user",
+    "deployment-not-found",
+]
+
 
 class NewTeamForm(StarletteForm):
     name = StringField(_l("Name"), validators=[DataRequired(), Length(min=1, max=100)])
@@ -40,6 +50,10 @@ class TeamGeneralForm(StarletteForm):
     avatar = FileField(_l("Avatar"))
     delete_avatar = BooleanField(_l("Delete avatar"), default=False)
 
+    def validate_slug(self, field):
+        if field.data in FORBIDDEN_TEAM_SLUGS:
+            raise ValidationError(_("This slug is reserved."))
+
     def validate_avatar(self, field):
         if field.data:
             if field.data.content_type not in [
@@ -60,13 +74,13 @@ class TeamGeneralForm(StarletteForm):
 
 
 class TeamDeleteForm(StarletteForm):
-    name = HiddenField(_l("Team Name"), validators=[DataRequired()])
+    slug = HiddenField(_l("Team slug"), validators=[DataRequired()])
     confirm = StringField(_l("Confirmation"), validators=[DataRequired()])
     submit = SubmitField(_l("Delete"), name="delete_team")
 
     def validate_confirm(self, field):
-        if field.data != self.name.data:  # type: ignore
-            raise ValidationError(_("Team name confirmation did not match."))
+        if field.data != self.slug.data:  # type: ignore
+            raise ValidationError(_("Team slug confirmation did not match."))
 
 
 class TeamAddMemberForm(StarletteForm):

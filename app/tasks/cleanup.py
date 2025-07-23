@@ -75,6 +75,7 @@ async def cleanup_user(ctx, user_id: int):
             logger.info(f"[CleanupUser:{user_id}] Deleting remaining user data")
             await db.execute(delete(TeamMember).where(TeamMember.user_id == user_id))
             await db.execute(delete(TeamInvite).where(TeamInvite.inviter_id == user_id))
+            await db.execute(delete(TeamInvite).where(TeamInvite.email == user.email))
             await db.execute(
                 delete(UserIdentity).where(UserIdentity.user_id == user_id)
             )
@@ -126,6 +127,13 @@ async def cleanup_team(ctx, team_id: str):
             )
             await db.execute(delete(TeamMember).where(TeamMember.team_id == team_id))
             await db.execute(delete(TeamInvite).where(TeamInvite.team_id == team_id))
+
+            # Clear default team for any other user pointing to this team
+            await db.execute(
+                update(User)
+                .where(User.default_team_id == team_id)
+                .values(default_team_id=None)
+            )
 
             # Delete the team itself
             logger.info(f"[CleanupTeam:{team_id}] Deleting team record")
@@ -242,7 +250,7 @@ async def cleanup_project(ctx, project_id: str, batch_size: int = 100):
                 # No more deployments:
                 # 1. Remove Traefik config file
                 project_config_file_path = os.path.join(
-                    "/traefik_configs", f"project_{project_id}.yml"
+                    settings.traefik_config_dir, f"project_{project_id}.yml"
                 )
                 if os.path.exists(project_config_file_path):
                     try:

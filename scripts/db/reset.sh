@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
-# Drop and recreate the public schema of the Postgres DB defined in .env
-
 set -e
 
 if [ -f .env ]; then

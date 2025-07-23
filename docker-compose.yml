@@ -32,11 +32,13 @@ services:
     restart: always
     stop_grace_period: ${JOB_TIMEOUT:-120}s
     depends_on:
+      - app
       - redis
       - pgsql
     networks:
       - default
       - internal
+      - runner
     env_file:
       - .env
     environment:
@@ -80,6 +82,7 @@ services:
     networks:
       - default
       - internal
+      - runner
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.deployment-not-found.rule=HostRegexp(`^(.+)\\.${DEPLOY_DOMAIN:-deploy.localhost}$`)"
@@ -123,3 +126,5 @@ networks:
   internal:
     name: devpush_internal
     internal: true
+  runner:
+    name: devpush_runner

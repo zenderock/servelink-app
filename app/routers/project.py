@@ -860,18 +860,6 @@ async def project_settings(
             for error in delete_project_form.confirm.errors:
                 flash(request, error, "error")
 
-            return RedirectResponse(
-                url=str(
-                    request.url_for(
-                        "project_settings",
-                        team_slug=team.slug,
-                        project_name=project.name,
-                    )
-                )
-                + "#danger",
-                status_code=303,
-            )
-
     # General
     general_form: Any = await ProjectGeneralForm.from_formdata(
         request,

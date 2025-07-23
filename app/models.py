@@ -26,6 +26,16 @@ from db import Base
 from config import get_settings
 from utils.color import get_color
 
+FORBIDDEN_TEAM_SLUGS = [
+    "auth",
+    "api",
+    "health",
+    "static",
+    "upload",
+    "user",
+    "deployment-not-found",
+]
+
 
 def utc_now() -> datetime:
     """Get current UTC time as timezone-naive datetime"""
@@ -191,7 +201,7 @@ def set_team_slug(mapper, connection, team):
         base_slug = re.sub(r"[^a-z0-9-]", "", base_slug)
         base_slug = re.sub(r"-+", "-", base_slug)
         base_slug = base_slug[:40].strip("-")
-        if not base_slug:
+        if not base_slug or base_slug in FORBIDDEN_TEAM_SLUGS:
             base_slug = f"team-{team.id}"[:40]
 
         new_slug = (

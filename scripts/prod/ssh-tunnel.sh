@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Source the .env.devops file if it exists
 if [ -f "$(dirname "$0")/../../.env.devops" ]; then

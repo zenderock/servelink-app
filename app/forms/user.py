@@ -75,6 +75,6 @@ class UserRevokeOAuthAccessForm(StarletteForm):
     provider = SelectField(
         _l("Provider"),
         default="",
-        choices=["github","google"],
+        choices=["github", "google"],
     )
     submit = SubmitField(_l("Disconnect"))

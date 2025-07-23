@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     docker_host: str = "tcp://docker-proxy:2375"
     upload_dir: str = "/upload"
     traefik_config_dir: str = "/data/traefik"
+    default_cpu_quota: int = 100000
+    default_memory_mb: int = 512
     frameworks: list[dict] = []
     job_timeout: int = 120
     deployment_timeout: int = 90

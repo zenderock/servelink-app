@@ -1,6 +1,5 @@
 <!doctype html>
 <html>
-
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Language" content="en" />
@@ -8,7 +7,6 @@
 
   {# CSS #}
   <link rel="stylesheet" href="{{url_for('static', path='/styles.css')}}">
-
 
   {# Dark theme #}
   <script>
@@ -41,28 +39,24 @@
     {% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}
     {% endblock %}
   </title>
-  <meta name="title"
-    content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
+  <meta name="title" content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
   <meta name="description" content="{{ description or settings.app_description }}">
 
   {# Open Graph / Facebook #}
   <meta property="og:type" content="website">
   <meta property="og:url" content="{{ request.url }}">
-  <meta property="og:title"
-    content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
+  <meta property="og:title" content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
   <meta property="og:description" content="{{ description or settings.app_description }}">
   <meta property="og:image" content="{{ url_for('static', path='/social.png') }}">
   <meta property="og:site_name" content="{{ settings.app_name }}">
+  <meta property="og:locale" content="en_US">
 
   {# X/Twitter #}
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="{{ request.url }}">
-  <meta name="twitter:title"
-    content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
+  <meta name="twitter:title" content="{% if title %}{{ title }} | {{ settings.app_name }}{% else %}{{ settings.app_name }}{% endif %}">
   <meta name="twitter:description" content="{{ description or settings.app_description }}">
   <meta name="twitter:image" content="{{ url_for('static', path='/social.png') }}">
-  <!-- <meta name="twitter:creator" content="@hunvreus">
-  <meta property="og:locale" content="en_US"> -->
 
   {# Favicon #}
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}" />
@@ -80,5 +74,4 @@
   {% block base_content %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>
-
 </html>

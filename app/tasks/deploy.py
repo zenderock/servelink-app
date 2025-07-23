@@ -198,7 +198,7 @@ async def deploy(ctx, deployment_id: str):
                         f"traefik.http.routers.{router}.service": f"{router}@docker",
                         f"traefik.http.routers.{router}.priority": "10",
                         f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
-                        "traefik.docker.network": "devpush_default",
+                        "traefik.docker.network": "devpush_runner",
                         "app.deployment_id": deployment.id,
                         "app.project_id": project.id,
                     }
@@ -214,6 +214,22 @@ async def deploy(ctx, deployment_id: str):
                     else:
                         labels[f"traefik.http.routers.{router}.entrypoints"] = "web"
 
+                    # Get resource limits from config
+                    try:
+                        cpu_quota = int(
+                            deployment.config.get("cpu") or settings.default_cpu_quota
+                        )
+                        memory_mb = int(
+                            deployment.config.get("memory")
+                            or settings.default_memory_mb
+                        )
+                    except (ValueError, TypeError):
+                        cpu_quota = settings.default_cpu_quota
+                        memory_mb = settings.default_memory_mb
+                        logger.warning(
+                            f"{log_prefix} Invalid CPU/memory values in config, using defaults."
+                        )
+
                     # Create and start container
                     container = await docker_client.containers.create_or_replace(
                         name=container_name,
@@ -224,18 +240,18 @@ async def deploy(ctx, deployment_id: str):
                             "WorkingDir": "/app",
                             "Labels": labels,
                             "NetworkingConfig": {
-                                "EndpointsConfig": {"devpush_default": {}}
+                                "EndpointsConfig": {"devpush_runner": {}}
+                            },
+                            "HostConfig": {
+                                "CpuQuota": cpu_quota,
+                                "Memory": memory_mb * 1024 * 1024,
+                                "CapDrop": ["ALL"],
+                                "SecurityOpt": ["no-new-privileges:true"],
                             },
                         },
                     )
 
                     await container.start()
-
-                    # Connect to internal network
-                    internal_network = await docker_client.networks.get(
-                        "devpush_internal"
-                    )
-                    await internal_network.connect({"Container": container.id})
 
                     # Save container info
                     deployment.container_id = container.id
@@ -264,7 +280,7 @@ async def deploy(ctx, deployment_id: str):
                         networks = container_info.get("NetworkSettings", {}).get(
                             "Networks", {}
                         )
-                        container_ip = networks.get("devpush_default", {}).get(
+                        container_ip = networks.get("devpush_runner", {}).get(
                             "IPAddress"
                         )
 

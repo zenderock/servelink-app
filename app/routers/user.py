@@ -64,7 +64,8 @@ async def user_settings(
                     ),
                     "success",
                 )
-                return RedirectResponse("/")
+
+                return RedirectResponse("/auth/logout", status_code=303)
             except Exception as e:
                 await db.rollback()
                 logger.error(

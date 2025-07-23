@@ -182,46 +182,43 @@ async def team_settings(
 
     # Delete
     delete_team_form = None
-    # Prevent deleting default teams
-    result = await db.execute(select(User).where(User.default_team_id == team.id))
-    is_default_team = result.scalar_one_or_none()
-    if not is_default_team:
-        delete_team_form: Any = await TeamDeleteForm.from_formdata(request, team=team)
-        if request.method == "POST" and fragment == "danger":
-            if await delete_team_form.validate_on_submit():
-                try:
-                    delete_team_form.status = "deleted"
-                    await db.commit()
-
-                    # Team is marked as deleted, actual cleanup is delegated to a job
-                    await deployment_queue.enqueue_job("cleanup_team", team.id)
-
-                    flash(
-                        request,
-                        _('Team "%(name)s" has been marked for deletion.')
-                        % {"name": team.name},
-                        "success",
-                    )
-                    return RedirectResponse("/")
-                except Exception as e:
-                    await db.rollback()
-                    logger.error(
-                        f'Error marking team "{team.name}" as deleted: {str(e)}'
-                    )
-                    flash(
-                        request,
-                        _("An error occurred while marking the team for deletion."),
-                        "error",
-                    )
-
-            for error in delete_team_form.confirm.errors:
-                flash(request, error, "error")
-
-            return RedirectResponse(
-                url=str(request.url_for("team_settings", team_slug=team.slug))
-                + "#danger",
-                status_code=303,
+    if get_access(role, "owner"):
+        # Prevent deleting default teams
+        result = await db.execute(select(User).where(User.default_team_id == team.id))
+        is_default_team = result.scalar_one_or_none()
+        if not is_default_team:
+            delete_team_form: Any = await TeamDeleteForm.from_formdata(
+                request, team=team
             )
+            if request.method == "POST" and fragment == "danger":
+                if await delete_team_form.validate_on_submit():
+                    try:
+                        delete_team_form.status = "deleted"
+                        await db.commit()
+
+                        # Team is marked as deleted, actual cleanup is delegated to a job
+                        await deployment_queue.enqueue_job("cleanup_team", team.id)
+
+                        flash(
+                            request,
+                            _('Team "%(name)s" has been marked for deletion.')
+                            % {"name": team.name},
+                            "success",
+                        )
+                        return RedirectResponse("/", status_code=303)
+                    except Exception as e:
+                        await db.rollback()
+                        logger.error(
+                            f'Error marking team "{team.name}" as deleted: {str(e)}'
+                        )
+                        flash(
+                            request,
+                            _("An error occurred while marking the team for deletion."),
+                            "error",
+                        )
+
+                for error in delete_team_form.confirm.errors:
+                    flash(request, error, "error")
 
     # General
     general_form: Any = await TeamGeneralForm.from_formdata(
