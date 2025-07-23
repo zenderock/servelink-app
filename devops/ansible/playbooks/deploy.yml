@@ -58,26 +58,3 @@
       command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --pull always --remove-orphans
       args:
         chdir: "{{ app_dir }}"
-
-    - name: Wait for database to be ready
-      command: docker compose -p devpush exec pgsql pg_isready -U devpush-app
-      args:
-        chdir: "{{ app_dir }}"
-      register: db_ready
-      until: db_ready.rc == 0
-      retries: 30
-      delay: 2
-      changed_when: false
-
-    - name: Wait for app container to be ready
-      wait_for:
-        host: localhost
-        port: 8000
-        timeout: 60
-      when: db_ready.rc == 0
-
-    - name: Run database migrations
-      command: docker compose -p devpush exec app uv run alembic upgrade head
-      args:
-        chdir: "{{ app_dir }}"
-      when: db_ready.rc == 0

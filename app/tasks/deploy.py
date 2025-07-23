@@ -52,7 +52,7 @@ async def publish_docker_logs(container, offset, redis_client, stream_key):
     return updated_logs
 
 
-async def http_probe(ip, port, path="/", timeout=2):
+async def http_probe(ip, port, path="/", timeout=30):
     url = f"http://{ip}:{port}{path}"
     try:
         async with httpx.AsyncClient() as client:

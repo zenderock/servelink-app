@@ -1,6 +1,5 @@
 services:
   app:
-    command: ["/entrypoint.app.sh"]
     labels:
       - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.routers.app.tls=true
@@ -18,7 +17,6 @@ services:
       replicas: 2
 
   worker:
-    command: ["/entrypoint.worker.sh"]
     volumes:
       - /srv/devpush/traefik:/data/traefik
     deploy:
