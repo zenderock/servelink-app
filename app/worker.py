@@ -7,6 +7,10 @@ from tasks.cleanup import (
     cleanup_inactive_deployments,
 )
 
+from config import get_settings
+
+settings = get_settings()
+
 
 class WorkerSettings:
     functions = [
@@ -18,5 +22,5 @@ class WorkerSettings:
     ]
     redis_settings = RedisSettings.from_dsn("redis://redis:6379")
     max_jobs = 8
-    job_timeout = 120
-    job_completion_wait = 120
+    job_timeout = settings.job_timeout
+    job_completion_wait = settings.job_completion_wait

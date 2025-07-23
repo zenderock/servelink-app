@@ -35,8 +35,9 @@ class Settings(BaseSettings):
     default_cpu_quota: int = 100000
     default_memory_mb: int = 512
     frameworks: list[dict] = []
-    job_timeout: int = 120
-    deployment_timeout: int = 90
+    job_timeout: int = 320
+    job_completion_wait: int = 300
+    deployment_timeout: int = 300
     db_echo: bool = False
     log_level: str = "WARNING"
     env: str = "development"

@@ -30,7 +30,7 @@ services:
       context: .
       dockerfile: Docker/Dockerfile.app
     restart: always
-    stop_grace_period: ${JOB_TIMEOUT:-120}s
+    stop_grace_period: ${JOB_TIMEOUT:-320}s
     depends_on:
       - app
       - redis

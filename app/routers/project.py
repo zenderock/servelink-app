@@ -570,7 +570,7 @@ async def project_deploy(
 
 
 @router.api_route(
-    "/{team_slug}/projects/{project_name}/deplyments/{deployment_id}/rollback",
+    "/{team_slug}/projects/{project_name}/deployments/{deployment_id}/redeploy",
     methods=["GET", "POST"],
     name="project_redeploy",
 )
