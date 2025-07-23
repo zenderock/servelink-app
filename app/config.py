@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     secret_key: str = "secret-key"
     encryption_key: str = "encryption-key"
     postgres_host: str = "pgsql"
-    postgres_user: str = "devpush"
+    postgres_user: str = "devpush-app"
     postgres_password: str = "devpush"
     postgres_db: str = "devpush"
     redis_url: str = "redis://redis:6379"

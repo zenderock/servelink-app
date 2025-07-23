@@ -161,8 +161,8 @@ class Team(Base):
         nullable=False,
         default="active",
     )
-    created_by_user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id", use_alter=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", use_alter=True, ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
@@ -173,7 +173,9 @@ class Team(Base):
 
     # Relationships
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
-    created_by_user: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
+    created_by_user: Mapped[User | None] = relationship(
+        foreign_keys=[created_by_user_id]
+    )
 
     @property
     def color(self) -> str:
@@ -314,8 +316,8 @@ class Project(Base):
     config: Mapped[dict[str, object]] = mapped_column(
         JSON, nullable=False, default=dict
     )
-    created_by_user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id", use_alter=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", use_alter=True, ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
@@ -336,7 +338,9 @@ class Project(Base):
     )
     deployments: Mapped[list["Deployment"]] = relationship(back_populates="project")
     team: Mapped[Team] = relationship(back_populates="projects")
-    created_by_user: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
+    created_by_user: Mapped[User | None] = relationship(
+        foreign_keys=[created_by_user_id]
+    )
 
     __table_args__ = (UniqueConstraint("team_id", "name", name="uq_project_team_name"),)
 
@@ -621,8 +625,8 @@ class Deployment(Base):
         nullable=False,
         default="user",
     )
-    created_by_user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id", use_alter=True), nullable=True
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", use_alter=True, ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         index=True, nullable=False, default=utc_now
@@ -634,6 +638,9 @@ class Deployment(Base):
     project: Mapped[Project] = relationship(back_populates="deployments")
     aliases: Mapped[list["Alias"]] = relationship(
         back_populates="deployment", foreign_keys="Alias.deployment_id"
+    )
+    created_by_user: Mapped[User | None] = relationship(
+        foreign_keys=[created_by_user_id]
     )
 
     def __init__(self, *args, project: "Project", environment_id: str, **kwargs):

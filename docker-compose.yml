@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
-    command: ["/entrypoint.app.sh"]
     restart: always
     depends_on:
       - redis
@@ -30,7 +29,6 @@ services:
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
-    command: ["/entrypoint.worker.sh"]
     restart: always
     stop_grace_period: ${JOB_TIMEOUT:-120}s
     depends_on:

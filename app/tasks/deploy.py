@@ -66,6 +66,8 @@ async def deploy(ctx, deployment_id: str):
     """Deploy a project to its environment."""
     settings = get_settings()
     redis_client = get_redis_client()
+    log_prefix = f"[Deploy:{deployment_id}]"
+    logger.info(f"{log_prefix} Starting deployment")
 
     github_installation_service = get_github_installation_service()
 
@@ -80,27 +82,26 @@ async def deploy(ctx, deployment_id: str):
             ).scalar_one()
 
             if not deployment:
-                error_message = f"Deployment {deployment_id} not found"
-                logger.error(error_message)
-                raise Exception(error_message)
+                error_message = "Deployment not found"
+                logger.error(f"{log_prefix} {error_message}")
+                raise Exception(f"{log_prefix} {error_message}")
 
             project = await db.get(Project, deployment.project_id)
             if not project:
                 error_message = f"Project {deployment.project_id} not found"
-                logger.error(error_message)
-                raise Exception(error_message)
+                logger.error(f"{log_prefix} {error_message}")
+                raise Exception(f"{log_prefix} {error_message}")
 
             environment = project.get_environment_by_id(deployment.environment_id)
             if not environment:
                 error_message = f"Environment {deployment.environment_id} not found"
-                logger.error(error_message)
-                raise Exception(error_message)
+                logger.error(f"{log_prefix} {error_message}")
+                raise Exception(f"{log_prefix} {error_message}")
 
             # Check project status
             if project.status != "active":
                 logger.warning(
-                    f"Deployment {deployment_id} for project {project.id} ({project.name}) "
-                    f"will not proceed as project status is '{project.status}'."
+                    f"{log_prefix} Project {project.id} has a status of '{project.status}'."
                 )
                 deployment.status = "skipped"
                 deployment.conclusion = "skipped"
@@ -269,7 +270,7 @@ async def deploy(ctx, deployment_id: str):
 
                         if not container_ip:
                             logger.info(
-                                f"Container {container.id} not yet assigned an IP address"
+                                f"{log_prefix} Container {container.id} not yet assigned an IP address"
                             )
                             await asyncio.sleep(0.5)
                             continue
@@ -298,7 +299,7 @@ async def deploy(ctx, deployment_id: str):
                             value=branch,
                         )
                     except Exception as e:
-                        logger.error(f"Failed to setup branch alias: {e}")
+                        logger.error(f"{log_prefix} Failed to setup branch alias: {e}")
 
                     # Environment alias
                     if deployment.environment_id == "prod":
@@ -316,7 +317,9 @@ async def deploy(ctx, deployment_id: str):
                             environment_id=deployment.environment_id,
                         )
                     except Exception as e:
-                        logger.error(f"Failed to setup environment alias: {e}")
+                        logger.error(
+                            f"{log_prefix} Failed to setup environment alias: {e}"
+                        )
 
                     await db.commit()
 
@@ -331,7 +334,7 @@ async def deploy(ctx, deployment_id: str):
                         "cleanup_inactive_deployments", project.id
                     )
                     logger.info(
-                        f"Inactive deployments cleanup job queued for project {project.id}."
+                        f"{log_prefix} Inactive deployments cleanup job queued for project {project.id}."
                     )
 
                     # Success message
@@ -345,9 +348,7 @@ async def deploy(ctx, deployment_id: str):
                     deployment.conclusion = "failed"
                     if deployment.container_status:
                         deployment.container_status = "stopped"
-                    logger.error(
-                        f"Deployment {deployment_id} failed: {e}", exc_info=True
-                    )
+                    logger.error(f"{log_prefix} Deployment failed: {e}", exc_info=True)
 
                 finally:
                     # Update deployment status
@@ -392,18 +393,20 @@ async def deploy(ctx, deployment_id: str):
                             deployment.container_status = "removed"
                             await db.commit()
                             logger.info(
-                                f"Cleaned up failed container {container.id} from deployment {deployment.id}"
+                                f"{log_prefix} Cleaned up failed container {container.id}"
                             )
                         except Exception as e:
                             logger.error(
-                                f"Error cleaning up container {container.id} from deployment {deployment.id}: {e}"
+                                f"{log_prefix} Error cleaning up container {container.id}: {e}"
                             )
 
                     logger.info(
-                        f"Deployment {deployment.id} completed with conclusion: {deployment.conclusion}"
+                        f"{log_prefix} Deployment completed with conclusion: {deployment.conclusion}"
                     )
 
         except Exception as e:
             await db.rollback()
-            logger.error(f"Deploy task failed: {e}", exc_info=True)
+            logger.error(
+                f"[Deploy:{deployment_id}] Deploy task failed: {e}", exc_info=True
+            )
             raise
