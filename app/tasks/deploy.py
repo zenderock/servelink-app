@@ -22,7 +22,18 @@ from services.deployment import DeploymentService
 logger = logging.getLogger(__name__)
 
 
-async def publish_docker_logs(container, offset, redis_client, stream_key):
+async def _log_to_container(container, message, error=False):
+    fd = "2" if error else "1"
+    exec = await container.exec(
+        ["/bin/sh", "-c", f"echo '{message}' >> /proc/1/fd/{fd}"],
+        user="appuser",
+        stdout=False,
+        stderr=False,
+    )
+    await exec.start(detach=True)
+
+
+async def _publish_docker_logs(container, offset, redis_client, stream_key):
     logs = await container.log(stdout=True, stderr=True, timestamps=True)
     updated_logs = "".join(logs)
     new_logs = updated_logs[offset:]
@@ -52,7 +63,7 @@ async def publish_docker_logs(container, offset, redis_client, stream_key):
     return updated_logs
 
 
-async def http_probe(ip, port, path="/", timeout=30):
+async def _http_probe(ip, port, path="/", timeout=30):
     url = f"http://{ip}:{port}{path}"
     try:
         async with httpx.AsyncClient() as client:
@@ -105,9 +116,6 @@ async def deploy(ctx, deployment_id: str):
                 )
                 deployment.status = "skipped"
                 deployment.conclusion = "skipped"
-                deployment.build_logs = (
-                    f"Skipped: Project status is '{project.status}'."
-                )
                 deployment.concluded_at = datetime.now(timezone.utc)
                 await db.commit()
                 return
@@ -269,7 +277,7 @@ async def deploy(ctx, deployment_id: str):
                             raise Exception("Container failed to start")
 
                         # Publish logs
-                        container_logs = await publish_docker_logs(
+                        container_logs = await _publish_docker_logs(
                             container,
                             len(container_logs),
                             redis_client,
@@ -291,12 +299,17 @@ async def deploy(ctx, deployment_id: str):
                             await asyncio.sleep(0.5)
                             continue
 
-                        if await http_probe(container_ip, 8000):
+                        if await _http_probe(container_ip, 8000):
                             deployment.conclusion = "succeeded"
                             break
 
                         await asyncio.sleep(0.5)
                     else:
+                        await _log_to_container(
+                            container,
+                            "Timeout waiting for application to reply on port 8000.",
+                            err=True,
+                        )
                         raise Exception("Timeout waiting for application to start")
 
                     # Setup branch domains
@@ -315,6 +328,11 @@ async def deploy(ctx, deployment_id: str):
                             value=branch,
                         )
                     except Exception as e:
+                        await _log_to_container(
+                            container,
+                            f"Failed to setup branch alias ({branch_subdomain}.{settings.deploy_domain})",
+                            err=True,
+                        )
                         logger.error(f"{log_prefix} Failed to setup branch alias: {e}")
 
                     # Environment alias
@@ -333,6 +351,11 @@ async def deploy(ctx, deployment_id: str):
                             environment_id=deployment.environment_id,
                         )
                     except Exception as e:
+                        await _log_to_container(
+                            container,
+                            f"Failed to setup environment alias ({env_subdomain}.{settings.deploy_domain})",
+                            err=True,
+                        )
                         logger.error(
                             f"{log_prefix} Failed to setup environment alias: {e}"
                         )
@@ -354,9 +377,10 @@ async def deploy(ctx, deployment_id: str):
                     )
 
                     # Success message
-                    success_message = f"Deployment succeeded. Visit {deployment.url}"
-                    await container.exec(
-                        ["/bin/sh", "-c", f"echo '{success_message}' >> /proc/1/fd/1"]
+                    await _log_to_container(
+                        container,
+                        f"Deployment succeeded. Visit {deployment.url}",
+                        error=False,
                     )
 
                 except Exception as e:
@@ -375,7 +399,7 @@ async def deploy(ctx, deployment_id: str):
                     )
 
                     if container:
-                        container_logs = await publish_docker_logs(
+                        container_logs = await _publish_docker_logs(
                             container,
                             len(container_logs),
                             redis_client,
