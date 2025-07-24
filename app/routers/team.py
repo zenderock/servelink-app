@@ -227,6 +227,8 @@ async def team_settings(
             "name": team.name,
             "slug": team.slug,
         },
+        db=db,
+        team=team,
     )
 
     if fragment == "general":

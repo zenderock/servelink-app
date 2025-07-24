@@ -10,6 +10,7 @@
         data-turbo="false"
         aria-selected="{{ 'true' if request.path == url_for('team_index', team_slug=team.slug).path else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+        hx-boost="true"
       >{{ _('Overview') }}</a>
     </li>
     <li
@@ -22,6 +23,7 @@
         data-turbo="false"
         aria-selected="{{ 'true' if request.path.startswith(url_for('team_projects', team_slug=team.slug).path) else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+        hx-boost="true"
       >{{ _('Projects') }}</a>
     </li>
     {% if get_access(role, "admin") %}
@@ -35,6 +37,7 @@
           data-turbo="false"
           aria-selected="{{ 'true' if request.path.startswith(url_for('team_settings', team_slug=team.slug).path) else 'false' }}"
           class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+          hx-boost="true"
         >{{ _('Settings') }}</a>
       </li>
     {% endif %}

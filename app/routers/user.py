@@ -89,6 +89,8 @@ async def user_settings(
     general_form: Any = await UserGeneralForm.from_formdata(
         request,
         data={"name": current_user.name, "username": current_user.username},
+        db=db,
+        user=current_user,
     )
 
     if fragment == "general":

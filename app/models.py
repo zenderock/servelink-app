@@ -11,6 +11,7 @@ from sqlalchemy import (
     event,
     select,
     update,
+    func,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,6 +35,7 @@ FORBIDDEN_TEAM_SLUGS = [
     "upload",
     "user",
     "deployment-not-found",
+    "new-team",
 ]
 
 
@@ -206,7 +208,9 @@ def set_team_slug(mapper, connection, team):
 
         new_slug = (
             base_slug
-            if not connection.scalar(select(Team.slug).where(Team.slug == base_slug))
+            if not connection.scalar(
+                select(Team.slug).where(func.lower(Team.slug) == base_slug.lower())
+            )
             else f"{base_slug[:32]}-{str(team.id)[:7]}"
         )
 

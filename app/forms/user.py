@@ -8,8 +8,11 @@ from wtforms import (
     SelectField,
 )
 from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Email
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import get_translation as _, get_lazy_translation as _l
+from models import User
 
 
 class UserGeneralForm(StarletteForm):
@@ -29,6 +32,26 @@ class UserGeneralForm(StarletteForm):
     )
     avatar = FileField(_l("Avatar"))
     delete_avatar = BooleanField(_l("Delete avatar"), default=False)
+
+    def __init__(self, *args, db: AsyncSession, user: User, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.db = db
+        self.user = user
+
+    async def async_validate_username(self, field):
+        if self.db and self.user:
+            if self.user.username != field.data:
+                result = await self.db.execute(
+                    select(User).where(
+                        func.lower(User.username) == field.data.lower(),
+                        User.status != "deleted",
+                        User.id != self.user.id,
+                    )
+                )
+                if result.scalar_one_or_none():
+                    raise ValidationError(
+                        _("A user with this username already exists.")
+                    )
 
     def validate_avatar(self, field):
         if field.data:

@@ -22,6 +22,7 @@ FORBIDDEN_TEAM_SLUGS = [
     "upload",
     "user",
     "deployment-not-found",
+    "new-team",
 ]
 
 
@@ -50,9 +51,25 @@ class TeamGeneralForm(StarletteForm):
     avatar = FileField(_l("Avatar"))
     delete_avatar = BooleanField(_l("Delete avatar"), default=False)
 
-    def validate_slug(self, field):
+    def __init__(self, *args, db: AsyncSession, team: Team, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.db = db
+        self.team = team
+
+    async def async_validate_slug(self, field):
         if field.data in FORBIDDEN_TEAM_SLUGS:
             raise ValidationError(_("This slug is reserved."))
+
+        if self.db and self.team:
+            result = await self.db.execute(
+                select(Team).where(
+                    func.lower(Team.slug) == field.data.lower(),
+                    Team.status != "deleted",
+                    Team.id != self.team.id,
+                )
+            )
+            if result.scalar_one_or_none():
+                raise ValidationError(_("A team with this slug already exists."))
 
     def validate_avatar(self, field):
         if field.data:
