@@ -56,15 +56,18 @@ async def google_authorize_callback(
     try:
         token = await oauth_client.google.authorize_access_token(request)
         google_user_info = await get_google_user_info(oauth_client, token)
-        
+
         if not google_user_info:
             flash(request, _("Failed to get user info from Google"), "error")
             return RedirectResponse(redirect_url, status_code=303)
 
-        # Check if Google account already linked to another user
         existing_user = await get_user_by_provider(db, "google", google_user_info["id"])
         if existing_user and existing_user.id != current_user.id:
-            flash(request, _("This Google account is already linked to another user"), "error")
+            flash(
+                request,
+                _("This Google account is already linked to another user"),
+                "error",
+            )
             return RedirectResponse(redirect_url, status_code=303)
 
         result = await db.execute(

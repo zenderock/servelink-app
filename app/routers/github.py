@@ -24,7 +24,7 @@ from dependencies import (
 from models import User, UserIdentity, GithubInstallation, Project
 from services.github import GitHubService
 from services.deployment import DeploymentService
-from utils.user import get_user_github_token
+from utils.user import get_user_github_token, get_user_by_provider
 from config import get_settings, Settings
 
 router = APIRouter(prefix="/api/github")
@@ -147,6 +147,15 @@ async def github_authorize_callback(
         token = await oauth_client.github.authorize_access_token(request)
         response = await oauth_client.github.get("user", token=token)
         github_user = response.json()
+
+        existing_user = await get_user_by_provider(db, "github", str(github_user["id"]))
+        if existing_user and existing_user.id != current_user.id:
+            flash(
+                request,
+                _("This GitHub account is already linked to another user"),
+                "error",
+            )
+            return RedirectResponse(redirect_url, status_code=303)
 
         result = await db.execute(
             select(UserIdentity).where(
