@@ -141,8 +141,8 @@
 						<div class="text-muted-foreground">{{ current_user.email }}</div>
 					</header>
 					<hr role="separator" />
-					<a href="{{ url_for('user_settings') }}" role="menuitem">{{ _('Account settings') }}</a>
-					<a href="/" role="menuitem">{{ _('Default team') }}</a>
+					<a href="{{ url_for('user_settings') }}" role="menuitem" hx-boost="true">{{ _('Account settings') }}</a>
+					<a href="/" role="menuitem" hx-boost="true">{{ _('Default team') }}</a>
 					<hr role="separator" />
 					<button
 						type="button"
