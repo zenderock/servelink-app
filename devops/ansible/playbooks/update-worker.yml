@@ -47,29 +47,30 @@
 
     - name: Gracefully stop old worker (SIGTERM)
       command: docker stop {{ old_worker.stdout_lines[0] }}
+      when: old_worker.stdout_lines | length > 0
       args:
         chdir: "{{ app_dir }}"
 
     - name: Wait for old worker to exit
       shell: |
-        for i in $(seq 1 64); do  # up to ~10 min (64×10 s)
-          if ! docker ps --filter "name={{ old_worker.stdout_lines[0] }}" --filter "status=running" | grep -q {{ old_worker.stdout_lines[0] }}; then
-            echo "Old worker has exited"
+        for i in $(seq 1 64); do
+          if ! docker ps --filter "name={{ old_worker.stdout_lines[0] }}" \
+                         --filter "status=running" | grep -q {{ old_worker.stdout_lines[0] }}; then
             exit 0
           fi
-          echo "Old worker still running; waiting..."
           sleep 10
         done
-        echo "Timeout waiting for old worker to exit"
         exit 1
+      when: old_worker.stdout_lines | length > 0
       args:
         chdir: "{{ app_dir }}"
 
     - name: Remove stopped old worker container
       command: docker rm {{ old_worker.stdout_lines[0] }}
+      when: old_worker.stdout_lines | length > 0
+      ignore_errors: yes
       args:
         chdir: "{{ app_dir }}"
-      ignore_errors: yes
 
     - name: Verify single worker is running
       shell: |

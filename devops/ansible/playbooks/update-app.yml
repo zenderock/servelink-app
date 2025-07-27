@@ -35,6 +35,7 @@
       command: docker stop {{ running_app.stdout_lines[0] }}
       args:
         chdir: "{{ app_dir }}"
+      when: running_app.stdout_lines | length > 0
 
     - name: Wait for app container to exit
       shell: |
@@ -44,12 +45,14 @@
         done
       args:
         chdir: "{{ app_dir }}"
+      when: running_app.stdout_lines | length > 0
 
     - name: Remove stopped app container
       command: docker rm {{ running_app.stdout_lines[0] }}
       args:
         chdir: "{{ app_dir }}"
       ignore_errors: yes
+      when: running_app.stdout_lines | length > 0
 
     - name: Start new app container
       command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps app
