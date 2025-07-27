@@ -32,56 +32,10 @@
         chdir: "{{ app_dir }}"
 
     - name: Update app containers one by one
-      vars:
-        app_list: "{{ running_apps.stdout_lines }}"
-      loop: "{{ app_list }}"
+      include_tasks: update-single-app.yml
+      loop: "{{ running_apps.stdout_lines }}"
       loop_control:
         loop_var: app_name
-      block:
-        - name: Stop app container
-          command: docker stop {{ app_name }}
-          args:
-            chdir: "{{ app_dir }}"
-
-        - name: Wait for app container to exit
-          shell: |
-            while docker ps --filter "name={{ app_name }}" --filter "status=running" | grep -q {{ app_name }}; do
-              echo "Waiting for {{ app_name }} to exit..."
-              sleep 5
-            done
-          args:
-            chdir: "{{ app_dir }}"
-
-        - name: Remove stopped app container
-          command: docker rm {{ app_name }}
-          args:
-            chdir: "{{ app_dir }}"
-          ignore_errors: yes
-
-        - name: Start new app container
-          command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps app
-          args:
-            chdir: "{{ app_dir }}"
-
-        - name: Wait for new app container to be healthy
-          shell: |
-            for i in {1..40}; do
-              healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
-              if [ "$healthy" -ge 1 ]; then
-                echo "App container {{ app_name }} updated and healthy"
-                exit 0
-              fi
-              echo "Waiting for {{ app_name }} to be healthy ($healthy/1)..."
-              sleep 10
-            done
-            echo "Timeout waiting for {{ app_name }} to be healthy"
-            exit 1
-          args:
-            chdir: "{{ app_dir }}"
-
-        - name: Brief pause before next container
-          pause:
-            seconds: 10
 
     - name: Verify all app containers are healthy
       shell: |
@@ -98,9 +52,9 @@
         chdir: "{{ app_dir }}"
 
     - name: Verify app is responding
-      uri:
-        url: "http://localhost/health"
-        method: GET
-        status_code: 200
+      shell: |
+        docker compose -p devpush exec -T app curl -f http://localhost:8000/health
+      args:
+        chdir: "{{ app_dir }}"
       retries: 5
       delay: 10 

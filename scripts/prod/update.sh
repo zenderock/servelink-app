@@ -55,4 +55,4 @@ ansible-playbook -i inventories/deploy.yml playbooks/$PLAYBOOK \
   -e "github_repo=$GITHUB_REPO"
 
 echo ""
-echo -e "\033[1;32m${COMPONENT^} update complete!\033[0m" 
+echo -e "\033[1;32m$COMPONENT update complete!\033[0m" 
