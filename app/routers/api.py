@@ -90,6 +90,7 @@ async def api_deployment_events(
                                 {
                                     "timestamp": message_fields.get("timestamp", ""),
                                     "message": message_fields.get("message", ""),
+                                    "level": message_fields.get("level", "INFO"),
                                 }
                             )
                             last_message_id = message_id

@@ -67,10 +67,12 @@
   <script src="{{ url_for('static', path='/assets/alpine.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx-sse.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='/assets/htmx-preload.min.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
 
-<body class="relative h-full text-sm">
+<body class="relative h-full text-sm" hx-ext="preload">
+
   {% block base_content %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

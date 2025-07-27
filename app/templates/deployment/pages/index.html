@@ -19,7 +19,6 @@
       id="deployment-logs"
       class="overflow-y-auto h-[500px] relative p-4 border-t scrollbar-thin scrollbar"
       x-init="$el.scrollTop = $el.scrollHeight"
-      hx-on::after-swap="this.scrollTop = this.scrollHeight"
       x-data="{
         getTime(timestamp) {
           return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -27,25 +26,24 @@
         getTooltip(timestamp) {
           return new Date(timestamp).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
         },
-        $log: {
+        $timestamp: {
           'x-text'() { return this.getTime(this.$el.getAttribute('datetime')) },
           ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
           ':data-side': '\'right\''
         }
       }"
+      {% if not deployment.conclusion %}hx-on::after-swap="this.scrollTop = this.scrollHeight"{% endif %}
     >
-      <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
-        <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-          {% include "icons/loader.svg" %}
-          {{ _('Waiting for logs') }}
+      {% if not deployment.conclusion %}
+        <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
+          <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
+            {% include "icons/loader.svg" %}
+            {{ _('Waiting for logs') }}
+          </div>
         </div>
-      </div>
-      {%- for log in deployment.parsed_logs -%}
-        <div class="flex items-start gap-x-4 px-2 py-1.5 hover:bg-muted rounded-md transition-colors font-mono text-[13px]">
-          <time class="text-muted-foreground whitespace-nowrap" datetime="{{ log.timestamp }}" x-bind="$log">{{ log.timestamp }}</time>
-          <div class="break-all">{{ log.message }}</div>
-        </div>
-      {%- endfor -%}
+      {% endif %}
+      {% from "deployment/macros/logs.html" import logs %}
+      {{ logs(deployment.parsed_logs) }}
     </div>
   </details>
 </div>

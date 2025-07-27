@@ -258,10 +258,10 @@ async def project_index(
         )
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
     latest_projects = await get_latest_projects(
-        db=db, team=team, current_project=project, limit=5
+        db=db, team=team, current_project=project
     )
 
     return TemplateResponse(
@@ -394,10 +394,10 @@ async def project_deployments(
         )
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
     latest_projects = await get_latest_projects(
-        db=db, team=team, current_project=project, limit=5
+        db=db, team=team, current_project=project
     )
 
     return TemplateResponse(
@@ -1200,13 +1200,13 @@ async def project_deployment(
         )
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
     latest_projects = await get_latest_projects(
-        db=db, team=team, current_project=project, limit=5
+        db=db, team=team, current_project=project
     )
     latest_deployments = await get_latest_deployments(
-        db=db, project=project, current_deployment=deployment, limit=5
+        db=db, project=project, current_deployment=deployment
     )
 
     return TemplateResponse(

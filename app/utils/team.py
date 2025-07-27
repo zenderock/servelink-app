@@ -3,7 +3,7 @@ from sqlalchemy import select
 from models import Team, TeamMember
 
 
-async def get_latest_teams(db, current_user, current_team=None, limit=5):
+async def get_latest_teams(db, current_user, current_team=None, limit=4):
     query = (
         select(Team)
         .join(TeamMember, Team.id == TeamMember.team_id)

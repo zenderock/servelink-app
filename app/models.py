@@ -26,6 +26,7 @@ from typing import override
 from db import Base
 from config import get_settings
 from utils.color import get_color
+from utils.log import parse_log
 
 FORBIDDEN_TEAM_SLUGS = [
     "auth",
@@ -707,16 +708,7 @@ class Deployment(Base):
         if not self.build_logs:
             return []
 
-        logs = [
-            {
-                "timestamp": timestamp if separator else None,
-                "message": message if separator else timestamp,
-            }
-            for timestamp, separator, message in (
-                line.partition(" ") for line in self.build_logs.splitlines()
-            )
-        ]
-        return logs
+        return [parse_log(log) for log in self.build_logs.splitlines()]
 
     @property
     def parsed_logs(self):

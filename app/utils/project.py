@@ -3,7 +3,7 @@ from sqlalchemy import select
 from models import Project, Deployment
 
 
-async def get_latest_projects(db, team, current_project=None, limit=5):
+async def get_latest_projects(db, team, current_project=None, limit=4):
     query = (
         select(Project)
         .where(Project.status != "deleted", Project.team_id == team.id)
@@ -20,7 +20,7 @@ async def get_latest_projects(db, team, current_project=None, limit=5):
     return result.scalars().all()
 
 
-async def get_latest_deployments(db, project, current_deployment=None, limit=5):
+async def get_latest_deployments(db, project, current_deployment=None, limit=4):
     query = (
         select(Deployment)
         .where(Deployment.project_id == project.id)

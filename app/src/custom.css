@@ -12,6 +12,46 @@
   @apply visible opacity-100;
 }
 
+/* @keyframes progress-bar {
+  0% {
+    width: 0%
+  }
+
+  10% {
+    width: 40%
+  }
+
+  30% {
+    width: 60%
+  }
+
+  60% {
+    width: 70%
+  }
+
+  90% {
+    width: 75%
+  }
+
+  100% {
+    width: 78%
+  }
+}
+
+body {
+  &:after {
+    @apply content-[''] fixed top-0 left-0 h-1 bg-blue-600 dark:bg-blue-500 z-[999] opacity-0 w-0 transition-[opacity|width] pointer-events-none;
+  }
+
+  &.hx-boost-loading:after {
+    @apply opacity-100 animate-[progress-bar_4s_linear_forwards];
+  }
+
+  &:not(.hx-boost-loading):after {
+    @apply w-full opacity-0 transition-[width|opacity] duration-300 ease-in-out;
+  }
+} */
+
 .h1,
 .h2,
 .h3,

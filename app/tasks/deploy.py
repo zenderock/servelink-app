@@ -18,6 +18,7 @@ from dependencies import (
 from config import get_settings
 from arq.connections import ArqRedis
 from services.deployment import DeploymentService
+from utils.log import parse_log
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +39,7 @@ async def _publish_docker_logs(container, offset, redis_client, stream_key):
     updated_logs = "".join(logs)
     new_logs = updated_logs[offset:]
 
-    parsed_new_logs = [
-        {
-            "timestamp": timestamp if separator else None,
-            "message": message if separator else timestamp,
-        }
-        for timestamp, separator, message in (
-            line.partition(" ") for line in new_logs.splitlines()
-        )
-    ]
+    parsed_new_logs = [parse_log(log) for log in new_logs.splitlines()]
 
     for log in parsed_new_logs:
         await redis_client.xadd(
@@ -57,6 +50,7 @@ async def _publish_docker_logs(container, offset, redis_client, stream_key):
                     "timestamp", datetime.now(timezone.utc).isoformat()
                 ),
                 "message": log.get("message", ""),
+                "level": log.get("level", "INFO"),
                 "source": "build",
             },
         )
@@ -327,13 +321,19 @@ async def deploy(ctx, deployment_id: str):
                             type="branch",
                             value=branch,
                         )
+                        await _log_to_container(
+                            container,
+                            f"Assigned branch alias ({branch_subdomain}.{settings.deploy_domain})",
+                        )
                     except Exception as e:
                         await _log_to_container(
                             container,
-                            f"Failed to setup branch alias ({branch_subdomain}.{settings.deploy_domain})",
+                            f"Warning: Failed to setup branch alias ({branch_subdomain}.{settings.deploy_domain})",
                             err=True,
                         )
-                        logger.error(f"{log_prefix} Failed to setup branch alias: {e}")
+                        logger.warning(
+                            f"{log_prefix} Failed to setup branch alias: {e}"
+                        )
 
                     # Environment alias
                     if deployment.environment_id == "prod":
@@ -350,10 +350,14 @@ async def deploy(ctx, deployment_id: str):
                             value=deployment.environment_id,
                             environment_id=deployment.environment_id,
                         )
+                        await _log_to_container(
+                            container,
+                            f"Assigned environment alias ({env_subdomain}.{settings.deploy_domain})",
+                        )
                     except Exception as e:
                         await _log_to_container(
                             container,
-                            f"Failed to setup environment alias ({env_subdomain}.{settings.deploy_domain})",
+                            f"Warning: Failed to setup environment alias ({env_subdomain}.{settings.deploy_domain})",
                             err=True,
                         )
                         logger.error(
@@ -379,7 +383,7 @@ async def deploy(ctx, deployment_id: str):
                     # Success message
                     await _log_to_container(
                         container,
-                        f"Deployment succeeded. Visit {deployment.url}",
+                        f"Success: Deployment is available at {deployment.url}",
                         error=False,
                     )
 
@@ -391,13 +395,6 @@ async def deploy(ctx, deployment_id: str):
                     logger.error(f"{log_prefix} Deployment failed: {e}", exc_info=True)
 
                 finally:
-                    # Update deployment status
-                    project.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-                    deployment.status = "completed"
-                    deployment.concluded_at = datetime.now(timezone.utc).replace(
-                        tzinfo=None
-                    )
-
                     if container:
                         container_logs = await _publish_docker_logs(
                             container,
@@ -405,6 +402,13 @@ async def deploy(ctx, deployment_id: str):
                             redis_client,
                             f"stream:project:{project.id}:deployment:{deployment.id}:logs",
                         )
+
+                    # Update deployment status
+                    project.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+                    deployment.status = "completed"
+                    deployment.concluded_at = datetime.now(timezone.utc).replace(
+                        tzinfo=None
+                    )
 
                     deployment.build_logs = container_logs
                     await db.commit()

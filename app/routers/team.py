@@ -98,7 +98,7 @@ async def team_index(
     deployments = deployments_result.scalars().all()
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
 
     return TemplateResponse(
@@ -137,7 +137,7 @@ async def team_projects(
     pagination = await paginate(db, query, page, per_page)
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
 
     return TemplateResponse(
@@ -463,7 +463,7 @@ async def team_settings(
         )
 
     latest_teams = await get_latest_teams(
-        db=db, current_user=current_user, current_team=team, limit=5
+        db=db, current_user=current_user, current_team=team
     )
 
     return TemplateResponse(
