@@ -36,9 +36,14 @@
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Wait for new worker to be ready
-      pause:
-        seconds: 30
+    - name: Wait for new worker to be healthy
+      shell: |
+        for i in $(seq 1 60); do
+          healthy=$(docker ps --filter "name=devpush-worker" --filter "health=healthy" -q | wc -l)
+          [ "$healthy" -ge 1 ] && exit 0
+          sleep 10
+        done
+        exit 1
 
     - name: Gracefully stop old worker (SIGTERM)
       command: docker stop {{ old_worker.stdout_lines[0] }}
@@ -47,7 +52,7 @@
 
     - name: Wait for old worker to exit
       shell: |
-        for i in {1..64}; do  # up to ~10 min (64*10=640s)
+        for i in $(seq 1 64); do  # up to ~10 min (64×10 s)
           if ! docker ps --filter "name={{ old_worker.stdout_lines[0] }}" --filter "status=running" | grep -q {{ old_worker.stdout_lines[0] }}; then
             echo "Old worker has exited"
             exit 0

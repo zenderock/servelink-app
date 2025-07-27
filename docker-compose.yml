@@ -25,6 +25,12 @@ services:
       - "traefik.http.routers.app.entrypoints=web"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
       - "traefik.docker.network=devpush_default"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   worker:
     build:
@@ -47,6 +53,12 @@ services:
       - UPLOAD_DIR=/app/upload
       - TRAEFIK_CONFIG_DIR=/data/traefik
       - DOCKER_HOST=tcp://docker-proxy:2375
+    healthcheck:
+      test: ["CMD", "uv", "run", "arq", "worker.WorkerSettings", "--check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   redis:
     image: redis:alpine

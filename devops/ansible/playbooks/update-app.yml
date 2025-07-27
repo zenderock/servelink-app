@@ -58,7 +58,7 @@
 
     - name: Wait for new app container to be healthy
       shell: |
-        for i in {1..80}; do
+        for i in $(seq 1 80); do        # 80 × 10 s = 13 min max
           healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
           if [ "$healthy" -ge 1 ]; then
             echo "App container updated and healthy"

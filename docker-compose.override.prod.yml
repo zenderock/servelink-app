@@ -7,17 +7,11 @@ services:
     volumes:
       - /srv/devpush/traefik:/data/traefik
       - /srv/devpush/upload:/app/upload
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
   worker:
     volumes:
       - /srv/devpush/traefik:/data/traefik
-  
+
   pgsql:
     ports:
       - "127.0.0.1:5432:5432"
