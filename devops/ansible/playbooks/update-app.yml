@@ -25,27 +25,62 @@
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Get running app containers
+    - name: Get running app container
       command: docker ps --filter "name=devpush-app" --format "{{'{{.Names}}'}}"
-      register: running_apps
+      register: running_app
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Update app containers one by one
-      include_tasks: update-single-app.yml
-      loop: "{{ running_apps.stdout_lines }}"
-      loop_control:
-        loop_var: app_name
+    - name: Stop app container
+      command: docker stop {{ running_app.stdout_lines[0] }}
+      args:
+        chdir: "{{ app_dir }}"
 
-    - name: Verify all app containers are healthy
+    - name: Wait for app container to exit
       shell: |
-        expected=2
+        while docker ps --filter "name={{ running_app.stdout_lines[0] }}" --filter "status=running" | grep -q {{ running_app.stdout_lines[0] }}; do
+          echo "Waiting for {{ running_app.stdout_lines[0] }} to exit..."
+          sleep 5
+        done
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Remove stopped app container
+      command: docker rm {{ running_app.stdout_lines[0] }}
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+
+    - name: Start new app container
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps app
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for new app container to be healthy
+      shell: |
+        for i in {1..80}; do
+          healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
+          if [ "$healthy" -ge 1 ]; then
+            echo "App container updated and healthy"
+            exit 0
+          fi
+          echo "Waiting for app container to be healthy ($healthy/1)..."
+          sleep 10
+        done
+        echo "Timeout waiting for app container to be healthy"
+        exit 1
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Verify app container is healthy
+      shell: |
+        expected=1
         healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
         if [ "$healthy" = "$expected" ]; then
-          echo "All $expected app containers are healthy"
+          echo "App container is healthy"
           exit 0
         else
-          echo "Expected $expected healthy app containers, but $healthy are healthy"
+          echo "Expected $expected healthy app container, but $healthy are healthy"
           exit 1
         fi
       args:

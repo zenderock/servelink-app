@@ -25,27 +25,56 @@
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Get running worker containers
+    - name: Get current worker container name
       command: docker ps --filter "name=devpush-worker" --format "{{'{{.Names}}'}}"
-      register: running_workers
+      register: old_worker
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Update workers one by one
-      include_tasks: update-single-worker.yml
-      loop: "{{ running_workers.stdout_lines }}"
-      loop_control:
-        loop_var: worker_name
+    - name: Start new worker container
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps worker
+      args:
+        chdir: "{{ app_dir }}"
 
-    - name: Verify all workers are running
+    - name: Wait for new worker to be ready
+      pause:
+        seconds: 30
+
+    - name: Gracefully stop old worker (SIGTERM)
+      command: docker stop {{ old_worker.stdout_lines[0] }}
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for old worker to exit
       shell: |
-        expected=2
+        for i in {1..64}; do  # up to ~10 min (64*10=640s)
+          if ! docker ps --filter "name={{ old_worker.stdout_lines[0] }}" --filter "status=running" | grep -q {{ old_worker.stdout_lines[0] }}; then
+            echo "Old worker has exited"
+            exit 0
+          fi
+          echo "Old worker still running; waiting..."
+          sleep 10
+        done
+        echo "Timeout waiting for old worker to exit"
+        exit 1
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Remove stopped old worker container
+      command: docker rm {{ old_worker.stdout_lines[0] }}
+      args:
+        chdir: "{{ app_dir }}"
+      ignore_errors: yes
+
+    - name: Verify single worker is running
+      shell: |
+        expected=1
         running=$(docker ps --filter "name=devpush-worker" -q | wc -l)
         if [ "$running" = "$expected" ]; then
-          echo "All $expected workers are running"
+          echo "Worker swap complete"
           exit 0
         else
-          echo "Expected $expected workers, but $running are running"
+          echo "Expected $expected worker, but $running are running"
           exit 1
         fi
       args:
