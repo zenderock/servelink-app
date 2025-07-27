@@ -3,11 +3,11 @@ import time
 import asyncio
 from datetime import datetime, timezone
 import aiodocker
-import httpx
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from typing import Any
+import socket
 
 from models import Deployment, Alias, Project
 from db import AsyncSessionLocal
@@ -57,13 +57,16 @@ async def _publish_docker_logs(container, offset, redis_client, stream_key):
     return updated_logs
 
 
-async def _http_probe(ip, port, path="/", timeout=30):
-    url = f"http://{ip}:{port}{path}"
+async def _tcp_probe(ip: str, port: int, timeout: float = 5) -> bool:
+    """Return True as soon as a TCP connection can be made."""
     try:
-        async with httpx.AsyncClient() as client:
-            request = await client.get(url, timeout=timeout)
-            return request.status_code < 500
-    except httpx.RequestError:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: socket.create_connection((ip, port), timeout).close(),
+        )
+        return True
+    except OSError:
         return False
 
 
@@ -293,7 +296,7 @@ async def deploy(ctx, deployment_id: str):
                             await asyncio.sleep(0.5)
                             continue
 
-                        if await _http_probe(container_ip, 8000):
+                        if await _tcp_probe(container_ip, 8000):
                             deployment.conclusion = "succeeded"
                             break
 
@@ -366,6 +369,13 @@ async def deploy(ctx, deployment_id: str):
 
                     await db.commit()
 
+                    # Success message
+                    await _log_to_container(
+                        container,
+                        f"Success: Deployment is available at {deployment.url}",
+                        error=False,
+                    )
+
                     # Update Traefik dynamic config
                     await DeploymentService().update_traefik_config(
                         project, db, settings
@@ -380,13 +390,6 @@ async def deploy(ctx, deployment_id: str):
                         f"{log_prefix} Inactive deployments cleanup job queued for project {project.id}."
                     )
 
-                    # Success message
-                    await _log_to_container(
-                        container,
-                        f"Success: Deployment is available at {deployment.url}",
-                        error=False,
-                    )
-
                 except Exception as e:
                     await db.rollback()
                     deployment.conclusion = "failed"
@@ -396,6 +399,8 @@ async def deploy(ctx, deployment_id: str):
 
                 finally:
                     if container:
+                        # Making sure docker logs all got written and then pushed to Redis
+                        await asyncio.sleep(0.2)
                         container_logs = await _publish_docker_logs(
                             container,
                             len(container_logs),
