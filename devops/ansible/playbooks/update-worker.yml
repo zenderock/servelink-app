@@ -20,12 +20,12 @@
         group: "{{ deploy_user }}"
         mode: "0600"
 
-    - name: Build worker image
+    - name: Build app image
       command: docker compose -p devpush build worker
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Get current worker container ID
+    - name: Get current app container IDs
       command: docker ps --filter "name=devpush-worker" --format "{{'{{.ID}}'}}"
       register: old_worker_reg
       args:
@@ -36,8 +36,8 @@
         old_count: "{{ old_worker_reg.stdout_lines | length }}"
         target_count: "{{ (old_worker_reg.stdout_lines | length) + 1 }}"
 
-    - name: Scale workers to target count
-      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale worker={{ target_count }} --force-recreate
+    - name: Scale apps to target count (add new instance)
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale app={{ target_count }} --no-recreate
       args:
         chdir: "{{ app_dir }}"
 
@@ -85,7 +85,7 @@
     - name: Check if old worker stopped gracefully (3 attempts)
       shell: docker ps --filter "id={{ old_worker_id }}" --filter "status=running" -q
       register: worker_still_running
-      retries: 3
+      retries: "{{ (ansible_env.JOB_TIMEOUT | default('320') | int // 10) }}"
       delay: 10
       until: worker_still_running.stdout == ""
       when: old_worker_id != ""
