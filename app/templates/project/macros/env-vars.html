@@ -1,5 +1,6 @@
 {% macro render_env_vars(form, environments) %}
 {% from "macros/select.html" import select %}
+{% from "macros/dialog.html" import dialog %}
 {% from "project/macros/environment-label.html" import environment_label %}
 <div
   class="space-y-2"
@@ -95,11 +96,11 @@
       }">
       <div class="flex-1">
         <input type="text" :name="'env_vars-' + actualIndex + '-key'" :disabled="remove" class="input w-full font-mono"
-          placeholder="e.g. MY_VAR" pattern="[A-Za-z_][A-Za-z0-9_]*" />
+          placeholder="e.g. MY_VAR" pattern="[A-Za-z_][A-Za-z0-9_]*" :value="item.key" />
       </div>
       <div class="flex-1">
         <textarea :name="'env_vars-' + actualIndex + '-value'" :disabled="remove"
-          class="textarea w-full font-mono min-h-9 py-[7px] break-all" pattern="[A-Za-z_][A-Za-z0-9_]*"></textarea>
+          class="textarea w-full font-mono min-h-9 py-[7px] break-all" pattern="[A-Za-z_][A-Za-z0-9_]*" :value="item.value"></textarea>
       </div>
       <div class="field flex-1 min-w-0">
         {% set items = [{
@@ -142,9 +143,38 @@
       </div>
     </div>
   </template>
-  <button type="button" class="btn-sm-outline" @click="newEnvVars.push({ key: '', value: '' })">
-    {% include "icons/plus.svg" %}
-    {{ _('Add variable') }}
-  </button>
+  <div class="flex gap-x-2">
+    <button type="button" class="btn-sm-outline" @click="newEnvVars.push({ key: '', value: '' })">
+      {% include "icons/plus.svg" %}
+      {{ _('Add variable') }}
+    </button>
+    <button
+      type="button"
+      class="btn-sm-icon-outline"
+      @click="document.getElementById('dialog-env-paste').showModal()"
+      @env-vars:insert.document="
+        if (!event.detail) return;
+        for (const envVar of event.detail) {
+          newEnvVars.push({
+            key: envVar.key,
+            value: envVar.value,
+            environment: ''
+          });
+        }
+        if (newEnvVars.length > 0) {
+          // We remove all of the empty rows
+          for (let i = 0; i < newEnvVars.length; i++) {
+            if (newEnvVars[i].key === '' && newEnvVars[i].value === '') {
+              newEnvVars.splice(i, 1);
+            }
+          }
+        }
+      "
+      data-tooltip="{{ _('Paste .env file') }}"
+      aria-label="{{ _('Paste .env file') }}"
+    >
+      {% include "icons/file-text.svg" %}
+    </button>
+  </div>
 </div>
 {% endmacro %}

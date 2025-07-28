@@ -25,63 +25,94 @@
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Get current worker container name
-      command: docker ps --filter "name=devpush-worker" --format "{{'{{.Names}}'}}"
-      register: old_worker
+    - name: Get current worker container ID
+      command: docker ps --filter "name=devpush-worker" --format "{{'{{.ID}}'}}"
+      register: old_worker_reg
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Start new worker container
-      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps worker
+    - name: Set desired replica count variables
+      set_fact:
+        old_count: "{{ old_worker_reg.stdout_lines | length }}"
+        target_count: "{{ (old_worker_reg.stdout_lines | length) + 1 }}"
+
+    - name: Scale workers to target count
+      command: docker compose -p devpush up -d --scale worker={{ target_count }} --no-recreate
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Wait for new worker to be healthy
+    - name: Get all worker container IDs (wait for new one to appear)
+      command: docker ps --filter "name=devpush-worker" --format '{{'{{.ID}}'}}'
+      register: all_worker_ids
+      retries: 10
+      delay: 3
+      until: "(all_worker_ids.stdout_lines | difference(old_worker_reg.stdout_lines)) | length > 0"
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Identify new worker ID
+      set_fact:
+        old_worker_id: "{{ old_worker_reg.stdout_lines[0] | default('') }}"
+        new_worker_id: "{{ (all_worker_ids.stdout_lines | difference(old_worker_reg.stdout_lines)) | first }}"
+
+    - name: Wait until new worker is healthy
       shell: |
         for i in $(seq 1 60); do
-          healthy=$(docker ps --filter "name=devpush-worker" --filter "health=healthy" -q | wc -l)
-          [ "$healthy" -ge 1 ] && exit 0
-          sleep 10
-        done
-        exit 1
-
-    - name: Gracefully stop old worker (SIGTERM)
-      command: docker stop {{ old_worker.stdout_lines[0] }}
-      when: old_worker.stdout_lines | length > 0
-      args:
-        chdir: "{{ app_dir }}"
-
-    - name: Wait for old worker to exit
-      shell: |
-        for i in $(seq 1 64); do
-          if ! docker ps --filter "name={{ old_worker.stdout_lines[0] }}" \
-                         --filter "status=running" | grep -q {{ old_worker.stdout_lines[0] }}; then
+          status=$(docker inspect {{ new_worker_id }} --format {% raw %}'{{.State.Health.Status}}'{% endraw %} 2>/dev/null || echo "starting")
+          if [ "$status" = "healthy" ]; then
+            echo "New worker is healthy."
             exit 0
           fi
-          sleep 10
+          echo "Waiting for worker health... ($status)"
+          sleep 5
         done
+        echo "Timeout waiting for worker health."
         exit 1
-      when: old_worker.stdout_lines | length > 0
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Remove stopped old worker container
-      command: docker rm {{ old_worker.stdout_lines[0] }}
-      when: old_worker.stdout_lines | length > 0
+    - name: Gracefully stop old worker (SIGTERM)
+      command: docker stop {{ old_worker_id }}
+      when: old_worker_id != ""
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for grace period
+      pause:
+        seconds: "{{ ansible_env.JOB_TIMEOUT | default('320') }}"
+      when: old_worker_id != ""
+
+    - name: Check if old worker stopped gracefully (3 attempts)
+      shell: docker ps --filter "id={{ old_worker_id }}" --filter "status=running" -q
+      register: worker_still_running
+      retries: 3
+      delay: 10
+      until: worker_still_running.stdout == ""
+      when: old_worker_id != ""
       ignore_errors: yes
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Verify single worker is running
+    - name: Force stop old worker if still running
+      command: docker stop --time=0 {{ old_worker_id }}
+      when: old_worker_id != "" and worker_still_running.stdout != ""
+      ignore_errors: yes
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Remove stopped old worker container
+      command: docker rm {{ old_worker_id }}
+      when: old_worker_id != ""
+      ignore_errors: yes
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Verify a single healthy worker is running
       shell: |
-        expected=1
-        running=$(docker ps --filter "name=devpush-worker" -q | wc -l)
-        if [ "$running" = "$expected" ]; then
-          echo "Worker swap complete"
-          exit 0
-        else
-          echo "Expected $expected worker, but $running are running"
-          exit 1
-        fi
+        docker ps --filter "name=devpush-worker" --filter "health=healthy" -q | wc -l
+      register: final_check
+      until: final_check.stdout | int == 1
+      retries: 12
+      delay: 5
       args:
         chdir: "{{ app_dir }}" 
