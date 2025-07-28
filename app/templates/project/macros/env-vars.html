@@ -169,6 +169,7 @@
             }
           }
         }
+        $el.closest('form').dispatchEvent(new Event('change'));
       "
       data-tooltip="{{ _('Paste .env file') }}"
       aria-label="{{ _('Paste .env file') }}"

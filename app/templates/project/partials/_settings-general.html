@@ -118,11 +118,11 @@
         <a
           :href="`https://github.com/${repoFullName}`"
           target="_blank"
-          class="btn-icon-outline text-muted-foreground hover:text-foreground"
+          class="btn-icon-ghost text-muted-foreground hover:text-foreground"
           data-tooltip="{{ _('View on GitHub') }}"
           aria-label="{{ _('View on GitHub') }}"
         >
-          {% include "icons/github.svg" %}
+          {% include "icons/arrow-up-right.svg" %}
         </a>
       </div>
       {% for error in general_form.repo_id.errors %}
