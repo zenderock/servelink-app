@@ -37,7 +37,7 @@
         target_count: "{{ (old_app_reg.stdout_lines | length) + 1 }}"
 
     - name: Scale apps to target count (add new instance)
-      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale app={{ target_count }} --no-recreate
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale app={{ target_count }} --force-recreate
       args:
         chdir: "{{ app_dir }}"
 
