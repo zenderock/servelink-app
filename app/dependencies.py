@@ -342,13 +342,6 @@ def get_access(
     return LEVELS[role] <= LEVELS[permission]
 
 
-def timeago_filter(value):
-    """Convert a datetime or ISO string to a human readable time ago."""
-    if isinstance(value, str):
-        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return humanize.naturaltime(value)
-
-
 def RedirectResponseX(
     url: str,
     status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
@@ -371,13 +364,20 @@ def RedirectResponseX(
     return FastAPIRedirect(url=url, status_code=status_code, headers=headers)
 
 
+def time_ago_filter(value):
+    """Convert a datetime or ISO string to a human readable time ago."""
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return humanize.naturaltime(value)
+
+
 templates = Jinja2Templates(
     directory="templates", auto_reload=get_settings().env == "development"
 )
 templates.env.globals["_"] = get_translation
 templates.env.globals["settings"] = get_settings()
 templates.env.globals["get_flashed_messages"] = get_flashed_messages
-templates.env.filters["timeago"] = timeago_filter
+templates.env.filters["time_ago"] = time_ago_filter
 templates.env.globals["get_access"] = get_access
 
 

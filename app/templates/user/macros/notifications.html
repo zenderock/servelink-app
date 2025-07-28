@@ -80,7 +80,7 @@
                 <span class="truncate">{{ invite.team.name }}</span>
               </li>
               <li class="text-muted-foreground pl-7 truncate">
-                {{ invite.created_at | timeago }} {{ _('by') }} {{ invite.inviter.name or invite.inviter.username }}
+                {{ invite.created_at | time_ago }} {{ _('by') }} {{ invite.inviter.name or invite.inviter.username }}
               </li>
             </ul>
           </button>

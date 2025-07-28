@@ -33,4 +33,3 @@ else
 fi
 
 echo "Colima setup complete!"
-

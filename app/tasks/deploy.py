@@ -204,8 +204,10 @@ async def deploy(ctx, deployment_id: str):
                         f"traefik.http.routers.{router}.priority": "10",
                         f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
                         "traefik.docker.network": "devpush_runner",
-                        "app.deployment_id": deployment.id,
-                        "app.project_id": project.id,
+                        "deployment_id": deployment.id,
+                        "project_id": project.id,
+                        "environment_id": deployment.environment_id,
+                        "branch": deployment.branch,
                     }
 
                     if settings.url_scheme == "https":
@@ -252,6 +254,14 @@ async def deploy(ctx, deployment_id: str):
                                 "Memory": memory_mb * 1024 * 1024,
                                 "CapDrop": ["ALL"],
                                 "SecurityOpt": ["no-new-privileges:true"],
+                                "LogConfig": {
+                                    "Type": "loki",
+                                    "Config": {
+                                        "loki-url": "http://127.0.0.1:3100/loki/api/v1/push",
+                                        "loki-batch-size": "200",
+                                        "labels": "deployment_id,project_id,environment_id,branch",
+                                    },
+                                },
                             },
                         },
                     )

@@ -8,7 +8,7 @@
   {% else %}
     {{ remaining_seconds }}s
   {% endif %}
-  ({{ started_at | timeago }})
+  ({{ started_at | time_ago }})
 {% else %}
   <span
     x-data="{ 

@@ -13,7 +13,7 @@
           </span>
         {% endif %}
       {% if repo.updated_at %}
-        <p class="text-muted-foreground truncate">{{ repo.updated_at | timeago }}</p>
+        <p class="text-muted-foreground truncate">{{ repo.updated_at | time_ago }}</p>
       {% endif %}
       <button
         @click="$dispatch('repo-selected', { 
