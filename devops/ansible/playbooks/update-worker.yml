@@ -21,7 +21,7 @@
         mode: "0600"
 
     - name: Build worker image
-      command: docker compose -p devpush build worker
+      command: docker compose -p devpush build --pull --no-cache worker
       args:
         chdir: "{{ app_dir }}"
 
@@ -37,7 +37,7 @@
         target_count: "{{ (old_worker_reg.stdout_lines | length) + 1 }}"
 
     - name: Scale workers to target count
-      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale worker={{ target_count }} --no-recreate
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale worker={{ target_count }} --force-recreate
       args:
         chdir: "{{ app_dir }}"
 

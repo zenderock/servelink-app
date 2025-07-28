@@ -25,53 +25,67 @@
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Get running app container
-      command: docker ps --filter "name=devpush-app" --format "{{'{{.Names}}'}}"
-      register: running_app
+    - name: Get current app container IDs
+      command: docker ps --filter "name=devpush-app" --format "{{'{{.ID}}'}}"
+      register: old_app_reg
       args:
         chdir: "{{ app_dir }}"
 
-    - name: Stop app container
-      command: docker stop {{ running_app.stdout_lines[0] }}
+    - name: Set desired replica count variables
+      set_fact:
+        old_count: "{{ old_app_reg.stdout_lines | length }}"
+        target_count: "{{ (old_app_reg.stdout_lines | length) + 1 }}"
+
+    - name: Scale apps to target count (add new instance)
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale app={{ target_count }} --no-recreate
       args:
         chdir: "{{ app_dir }}"
-      when: running_app.stdout_lines | length > 0
 
-    - name: Wait for app container to exit
+    - name: Get all app container IDs (wait for new one to appear)
+      command: docker ps --filter "name=devpush-app" --format '{{'{{.ID}}'}}'
+      register: all_app_ids
+      retries: 10
+      delay: 3
+      until: "(all_app_ids.stdout_lines | difference(old_app_reg.stdout_lines)) | length > 0"
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Identify new app ID
+      set_fact:
+        old_app_id: "{{ old_app_reg.stdout_lines[0] | default('') }}"
+        new_app_id: "{{ (all_app_ids.stdout_lines | difference(old_app_reg.stdout_lines)) | first }}"
+
+    - name: Wait until new app is healthy
       shell: |
-        while docker ps --filter "name={{ running_app.stdout_lines[0] }}" --filter "status=running" | grep -q {{ running_app.stdout_lines[0] }}; do
-          echo "Waiting for {{ running_app.stdout_lines[0] }} to exit..."
-          sleep 5
-        done
-      args:
-        chdir: "{{ app_dir }}"
-      when: running_app.stdout_lines | length > 0
-
-    - name: Remove stopped app container
-      command: docker rm {{ running_app.stdout_lines[0] }}
-      args:
-        chdir: "{{ app_dir }}"
-      ignore_errors: yes
-      when: running_app.stdout_lines | length > 0
-
-    - name: Start new app container
-      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --no-deps app
-      args:
-        chdir: "{{ app_dir }}"
-
-    - name: Wait for new app container to be healthy
-      shell: |
-        for i in $(seq 1 80); do        # 80 × 10 s = 13 min max
-          healthy=$(docker ps --filter "name=devpush-app" --filter "health=healthy" -q | wc -l)
-          if [ "$healthy" -ge 1 ]; then
-            echo "App container updated and healthy"
+        for i in $(seq 1 60); do
+          status=$(docker inspect {{ new_app_id }} --format {% raw %}'{{.State.Health.Status}}'{% endraw %} 2>/dev/null || echo "starting")
+          if [ "$status" = "healthy" ]; then
+            echo "New app is healthy."
             exit 0
           fi
-          echo "Waiting for app container to be healthy ($healthy/1)..."
-          sleep 10
+          echo "Waiting for app health... ($status)"
+          sleep 5
         done
-        echo "Timeout waiting for app container to be healthy"
+        echo "Timeout waiting for app health."
         exit 1
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Gracefully stop old app
+      command: docker stop {{ old_app_id }}
+      when: old_app_id != ""
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Remove stopped old app container
+      command: docker rm {{ old_app_id }}
+      when: old_app_id != ""
+      ignore_errors: yes
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Scale apps back to single replica
+      command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --scale app=1 --no-recreate
       args:
         chdir: "{{ app_dir }}"
 
