@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+if [ -f "$(dirname "$0")/../../.env.prod" ]; then
+    source "$(dirname "$0")/../../.env.prod"
+fi
+
+if [ -z "$JOB_TIMEOUT" ]; then
+    # DEFAULT OT 320
+    JOB_TIMEOUT=320
+fi
+
 if [ -f "$(dirname "$0")/../../.env.devops" ]; then
     source "$(dirname "$0")/../../.env.devops"
 fi
@@ -51,8 +60,9 @@ echo ""
 
 cd "$(dirname "$0")/../../devops/ansible"
 ansible-playbook -i inventories/deploy.yml playbooks/$PLAYBOOK \
+  -e "job_timeout=$JOB_TIMEOUT" \
   -e "server_ip=$SERVER_IP" \
   -e "github_repo=$GITHUB_REPO"
 
 echo ""
-echo -e "\033[1;32m$COMPONENT update complete!\033[0m" 
+echo -e "\033[1;32m${COMPONENT^} update complete!\033[0m" 
