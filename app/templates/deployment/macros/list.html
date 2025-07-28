@@ -26,8 +26,12 @@
           attrs={ 'data-deployment-status': deployment.id }
         ) }}
 
-        <a href="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id) }}"
-          data-tooltip="{{ _('Deployment ID') }}">
+        <a
+          href="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id) }}"
+          data-tooltip="{{ _('Deployment ID') }}"
+          hx-boost="true"
+          preload="mouseover"
+        >
           <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
         </a>
 

@@ -9,6 +9,8 @@
         role="tab"
         aria-selected="{{ 'true' if request.path == url_for('project_index', team_slug=team.slug, project_name=project.name).path else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+        hx-boost="true"
+        preload="mouseover"
       >{{ _('Overview') }}</a>
     </li>
     <li
@@ -20,6 +22,8 @@
         role="tab"
         aria-selected="{{ 'true' if request.path.startswith(url_for('project_deployments', team_slug=team.slug, project_name=project.name).path|string) else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+        hx-boost="true"
+        preload="mouseover"
       >{{ _('Deployments') }}</a>
     </li>
     {% if get_access(role, "creator") %}
@@ -31,6 +35,8 @@
           href="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name) }}" role="tab"
           aria-selected="{{ 'true' if request.path.startswith(url_for('project_settings', team_slug=team.slug, project_name=project.name).path|string) else 'false' }}"
           class=" btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
+          hx-boost="true"
+          preload="mouseover"
         >{{ _('Settings') }}</a>
       </li>
     {% endif %}

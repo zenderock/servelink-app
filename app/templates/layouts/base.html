@@ -68,11 +68,22 @@
   <script src="{{ url_for('static', path='/assets/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx-sse.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx-preload.min.js') }}" defer></script>
+  <script>
+    document.addEventListener('htmx:historyRestore', () => {
+      if (window.basecoat) window.basecoat.initAll();
+    });
+    document.addEventListener('htmx:beforeHistorySave', (evt) => {
+      document.querySelectorAll('[x-for]').forEach((item) => {
+        item._x_lookup && Object.values(item._x_lookup).forEach((el) => el.remove())
+      })
+      document.querySelectorAll('[x-if]').forEach((item) => {
+        item._x_currentIfEl && item._x_currentIfEl.remove()
+      })
+    })
+  </script>
   {% block head %}{% endblock %}
 </head>
-
 <body class="relative h-full text-sm" hx-ext="preload">
-
   {% block base_content %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

@@ -379,7 +379,7 @@ async def project_deployments(
 
     pagination = await paginate(db, query, page, per_page)
 
-    if request.headers.get("HX-Request"):
+    if request.headers.get("HX-Request") and fragment == "deployments":
         return TemplateResponse(
             request=request,
             name="project/partials/_deployments.html",
