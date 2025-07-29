@@ -8,7 +8,7 @@
   </div>
 
   <details open class="w-full rounded-lg border group">
-    <summary class="px-4 py-3 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
+    <summary class="px-4 h-12 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
       {% include "icons/chevron-right.svg" %}
       {{ _('Build logs') }}
     </summary>
@@ -42,8 +42,8 @@
           </div>
         </div>
       {% endif %}
-      {% from "deployment/macros/logs.html" import logs %}
-      {{ logs(deployment.parsed_logs) }}
+      {% from "deployment/macros/log_list.html" import log_list %}
+      {{ log_list(deployment.parsed_logs) }}
     </div>
   </details>
 </div>
