@@ -1,0 +1,27 @@
+{% extends "layouts/app.html" %}
+
+{% block app_content %}
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
+  <h1 class="h1">{{ _('Logs') }}</h1>
+
+  <div
+    id="log-container"
+    class="px-2 py-2.5 w-full rounded-lg border"
+    x-data="{
+        getTime(timestamp) {
+          return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        },
+        getTooltip(timestamp) {
+          return new Date(timestamp).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
+        },
+        $timestamp: {
+          'x-text'() { return this.getTime(this.$el.getAttribute('datetime')) },
+          ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
+          ':data-side': '\'right\''
+        }
+      }"
+  >
+    {% include "project/partials/_logs_rows.html" %}
+  </div>
+</div>
+{% endblock %}
