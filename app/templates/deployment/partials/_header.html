@@ -30,6 +30,12 @@
     {% if deployment.conclusion == 'succeeded' and deployment.container_status == 'running' %}
       <div class="flex items-center">
         <a
+          href="{{ url_for('project_logs', team_slug=team.slug, project_name=deployment.project.name).include_query_params(deployment_id=deployment.id) }}"
+          class="btn-outline"
+        >
+          {{ _(Runtime logs'') }}
+        </a>
+        <a
           href="{{ deployment.url }}"
           class="btn-outline gap-x-2 {% if deployment.aliases %}rounded-r-none{% endif %}"
           target="_blank"
