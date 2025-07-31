@@ -35,26 +35,28 @@ async def _log_to_container(container, message, error=False):
 
 
 async def _publish_docker_logs(container, offset, redis_client, stream_key):
-    logs = await container.log(stdout=True, stderr=True, timestamps=True)
-    updated_logs = "".join(logs)
-    new_logs = updated_logs[offset:]
+    try:
+        logs = await container.log(stdout=True, stderr=True, timestamps=True)
+        updated_logs = "".join(logs)
+        new_logs = updated_logs[offset:]
 
-    parsed_new_logs = [parse_log(log) for log in new_logs.splitlines()]
+        parsed_new_logs = [parse_log(log) for log in new_logs.splitlines()]
 
-    for log in parsed_new_logs:
-        await redis_client.xadd(
-            stream_key,
-            {
-                "event_type": "deployment_log",
-                "timestamp": log.get(
-                    "timestamp", datetime.now(timezone.utc).isoformat()
-                ),
-                "message": log.get("message", ""),
-                "level": log.get("level", "INFO"),
-                "source": "build",
-            },
-        )
-    return updated_logs
+        for log in parsed_new_logs:
+            await redis_client.xadd(
+                stream_key,
+                {
+                    "event_type": "deployment_log",
+                    "timestamp": log.get("timestamp") or "",
+                    "message": log.get("message", ""),
+                    "level": log.get("level", "INFO"),
+                    "source": "build",
+                },
+            )
+        return updated_logs
+    except Exception as e:
+        logger.error(f"Error in _publish_docker_logs: {e}")
+        return []
 
 
 async def _tcp_probe(ip: str, port: int, timeout: float = 5) -> bool:

@@ -3,7 +3,7 @@ from fastapi.responses import Response, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from redis.asyncio import Redis
 from arq.connections import ArqRedis
 from urllib.parse import urlparse, parse_qs
@@ -1227,10 +1227,6 @@ async def project_deployment(
     )
 
 
-# LOKI_ADDR = "http://loki:3100"
-# LOKI_WS = "ws://loki:3100/loki/api/v1/tail"
-
-
 @router.get(
     "/{team_slug}/projects/{project_name}/logs",
     name="project_logs",
@@ -1238,211 +1234,177 @@ async def project_deployment(
 async def project_logs(
     request: Request,
     fragment: str | None = Query(None),
-    project_id: str = Query(None),
-    deployment_id: str = Query(None),
-    environment_id: str = Query(None),
-    branch: str = Query(None),
-    end: str = Query(None),
+    deployment_id: str | None = Query(None),
+    environment_id: str | None = Query(None),
+    branch: str | None = Query(None),
+    keyword: str | None = Query(None),
+    date_from: str | None = Query(None),
+    time_from: str | None = Query(None),
+    date_to: str | None = Query(None),
+    time_to: str | None = Query(None),
+    start_timestamp: int | None = Query(None),
+    end_timestamp: int | None = Query(None),
+    timezone_offset: int | None = Query(None),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
     role: str = Depends(get_role),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    db: AsyncSession = Depends(get_db),
 ):
     team, membership = team_and_membership
     limit = 50
 
-    # Subtract 1 from the nanosecond string to avoid fetching the same log.
-    end_ns = str(int(end) - 1) if end and end.isdigit() else None
+    deployment = None
+    if deployment_id:
+        deployment = await db.execute(
+            select(Deployment).where(Deployment.id == deployment_id)
+        )
+        deployment = deployment.scalar_one_or_none()
+        if not deployment:
+            flash(request, _("Deployment not found."), "error")
+            return RedirectResponseX(
+                url=str(request.url.include_query_params(deployment_id="")),
+                request=request,
+            )
 
-    loki_service = LokiService()
-    logs = await loki_service.get_project_logs(
-        project_id=project.id, limit=limit, end_ns=end_ns
-    )
+    if (date_from and date_to and date_from > date_to) or (
+        date_from == date_to and time_from and time_to and time_from > time_to
+    ):
+        return RedirectResponseX(
+            url=str(
+                request.url.include_query_params(
+                    **(
+                        {"date-to": date_from}
+                        if date_from > date_to
+                        else {"time-to": time_from}
+                    )
+                )
+            ),
+            request=request,
+        )
 
-    next_end_timestamp = None
-    # If we got a full page of logs, there might be more.
-    if logs and len(logs) == limit:
-        # Pass the nanosecond timestamp of the last log as the next cursor.
-        next_end_timestamp = logs[-1]["timestamp"]
+    if request.headers.get("HX-Request") and (
+        fragment == "batch" or fragment == "logs"
+    ):
+        if not end_timestamp:
+            if date_to:
+                if time_to:
+                    date_dt = datetime.strptime(date_to, "%Y-%m-%d")
+                    time_dt = datetime.strptime(time_to, "%H:%M").time()
+                    local_dt = datetime.combine(date_dt, time_dt)
+                    if timezone_offset is not None:
+                        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+                    else:
+                        utc_dt = local_dt
+                    end_timestamp = int(utc_dt.timestamp() * 1e9)
+                else:
+                    date_dt = datetime.strptime(date_to, "%Y-%m-%d")
+                    time_dt = datetime.strptime("23:59:59", "%H:%M:%S").time()
+                    local_dt = datetime.combine(date_dt, time_dt)
+                    if timezone_offset is not None:
+                        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+                    else:
+                        utc_dt = local_dt
+                    end_timestamp = int(utc_dt.timestamp() * 1e9)
 
-    # If it's an HTMX request, return only the logs partial.
-    if request.headers.get("HX-Request") and fragment == "logs":
+        if not start_timestamp:
+            if date_from:
+                if time_from:
+                    date_dt = datetime.strptime(date_from, "%Y-%m-%d")
+                    time_dt = datetime.strptime(time_from, "%H:%M").time()
+                    local_dt = datetime.combine(date_dt, time_dt)
+                    if timezone_offset is not None:
+                        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+                    else:
+                        utc_dt = local_dt
+                    start_timestamp = int(utc_dt.timestamp() * 1e9)
+                else:
+                    date_dt = datetime.strptime(date_from, "%Y-%m-%d")
+                    time_dt = datetime.strptime("00:00:00", "%H:%M:%S").time()
+                    local_dt = datetime.combine(date_dt, time_dt)
+                    if timezone_offset is not None:
+                        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+                    else:
+                        utc_dt = local_dt
+                    start_timestamp = int(utc_dt.timestamp() * 1e9)
+
+        if start_timestamp and not end_timestamp:
+            end_timestamp = int(datetime.now(timezone.utc).timestamp() * 1e9)
+
+        loki_service = LokiService()
+        logs = await loki_service.get_project_logs(
+            project_id=project.id,
+            limit=limit,
+            start_timestamp=str(start_timestamp) if start_timestamp else None,
+            end_timestamp=str(end_timestamp) if end_timestamp else None,
+            deployment_id=deployment_id,
+            environment_id=environment_id,
+            branch=branch,
+            keyword=keyword,
+        )
+
+        next_batch_url = None
+        if logs and len(logs) == limit:
+            next_batch_end_timestamp = int(logs[-1]["timestamp"]) - 1
+            next_batch_url = request.url.include_query_params(
+                end_timestamp=next_batch_end_timestamp,
+                fragment="batch",
+            )
         return TemplateResponse(
             request=request,
-            name="project/partials/_logs_rows.html",  # Create this template
+            name="project/partials/_logs-batch.html",
             context={
                 "team": team,
                 "project": project,
                 "logs": logs,
-                "next_end_timestamp": next_end_timestamp,
+                "next_batch_url": next_batch_url,
+                "date_from": date_from or "",
+                "time_from": time_from or "",
+                "date_to": date_to or "",
+                "time_to": time_to or "",
+                "deployment_id": deployment_id or "",
+                "environment_id": environment_id or "",
+                "branch": branch,
+                "keyword": keyword or "",
+                "fragment": fragment,
             },
         )
 
+    result = await db.execute(
+        select(Deployment.branch).where(Deployment.project_id == project.id).distinct()
+    )
+    branches = [
+        {"name": branch, "value": branch} for branch in result.scalars().all() if branch
+    ]
+
+    deployments = await get_latest_deployments(
+        db=db,
+        project=project,
+        current_deployment=deployment,
+        limit=4 if deployment else 5,
+    )
+
+    if deployment_id:
+        deployments.insert(0, deployment)
+
     return TemplateResponse(
         request=request,
-        name="project/pages/logs.html",  # Create this template
+        name="project/pages/logs.html",
         context={
             "current_user": current_user,
             "role": role,
             "team": team,
             "project": project,
-            "logs": logs,
-            "next_end_timestamp": next_end_timestamp,
+            "date_from": date_from or "",
+            "time_from": time_from or "",
+            "date_to": date_to or "",
+            "time_to": time_to or "",
+            "deployment_id": deployment_id or "",
+            "environment_id": environment_id or "",
+            "branch": branch or "",
+            "keyword": keyword or "",
+            "branches": branches,
+            "deployments": deployments,
+            "fragment": fragment,
         },
     )
-
-
-# LOKI_ADDR = "http://loki:3100"
-# LOKI_WS = "ws://loki:3100/loki/api/v1/tail"
-
-# async def _loki_tail(query: str, start_ns: int):
-#     """
-#     Async generator yielding {'ts', 'line', 'stream'}
-#     streamed from Loki's /tail WebSocket endpoint.
-#     """
-#     qs = urllib.parse.urlencode(
-#         {
-#             "query": query,
-#             "start": str(start_ns),
-#             "limit": 100,
-#             "delay_for": 0,
-#         }
-#     )
-#     uri = f"{LOKI_WS}?{qs}"
-
-#     logger.debug("→ connecting to %s", uri)
-#     try:
-#         async with websockets.connect(uri) as ws:
-#             logger.info("✓ Loki tail connected")
-#             async for frame in ws:
-#                 logger.debug("⋯ raw frame (first 200 B): %s", frame[:200])
-#                 try:
-#                     payload = json.loads(frame)
-#                 except json.JSONDecodeError:
-#                     logger.warning("⚠ malformed JSON frame – skipped")
-#                     continue
-
-#                 for stream in payload.get("streams", []):
-#                     lbls = stream["stream"]
-#                     for ts, line in stream["values"]:
-#                         yield {
-#                             "ts": int(ts),
-#                             "line": line,
-#                             "stream": lbls.get("stream", "stdout"),
-#                         }
-
-#     except Exception as exc:
-#         logger.exception("✗ Loki tail connection failed: %s", exc)
-#         raise
-
-
-# @router.get(
-#     "/api/{team_slug}/deployments/{deployment_id}/logs",
-#     name="api_deployment_logs",
-# )
-# async def api_deployment_logs(
-#     request: Request,
-#     settings: Settings = Depends(get_settings),
-#     db: AsyncSession = Depends(get_db),
-#     team: Team = Depends(get_team_by_slug),
-#     deployment: Deployment = Depends(get_deployment_by_id),
-#     redis_client: Redis = Depends(get_redis_client),
-# ):
-#     status_stream = (
-#         f"stream:project:{deployment.project_id}:deployment:{deployment.id}:status"
-#     )
-
-#     # selector used in runner‑container labels
-#     # loki_query = f'{{app.deployment_id="{deployment.id}",stream=~".+"}}'
-#     loki_query = f'{{deployment_id="{deployment.id}"}}'
-#     print(f"loki_query: {loki_query}")
-
-#     # HTML macro (unchanged)
-#     logs_tpl = templates.get_template("deployment/macros/log_list.html")
-
-#     async def event_generator():
-#         # --- historical tail: everything from the last minute so UI has backlog
-#         start_ns = (int(time.time()) - 60) * 1_000_000_000
-#         log_tail = _loki_tail(loki_query, start_ns)
-#         last_status_id = "0-0"  # include backlog once
-#         seen = set()  # dedupe log lines
-
-#         try:
-#             while True:
-#                 # 1) pump logs from Loki until it’s empty (non‑blocking)
-#                 try:
-#                     log = (
-#                         await asyncio.wait_for(
-#                             asyncio.shield(log_tail.__anext__()), 0.1
-#                         ),
-#                     )
-#                     key = (log["ts"], log["line"])
-#                     if key in seen:
-#                         continue
-#                     seen.add(key)
-#                     print(
-#                         f" timestamp: {log['ts']}, line: {log['line']}, stream: {log['stream']}"
-#                     )
-#                     html = logs_tpl.module.logs(
-#                         [
-#                             {
-#                                 "timestamp": time.strftime(
-#                                     "%Y-%m-%d %H:%M:%S",
-#                                     time.gmtime(log["ts"] // 1_000_000_000),
-#                                 ),
-#                                 "message": log["line"],
-#                                 "stream": log["stream"],
-#                             }
-#                         ]
-#                     ).replace("\n", "")
-#                     yield "event: deployment_log\n"
-#                     yield f"data: {html}\n\n"
-#                     continue
-
-#                 for stream_name, stream_messages in messages:
-#                     if stream_name == status_stream:
-#                         for message_id, message_fields in stream_messages:
-#                             if message_fields.get("deployment_status") in [
-#                                 "succeeded",
-#                                 "failed",
-#                             ]:
-#                                 deployment_conclusion = message_fields.get(
-#                                     "deployment_status"
-#                                 )
-#                             streams[stream_name] = message_id
-
-#                     else:
-#                         logs_list = []
-#                         last_message_id = None
-#                         for message_id, message_fields in stream_messages:
-#                             logs_list.append(
-#                                 {
-#                                     "timestamp": message_fields.get("timestamp", ""),
-#                                     "message": message_fields.get("message", ""),
-#                                     "level": message_fields.get("level", "INFO"),
-#                                 }
-#                             )
-#                             last_message_id = message_id
-#                             streams[stream_name] = message_id
-
-#                         if logs_list:
-#                             logs_html = logs_template.module.logs(logs_list)
-#                             logs_html = logs_html.replace("\n", "").replace("\r", "")
-
-#                             yield f"id: {last_message_id}\n"
-#                             yield "event: deployment_log\n"
-#                             yield f"data: {logs_html}\n\n"
-
-#                 if deployment_conclusion:
-#                     yield "event: deployment_concluded\n"
-#                     yield f"data: {deployment_conclusion}\n\n"
-#                     break
-
-#         except asyncio.CancelledError:
-#             pass
-
-#     return StreamingResponse(
-#         event_generator(),
-#         media_type="text/event-stream",
-#         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
-#     )

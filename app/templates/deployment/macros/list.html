@@ -30,7 +30,6 @@
           href="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id) }}"
           data-tooltip="{{ _('Deployment ID') }}"
           hx-boost="true"
-          preload="mouseover"
         >
           <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
         </a>
@@ -175,11 +174,15 @@
         <h2 class="h4">{{ _('No deployments') }}</h2>
         <p class="text-muted-foreground mt-1">{{ _('This project has no deployments yet. Push code to your repository or trigger a deployment below.') }}</p>
         {% from "macros/dialog.html" import dialog %}
-        <button type="button" class="btn-sm mt-4" onclick="
+          <button
+            type="button"
+            class="btn-sm mt-4
+             onclick="
               const dialog = document.getElementById('dialog-deploy');
               dialog.dispatchEvent(new Event('dialog:opened'));
               dialog.showModal();
-            ">
+            "
+          >
           {% include "icons/cloud-upload.svg" %}
           {{ _('Deploy') }}
         </button>

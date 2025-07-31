@@ -1,27 +1,293 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
-  <h1 class="h1">{{ _('Logs') }}</h1>
+{% from "macros/select.html" import select %}
+{% from "macros/dropdown-menu.html" import dropdown_menu %}
 
-  <div
-    id="log-container"
-    class="px-2 py-2.5 w-full rounded-lg border"
-    x-data="{
-        getTime(timestamp) {
-          return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
+  <header class="flex justify-between items-center">
+    <h1 class="h1 flex items-center gap-x-3">
+      <a href="{{ url_for('project_index', team_slug=team.slug, project_name=project.name) }}" class="shrink-0">
+        {% from "macros/avatar.html" import avatar with context %}
+        {{ avatar(item=project, prefix="project", name=project.name, size="md") }}
+      </a>
+      <span class="text-muted-foreground/25 font-normal">/</span>
+      <span class="truncate">{{ _('Logs') }}</span>
+    </h1>
+
+    <div class="flex items-center gap-x-2">
+      <button
+        type="button"
+        class="btn-icon-outline"
+        data-tooltip="{{ _('Refresh') }}"
+        aria-label="{{ _('Refresh') }}"
+        onclick="document.dispatchEvent(new Event('logs:refresh'))"
+      >
+        {% include "icons/refresh-cw.svg" %}
+      </button>
+      <button
+        type="button"
+        class="btn-icon-outline"
+        data-tooltip="{{ _('Live') }}"
+        aria-label="{{ _('Live') }}"
+        disabled
+      >
+        {% include "icons/play.svg" %}
+      </button>
+    </div>
+  </header>
+
+  <section class="space-y-4">
+    <form
+      class="flex justify-start items-center gap-x-4"
+      action="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}"
+      hx-get="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(fragment='logs') }}"
+      hx-target="#logs"
+      hx-indicator=".htmx-indicator"
+      hx-trigger="input delay:500ms, change delay:10ms, reset delay:10ms, logs:refresh from:document, load"
+      hx-push-url="true"
+      hx-swap="innerHTML"
+      x-data="{
+        isDirty: false,
+        timezone_offset: new Date().getTimezoneOffset() * -1,
+        dateFrom: '{{ request.query_params.get('date_from') or '' }}',
+        dateTo: '{{ request.query_params.get('date_to') or '' }}',
+        timeFrom: '{{ request.query_params.get('time_from') or '' }}',
+        timeTo: '{{ request.query_params.get('time_to') or '' }}',
+        updateDirty() {
+          const params = new URLSearchParams(window.location.search);
+          for (const [key, value] of params) {
+            if (['keyword', 'environment_id', 'deployment_id', 'branch', 'date_from', 'date_to', 'time_from', 'time_to'].includes(key) && value.trim() !== '') {
+              this.isDirty = true;
+              return;
+            }
+          }
+          this.isDirty = false;
         },
-        getTooltip(timestamp) {
-          return new Date(timestamp).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
+        reset() { 
+          $el.querySelectorAll('input').forEach(input => input.value = '');
+          dateFrom = '';
+          dateTo = '';
+          timeFrom = '';
+          timeTo = '';
+          this.updateDirty();
         },
-        $timestamp: {
-          'x-text'() { return this.getTime(this.$el.getAttribute('datetime')) },
-          ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
-          ':data-side': '\'right\''
+        validateDateRange(event) {
+          if (event) event.preventDefault();
+          
+          if (this.dateFrom && this.dateTo) {
+            const dateFromObject = new Date(this.dateFrom);
+            const dateToObject = new Date(this.dateTo);
+            
+            if (dateFromObject > dateToObject) {
+              this.dateTo = this.dateFrom;
+              this.timeTo = this.timeFrom || '';
+            } else if (dateFromObject === dateToObject) {
+              if (this.timeFrom && this.timeTo && this.timeFrom > this.timeTo) {
+                this.timeTo = this.timeFrom;
+              }
+            }
+          }
+          
+          this.$dispatch('change');
         }
       }"
-  >
-    {% include "project/partials/_logs_rows.html" %}
-  </div>
+      x-init="
+        updateDirty();
+        document.body.addEventListener('htmx:pushedIntoHistory', () => {
+          updateDirty();
+        });
+      "
+    >
+      <div class="relative [&>svg]:absolute [&>svg]:left-2 [&>svg]:top-1/2 [&>svg]:-translate-y-1/2 [&>svg]:text-muted-foreground [&>svg]:opacity-50 [&>svg]:size-4 [&>svg]:pointer-events-none">
+        <input
+          class="input h-8 w-48 pl-7"
+          type="text"
+          name="keyword" 
+          placeholder="{{ _('Find in logs') }}"
+          value="{{ keyword }}"
+        />
+        {% include "icons/search.svg" %}
+      </div>
+      
+      {% set items = [{
+        'label': _('All deployments'),
+        'value': ''
+      }] %}
+      {% for deployment in deployments %}
+        {% set items = items.append({
+          "label": deployment.id[:7],
+          "value": deployment.id
+        }) %}
+      {% endfor %}
+      {{ select(
+        name='deployment_id',
+        selected=request.query_params.get('deployment_id'),
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+      ) }}
+
+      {% set items = [{
+        'label': _('All environments'),
+        'value': ''
+      }] %}
+      {% from "project/macros/environment-label.html" import environment_label %}
+      {% for environment in project.active_environments %}
+        {% set items = items.append({
+          "label": environment_label(environment),
+          "value": environment['id']
+        }) %}
+      {% endfor %}
+      {{ select(
+        name='environment_id',
+        selected=request.query_params.get('environment_id'),
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+      ) }}
+
+      {% from "macros/popover.html" import popover %}
+      {% set date_range_trigger %}
+        <span class="truncate">
+          <span x-show="dateFrom" x-cloak>
+            {{ _('From') }}
+            <span x-text="dateFrom ? new Date(dateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
+          </span>
+          <span x-show="dateTo" x-cloak>
+            <span x-text="dateFrom ? '{{ _('to') }}' : '{{ _('Until') }}'"></span>
+            <span x-text="dateTo ? new Date(dateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''"></span>
+          </span>
+          <span x-show="!dateFrom && !dateTo">
+            {{ _('All dates') }}
+          </span>
+        </span>
+        <span class="text-muted-foreground opacity-50 ml-auto">
+          {% include "icons/chevron-down.svg" %}
+        </span>
+      {% endset %}
+      {% call popover(
+        trigger=date_range_trigger,
+        trigger_attrs={
+          'class': 'btn-outline font-normal gap-1.5 h-8 px-3',
+          ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
+        },
+        popover_attrs={
+        'class': 'form p-4 space-y-4 min-w-auto',
+        'data-align': 'start'
+        }
+      ) %}
+      <div class="space-y-3">
+        <label>From</label>
+        <div class="flex items-center gap-x-2">
+          <input 
+            class="h-8 flex-1"
+            type="date"
+            name="date_from" 
+            x-model="dateFrom"
+            max="9999-12-31"
+            :max="dateTo || '9999-12-31'"
+          />
+          <input 
+            class="h-8 w-auto" 
+            type="time" 
+            name="time_from" 
+            x-model="timeFrom"
+            :max="dateFrom === dateTo ? timeTo : undefined"
+          />
+          <button
+            type="button"
+            @click="dateFrom = null; timeFrom = null; $dispatch('change');"
+            class="btn-sm-icon-ghost"
+            data-tooltip="Clear"
+            :disabled="!dateFrom && !timeFrom"
+          >
+            {% include "icons/circle-x.svg" %}
+          </button>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <label>To</label>
+        <div class="flex items-center gap-x-2">
+          <input 
+            class="h-8 flex-1" 
+            type="date"
+            name="date_to" 
+            x-model="dateTo"
+            :min="dateFrom || undefined"
+            max="9999-12-31"
+            @input="validateDateRange()"
+          />
+          <input 
+            class="h-8 w-auto" 
+            type="time"
+            name="time_to" 
+            x-model="timeTo"
+            :min="dateFrom === dateTo ? timeFrom : undefined"
+            @input="validateDateRange()"
+          />
+          <button
+            type="button"
+            @click="dateTo = null; timeTo = null; $dispatch('change');"
+            class="btn-sm-icon-ghost"
+            data-tooltip="Clear"
+            :disabled="!dateTo && !timeTo"
+          >
+            {% include "icons/circle-x.svg" %}
+          </button>
+        </div>
+      </div>
+      {% endcall %}
+
+      <input type="hidden" name="timezone_offset" x-model="timezone_offset" />
+
+      {% set items = [{
+        "label": _('All branches'),
+        "value": ""
+      }] %}
+      {% for branch in branches %}
+        {% set items = items.append({
+          "label": branch['name'],
+          "value": branch['name']
+        }) %}
+      {% endfor %}
+      {{ select(
+        name="branch",
+        selected=request.query_params.get("branch"),
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+      ) }}
+
+      <a
+        href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}"
+        class="btn-sm-ghost text-muted-foreground hover:text-foreground"
+        x-show="isDirty"
+        x-cloak
+      >
+        {% include "icons/circle-x.svg" %}
+        {{ _('Reset') }}
+      </a>
+      <div class="htmx-indicator size-4 flex items-center justify-center [&>svg]:animate-spin [&>svg]:text-muted-foreground">
+        {% include "icons/loader.svg" %}
+      </div>
+    </form>
+
+    <div
+      id="logs"
+      x-data="{
+          getTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString('default', { month: 'short', day: 'numeric', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          },
+          getTooltip(timestamp) {
+            return new Date(timestamp).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
+          },
+          $datetime: {
+            'x-text'() { return this.getTime(this.$el.getAttribute('datetime')) },
+            ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
+            ':data-side': '\'right\''
+          }
+        }"
+    >
+      {% include "project/partials/_logs-batch-skeleton.html" %}
+    </div>
+  </section>
 </div>
 {% endblock %}

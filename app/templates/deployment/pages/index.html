@@ -26,7 +26,7 @@
         getTooltip(timestamp) {
           return new Date(timestamp).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })
         },
-        $timestamp: {
+        $datetime: {
           'x-text'() { return this.getTime(this.$el.getAttribute('datetime')) },
           ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
           ':data-side': '\'right\''
@@ -42,7 +42,7 @@
           </div>
         </div>
       {% endif %}
-      {% from "deployment/macros/log_list.html" import log_list %}
+      {% from "deployment/macros/log-list.html" import log_list %}
       {{ log_list(deployment.parsed_logs) }}
     </div>
   </details>

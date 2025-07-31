@@ -42,12 +42,12 @@
       hx-swap="innerHTML"
       x-data="{
         isDirty: false,
-        dateFrom: '{{ request.query_params.get('date-from') or '' }}',
-        dateTo: '{{ request.query_params.get('date-to') or '' }}',
+        dateFrom: '{{ request.query_params.get('date_from') or '' }}',
+        dateTo: '{{ request.query_params.get('date_to') or '' }}',
         updateDirty() {
           const params = new URLSearchParams(window.location.search);
           for (const [key, value] of params) {
-            if (['environment', 'status', 'branch', 'date-from', 'date-to'].includes(key) && value.trim() !== '') {
+            if (['environment', 'status', 'branch', 'date_from', 'date_to'].includes(key) && value.trim() !== '') {
               this.isDirty = true;
               return;
             }
@@ -55,7 +55,6 @@
           this.isDirty = false;
         },
         reset() { 
-          console.log('reset');
           $el.querySelectorAll('input').forEach(input => input.value = '');
           dateFrom = '';
           dateTo = '';
@@ -86,7 +85,8 @@
       {{ select(
         name='environment',
         selected=request.query_params.get('environment'),
-        items=items
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
       ) }}
 
       {% from "deployment/macros/status.html" import status %}
@@ -105,7 +105,8 @@
       {{ select(
         name="status",
         selected=request.query_params.get("status"),
-        items=items
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
       ) }}
 
       {% from "macros/popover.html" import popover %}
@@ -130,7 +131,7 @@
       {% call popover(
         trigger=date_range_trigger,
         trigger_attrs={
-          'class': 'btn-outline font-normal',
+          'class': 'btn-outline font-normal gap-1.5 h-8 px-3',
           ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
         },
         popover_attrs={
@@ -141,7 +142,7 @@
       <div class="space-y-3">
         <label>From</label>
         <div class="flex items-center gap-x-2">
-          <input class="flex-1 h-8" type="date" name="date-from" x-model="dateFrom" />
+          <input class="flex-1 h-8" type="date" name="date_from" x-model="dateFrom" max="9999-12-31" />
           <button
             type="button"
             @click="dateFrom = null; $dispatch('change');"
@@ -156,7 +157,7 @@
       <div class="space-y-3">
         <label>To</label>
         <div class="flex items-center gap-x-2">
-          <input class="flex-1 h-8" type="date" name="date-to" x-model="dateTo" />
+          <input class="flex-1 h-8" type="date" name="date_to" x-model="dateTo" max="9999-12-31" />
           <button
             type="button"
             @click="dateTo = null; $dispatch('change');"
@@ -183,13 +184,15 @@
       {{ select(
         name="branch",
         selected=request.query_params.get("branch"),
-        items=items
+        items=items,
+        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
       ) }}
 
       <a
         href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name) }}"
-        class="btn-ghost text-muted-foreground hover:text-foreground"
+        class="btn-sm-ghost text-muted-foreground hover:text-foreground"
         x-show="isDirty"
+        x-cloak
       >
         {% include "icons/circle-x.svg" %}
         {{ _('Reset') }}

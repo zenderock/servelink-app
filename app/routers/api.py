@@ -17,6 +17,7 @@ from dependencies import (
     templates,
     get_db,
 )
+from utils.log import iso_nano_to_iso
 
 router = APIRouter()
 
@@ -91,7 +92,7 @@ STREAM_TTL = 900
 #     print(f"loki_query: {loki_query}")
 
 #     # HTML macro (unchanged)
-#     logs_tpl = templates.get_template("deployment/macros/log_list.html")
+#     logs_tpl = templates.get_template("deployment/macros/log-list.html")
 
 #     async def event_generator():
 #         # --- historical tail: everything from the last minute so UI has backlog
@@ -207,7 +208,7 @@ async def api_deployment_events(
             status_stream: last_event_id if last_event_id else "$",
         }
 
-        logs_template = templates.get_template("deployment/macros/log_list.html")
+        logs_template = templates.get_template("deployment/macros/log-list.html")
 
         try:
             # start_ts   = time.time()
@@ -241,9 +242,15 @@ async def api_deployment_events(
                         logs = []
                         last_message_id = None
                         for message_id, message_fields in stream_messages:
+                            timestamp = message_fields.get("timestamp", "")
+                            timestamp_iso = (
+                                iso_nano_to_iso(timestamp) if timestamp else ""
+                            )
+
                             logs.append(
                                 {
-                                    "timestamp": message_fields.get("timestamp", ""),
+                                    "timestamp_iso": timestamp_iso,
+                                    "timestamp": timestamp,
                                     "message": message_fields.get("message", ""),
                                     "level": message_fields.get("level", "INFO"),
                                 }

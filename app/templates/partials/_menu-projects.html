@@ -2,7 +2,7 @@
 <span role="menuitem" class="flex items-center gap-x-1">
   {{ avatar(item=project, prefix="project", name=project.name, size="xs") }}
   {{ project.name }}
-  <span class="h-4 w-4 ml-auto text-muted-foreground">
+  <span class="size-4 ml-auto text-muted-foreground">
     {% include "icons/check.svg" %}
   </span>
 </span>
@@ -10,7 +10,7 @@
 <a href="{{ url_for('project_index', team_slug=team.slug, project_name=other_project.name) }}" role="menuitem">
   {{ avatar(item=other_project, prefix="project", name=other_project.name, size="xs") }}
   {{ other_project.name }}
-  <span class="h-4 w-4 ml-auto"></span>
+  <span class="size-4 ml-auto"></span>
 </a>
 {% endfor %}
 <hr role="separator" />

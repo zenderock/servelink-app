@@ -1,0 +1,39 @@
+{% from "deployment/macros/log-list.html" import log_list with context %}
+
+{% if not logs and fragment != 'batch' %}
+  <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+    <div class="max-w-sm">
+      <div class="text-center">
+        <h2 class="h4">{{ _('No logs') }}</h2>
+        <p class="text-muted-foreground mt-1">{{ _('There are no logs matching the  selected filters.') }}</p>
+        <footer class="mt-4 flex items-center justify-center gap-x-2">
+          <button class="btn-sm-outline" onclick="document.dispatchEvent(new Event('logs:refresh'))">
+            {{ _('Refresh logs') }}
+          </button>
+          <a href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}" class="btn-sm">
+            {{ _('Reset filters') }}
+          </a>
+        </footer>
+      </div>
+      {% include "project/partials/_dialog-deploy.html" %}
+    </div>
+  </section>
+{% else %}
+  {{ log_list(logs) }}
+
+  {% if next_batch_url %}
+    <div
+      class="flex justify-center p-4"
+      hx-get="{{ next_batch_url }}"
+      hx-trigger="revealed"
+      hx-disabled-elt="button"
+      hx-swap="outerHTML"
+      hx-indicator=".htmx-indicator"
+    >
+      <button class="btn-secondary flex items-center gap-x-2">
+        {{ _('Load more') }}
+        <div class="htmx-indicator [&>svg]:size-4 [&>svg]:animate-spin">{% include "icons/loader.svg" %}</div>
+      </button>
+    </div>
+  {% endif %}
+{% endif %}

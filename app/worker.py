@@ -1,3 +1,4 @@
+import logging
 from arq.connections import RedisSettings
 from tasks.deploy import deploy
 from tasks.cleanup import (
@@ -8,6 +9,8 @@ from tasks.cleanup import (
 )
 
 from config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 

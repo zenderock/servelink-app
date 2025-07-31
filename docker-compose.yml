@@ -137,10 +137,13 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - default
-      - runner
+      - internal
+    volumes:
+      - loki-data:/loki
 
 volumes:
   devpush-db:
+  loki-data:
 
 networks:
   default:

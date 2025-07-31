@@ -371,22 +371,6 @@ def time_ago_filter(value):
     return humanize.naturaltime(value)
 
 
-def format_from_nanoseconds(ts_nano_str: str, format_type: str = "time"):
-    """Formats a nanosecond timestamp string for display."""
-    if not ts_nano_str or not ts_nano_str.isdigit():
-        return ts_nano_str
-    try:
-        ts_nano = int(ts_nano_str)
-        dt = datetime.fromtimestamp(ts_nano / 1e9, tz=timezone.utc)
-        if format_type == "tooltip":
-            ms = f"{ts_nano % 1_000_000_000 // 1_000_000:03d}"
-            return dt.strftime(f"%b %d, %Y, %-I:%M:%S.{ms} %p")
-        # Default to 'time' format
-        return dt.strftime("%H:%M:%S")
-    except (ValueError, TypeError):
-        return ts_nano_str
-
-
 templates = Jinja2Templates(
     directory="templates", auto_reload=get_settings().env == "development"
 )
