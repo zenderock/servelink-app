@@ -10,7 +10,7 @@
           <button class="btn-sm-outline" onclick="document.dispatchEvent(new Event('logs:refresh'))">
             {{ _('Refresh logs') }}
           </button>
-          <a href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}" class="btn-sm">
+          <button type="button" class="btn-sm" onclick="document.dispatchEvent(new Event('logs:reset'))">
             {{ _('Reset filters') }}
           </a>
         </footer>

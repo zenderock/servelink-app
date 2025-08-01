@@ -32,7 +32,7 @@
 
   <section class="space-y-4">
     <form
-      class="flex justify-start items-center gap-x-4"
+      class="flex justify-start items-center gap-x-2"
       action="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name) }}"
       hx-get="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name).include_query_params(fragment='deployments') }}"
       hx-target="#deployments"
@@ -54,12 +54,14 @@
           }
           this.isDirty = false;
         },
-        reset() { 
-          $el.querySelectorAll('input').forEach(input => input.value = '');
-          dateFrom = '';
-          dateTo = '';
+        resetFilters() {
+          $el.querySelectorAll('.select').forEach(select => select.selectByValue(''));
+          $el.querySelectorAll('[type=date]').forEach(input => input.value = '');
+          this.dateFrom = '';
+          this.dateTo = '';
+          $dispatch('change');
           this.updateDirty();
-        }
+        },
       }"
       x-init="
         updateDirty();
@@ -188,15 +190,16 @@
         trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
       ) }}
 
-      <a
-        href="{{ url_for('project_deployments', team_slug=team.slug, project_name=project.name) }}"
-        class="btn-sm-ghost text-muted-foreground hover:text-foreground"
-        x-show="isDirty"
-        x-cloak
+      <button
+        type="button"
+        class="btn-sm-icon-ghost"
+        :disabled="!isDirty"
+        @click="resetFilters()"
+        data-tooltip="{{ _('Reset') }}"
+        aria-label="{{ _('Reset') }}"
       >
         {% include "icons/circle-x.svg" %}
-        {{ _('Reset') }}
-      </a>
+      </button>
     </form>
 
     <div class="relative">

@@ -39,7 +39,8 @@
 
   <section class="space-y-4">
     <form
-      class="flex justify-start items-center gap-x-4"
+      id="log-filters"
+      class="flex justify-start items-center gap-x-2"
       action="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}"
       hx-get="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(fragment='logs') }}"
       hx-target="#logs"
@@ -47,6 +48,7 @@
       hx-trigger="input delay:500ms, change delay:10ms, reset delay:10ms, logs:refresh from:document, load"
       hx-push-url="true"
       hx-swap="innerHTML"
+      @logs:reset.document="resetFilters()"
       x-data="{
         isDirty: false,
         timezone_offset: new Date().getTimezoneOffset() * -1,
@@ -64,12 +66,14 @@
           }
           this.isDirty = false;
         },
-        reset() { 
-          $el.querySelectorAll('input').forEach(input => input.value = '');
-          dateFrom = '';
-          dateTo = '';
-          timeFrom = '';
-          timeTo = '';
+        resetFilters() {
+          $el.querySelectorAll('.select').forEach(select => select.selectByValue(''));
+          $el.querySelectorAll('[type=text], [type=date], [type=time]').forEach(input => input.value = '');
+          this.dateFrom = '';
+          this.dateTo = '';
+          this.timeFrom = '';
+          this.timeTo = '';
+          $dispatch('change');
           this.updateDirty();
         },
         validateDateRange(event) {
@@ -111,8 +115,8 @@
       </div>
       
       {% set items = [{
-        'label': _('All deployments'),
-        'value': ''
+        "label": _("All deployments"),
+        "value": ""
       }] %}
       {% for deployment in deployments %}
         {% set items = items.append({
@@ -121,15 +125,15 @@
         }) %}
       {% endfor %}
       {{ select(
-        name='deployment_id',
-        selected=request.query_params.get('deployment_id'),
+        name="deployment_id",
+        selected=request.query_params.get("deployment_id"),
         items=items,
-        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+        trigger_attrs={"class": "gap-1.5 h-8 px-3"}
       ) }}
 
       {% set items = [{
-        'label': _('All environments'),
-        'value': ''
+        "label": _("All environments"),
+        "value": ""
       }] %}
       {% from "project/macros/environment-label.html" import environment_label %}
       {% for environment in project.active_environments %}
@@ -139,10 +143,10 @@
         }) %}
       {% endfor %}
       {{ select(
-        name='environment_id',
-        selected=request.query_params.get('environment_id'),
+        name="environment_id",
+        selected=request.query_params.get("environment_id"),
         items=items,
-        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+        trigger_attrs={"class": "gap-1.5 h-8 px-3"}
       ) }}
 
       {% from "macros/popover.html" import popover %}
@@ -167,12 +171,12 @@
       {% call popover(
         trigger=date_range_trigger,
         trigger_attrs={
-          'class': 'btn-outline font-normal gap-1.5 h-8 px-3',
-          ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
+          "class": "btn-outline font-normal gap-1.5 h-8 px-3",
+          ":class": "dateFrom || dateTo ? 'bg-muted' : ''"
         },
         popover_attrs={
-        'class': 'form p-4 space-y-4 min-w-auto',
-        'data-align': 'start'
+          "class": "form p-4 space-y-4 min-w-auto",
+          "data-align": "start"
         }
       ) %}
       <div class="space-y-3">
@@ -256,15 +260,16 @@
         trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
       ) }}
 
-      <a
-        href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}"
-        class="btn-sm-ghost text-muted-foreground hover:text-foreground"
-        x-show="isDirty"
-        x-cloak
+      <button
+        type="button"
+        class="btn-sm-icon-ghost"
+        :disabled="!isDirty"
+        @click="resetFilters()"
+        data-tooltip="{{ _('Reset') }}"
+        aria-label="{{ _('Reset') }}"
       >
         {% include "icons/circle-x.svg" %}
-        {{ _('Reset') }}
-      </a>
+      </button>
       <div class="htmx-indicator size-4 flex items-center justify-center [&>svg]:animate-spin [&>svg]:text-muted-foreground">
         {% include "icons/loader.svg" %}
       </div>

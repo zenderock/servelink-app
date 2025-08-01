@@ -33,7 +33,7 @@
           href="{{ url_for('project_logs', team_slug=team.slug, project_name=deployment.project.name).include_query_params(deployment_id=deployment.id) }}"
           class="btn-outline"
         >
-          {{ _(Runtime logs'') }}
+          {{ _('Runtime logs') }}
         </a>
         <a
           href="{{ deployment.url }}"
