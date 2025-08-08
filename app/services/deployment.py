@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from arq.connections import ArqRedis
+from arq.jobs import Job
 
 from models import Deployment, Alias, Project, User
 from utils.environment import get_environment_for_branch
@@ -56,7 +57,7 @@ class DeploymentService:
             with open(path, "w") as f:
                 yaml.dump({"http": {"routers": routers}}, f, sort_keys=False, indent=2)
 
-    async def create_deployment(
+    async def create(
         self,
         project: Project,
         branch: str,
@@ -93,6 +94,10 @@ class DeploymentService:
         db.add(deployment)
         await db.commit()
 
+        job = await deployment_queue.enqueue_job("deploy", deployment.id)
+        deployment.job_id = job.job_id
+        await db.commit()
+
         await redis_client.xadd(
             f"stream:project:{project.id}:updates",
             fields={
@@ -103,11 +108,64 @@ class DeploymentService:
             },
         )
 
-        await deployment_queue.enqueue_job("deploy", deployment.id)
         logger.info(
             f"Deployment {deployment.id} created and queued for "
             f"project {project.name} ({project.id}) to environment {environment.get('name')} ({environment.get('id')})"
         )
+
+        return deployment
+
+    async def cancel(
+        self,
+        project: Project,
+        deployment: Deployment,
+        deployment_queue: ArqRedis,
+        redis_client: Redis,
+        db: AsyncSession,
+    ) -> Alias:
+        """Cancel a deployment."""
+        logger.info(
+            f"Attempting to cancel deployment {deployment.id} with job_id: {deployment.job_id}"
+        )
+
+        if not deployment.job_id:
+            logger.warning(f"Deployment {deployment.id} has no job_id to cancel")
+
+        job = Job(job_id=deployment.job_id, redis=deployment_queue)
+
+        # Check if job exists and get its status
+        try:
+            job_info = await job.info()
+            logger.info(f"Job info for deployment {deployment.id}: {job_info}")
+        except Exception as e:
+            logger.error(f"Error getting job info for deployment {deployment.id}: {e}")
+
+        abort_result = await job.abort()
+        logger.info(f"Abort result for deployment {deployment.id}: {abort_result}")
+
+        if abort_result:
+            deployment.status = "completed"
+            deployment.conclusion = "canceled"
+            await db.commit()
+
+            logger.info(f"Deployment {deployment.id} canceled.")
+
+            fields = {
+                "event_type": "deployment_status_update",
+                "project_id": project.id,
+                "deployment_id": deployment.id,
+                "deployment_status": "canceled",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+            await redis_client.xadd(
+                f"stream:project:{project.id}:deployment:{deployment.id}:status",
+                fields,
+            )
+            await redis_client.xadd(f"stream:project:{project.id}:updates", fields)
+        else:
+            logger.error(f"Error aborting deployment {deployment.id}.")
+            raise Exception("Error aborting deployment.")
 
         return deployment
 

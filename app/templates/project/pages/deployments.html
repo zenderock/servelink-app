@@ -108,7 +108,7 @@
         name="status",
         selected=request.query_params.get("status"),
         items=items,
-        trigger_attrs={'class': 'gap-1.5 h-8 px-3'}
+        trigger_attrs={"class": "gap-1.5 h-8 px-3"}
       ) }}
 
       {% from "macros/popover.html" import popover %}
@@ -132,13 +132,10 @@
       {% endset %}
       {% call popover(
         trigger=date_range_trigger,
-        trigger_attrs={
-          'class': 'btn-outline font-normal gap-1.5 h-8 px-3',
-          ':class': 'dateFrom || dateTo ? "bg-muted" : ""'
-        },
+        trigger_attrs={'class': 'btn-outline font-normal gap-1.5 h-8 px-3'},
         popover_attrs={
-        'class': 'form p-4 space-y-4 min-w-auto',
-        'data-align': 'start'
+          'class': 'form p-4 space-y-4 min-w-auto',
+          'data-align': 'start'
         }
       ) %}
       <div class="space-y-3">

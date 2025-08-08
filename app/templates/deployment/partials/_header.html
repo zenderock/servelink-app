@@ -27,17 +27,29 @@
   </h1>
 
   <div class="flex items-center gap-x-2 ml-auto">
+    {% if cancel_form %}
+      <form
+        method="post"
+        action="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
+        hx-post="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
+        hx-target="#deployment-page-header"
+        hx-disabled-elt="button"
+        hx-indicator="find .htmx-indicator"
+      >
+        {{ cancel_form.csrf_token() }}
+        <button type="submit" class="btn-destructive">
+          {% include "icons/circle-x.svg" %}
+          {{ _('Cancel') }}
+          <div class="htmx-indicator [&>svg]:size-4 [&>svg]:animate-spin">{% include "icons/loader.svg" %}</div>
+        </button>
+      </form>
+    {% endif %}
+
     {% if deployment.conclusion == 'succeeded' and deployment.container_status == 'running' %}
       <div class="flex items-center">
         <a
-          href="{{ url_for('project_logs', team_slug=team.slug, project_name=deployment.project.name).include_query_params(deployment_id=deployment.id) }}"
-          class="btn-outline"
-        >
-          {{ _('Runtime logs') }}
-        </a>
-        <a
           href="{{ deployment.url }}"
-          class="btn-outline gap-x-2 {% if deployment.aliases %}rounded-r-none{% endif %}"
+          class="btn gap-x-2 {% if deployment.aliases %}rounded-r-none{% endif %}"
           target="_blank"
         >
           {% include "icons/link-2.svg" %}
@@ -50,7 +62,7 @@
           {% endset %}
           {% call popover(
             trigger=trigger,
-            trigger_attrs={"class": "btn-icon-outline w-6 border-l-0 rounded-l-none"},
+            trigger_attrs={"class": "btn-icon w-6 border-l-0 rounded-l-none"},
             popover_attrs={
               "data-align": "end",
               "class": "max-w-xs"
@@ -88,7 +100,7 @@
         {% endif %}
       </div>
     {% else %}
-      <button type="button" class="btn-outline gap-x-2" disabled>
+      <button type="button" class="btn gap-x-2" disabled>
         {% include "icons/link-2.svg" %}
         {{ _('Visit') }}
       </button>

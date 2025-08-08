@@ -391,26 +391,6 @@ class Project(Base):
     def __repr__(self):
         return f"<Project {self.name}>"
 
-    def get_config(self) -> dict[str, object]:
-        """Get complete project configuration with framework defaults."""
-        settings = get_settings()
-        framework_slug = self.config.get("framework", "python")
-        framework = next(
-            (f for f in settings.frameworks if f.get("slug") == framework_slug), {}
-        )
-
-        return {
-            "framework": framework,
-            "build_command": self.config.get("build_command")
-            or framework.get("build_command"),
-            "pre_deploy_command": self.config.get("pre_deploy_command")
-            or framework.get("pre_deploy_command"),
-            "start_command": self.config.get("start_command")
-            or framework.get("start_command"),
-            "root_directory": self.config.get("root_directory")
-            or framework.get("root_directory", "./"),
-        }
-
     def get_env_vars(self, environment: str) -> list[dict[str, str]]:
         """Flattened env vars for a specific environment."""
         env_vars = [var for var in self.env_vars if not var.get("environment")]
@@ -619,6 +599,7 @@ class Deployment(Base):
         JSON, nullable=False, default=dict
     )
     _env_vars: Mapped[str] = mapped_column("env_vars", Text, nullable=False, default="")
+    job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     container_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     container_status: Mapped[str | None] = mapped_column(
         SQLAEnum("running", "stopped", "removed", name="deployment_container_status"),
@@ -647,7 +628,6 @@ class Deployment(Base):
         index=True, nullable=False, default=utc_now
     )
     concluded_at: Mapped[datetime | None] = mapped_column(index=True, nullable=True)
-    build_logs: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
     project: Mapped[Project] = relationship(back_populates="deployments")
@@ -663,7 +643,7 @@ class Deployment(Base):
         # Snapshot repo, config, environments and env_vars from project at time of creation
         self.repo_id = project.repo_id
         self.repo_full_name = project.repo_full_name
-        self.config = project.get_config()
+        self.config = project.config
         environment = project.get_environment_by_id(environment_id)
         self.env_vars = project.get_env_vars(environment["slug"]) if environment else []
 

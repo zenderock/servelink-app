@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs
 import logging
 import os
 from typing import Any
+import httpx
 
 from dependencies import (
     get_current_user,
@@ -44,7 +45,8 @@ from forms.project import (
     ProjectEnvironmentForm,
     ProjectDeleteEnvironmentForm,
     ProjectBuildAndProjectDeployForm,
-    ProjectRollbackForm,
+    ProjectCancelDeploymentForm,
+    ProjectRollbackDeploymentForm,
 )
 from config import get_settings, Settings
 from db import get_db
@@ -112,6 +114,12 @@ async def new_project_details(
 
     form: Any = await NewProjectForm.from_formdata(request, db=db, team=team)
 
+    framework_choices = []
+    for framework in settings.frameworks:
+        framework_choices.append((framework["slug"], framework["name"]))
+
+    form.framework.choices = framework_choices
+
     if request.method == "GET":
         form.repo_id.data = int(repo_id)
         form.name.data = repo_name
@@ -161,18 +169,10 @@ async def new_project_details(
             config={
                 "framework": form.framework.data,
                 "runtime": form.runtime.data,
-                "root_directory": form.root_directory.data
-                if form.use_custom_root_directory.data
-                else None,
-                "build_command": form.build_command.data
-                if form.use_custom_build_command.data
-                else None,
-                "pre_deploy_command": form.pre_deploy_command.data
-                if form.use_custom_pre_deploy_command.data
-                else None,
-                "start_command": form.start_command.data
-                if form.use_custom_start_command.data
-                else None,
+                "root_directory": form.root_directory.data,
+                "build_command": form.build_command.data,
+                "pre_deploy_command": form.pre_deploy_command.data,
+                "start_command": form.start_command.data,
             },
             env_vars=env_vars,
             environments=[
@@ -462,7 +462,7 @@ async def project_deploy(
                 branch=branch,
             )
 
-            deployment = await DeploymentService().create_deployment(
+            deployment = await DeploymentService().create(
                 project=project,
                 branch=branch,
                 commit=commit,
@@ -614,7 +614,7 @@ async def project_redeploy(
                 branch=deployment.branch,
             )
 
-            new_deployment = await DeploymentService().create_deployment(
+            new_deployment = await DeploymentService().create(
                 project=project,
                 branch=deployment.branch,
                 commit=commit,
@@ -664,6 +664,66 @@ async def project_redeploy(
 
 
 @router.api_route(
+    "/{team_slug}/projects/{project_name}/deployments/{deployment_id}/cancel",
+    methods=["GET", "POST"],
+    name="project_cancel",
+)
+async def project_cancel(
+    request: Request,
+    project: Project = Depends(get_project_by_name),
+    current_user: User = Depends(get_current_user),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    deployment: Deployment = Depends(get_deployment_by_id),
+    redis_client: Redis = Depends(get_redis_client),
+    deployment_queue: ArqRedis = Depends(get_deployment_queue),
+):
+    team, membership = team_and_membership
+
+    form: Any = await ProjectCancelDeploymentForm.from_formdata(request)
+
+    if request.method == "POST" and await form.validate_on_submit():
+        try:
+            await DeploymentService().cancel(
+                project=project,
+                deployment=deployment,
+                deployment_queue=deployment_queue,
+                redis_client=redis_client,
+            )
+
+            flash(
+                request,
+                _(
+                    'Deployment "%(deployment_id)s" canceled.',
+                    deployment_id=deployment.id,
+                ),
+                "success",
+            )
+
+        except Exception as e:
+            logger.error(f"Error canceling deployment: {str(e)}")
+            flash(
+                request,
+                _(
+                    "Error canceling deployment %(deployment_id)s.",
+                    deployment_id=deployment.id,
+                ),
+                "error",
+            )
+
+    return TemplateResponse(
+        request=request,
+        name="project/partials/_dialog-cancel-form.html",
+        context={
+            "current_user": current_user,
+            "team": team,
+            "project": project,
+            "form": form,
+            "deployment": deployment,
+        },
+    )
+
+
+@router.api_route(
     "/{team_slug}/projects/{project_name}/deployments/{deployment_id}/rollback",
     methods=["GET", "POST"],
     name="project_rollback",
@@ -680,7 +740,7 @@ async def project_rollback(
 ):
     team, membership = team_and_membership
 
-    form: Any = await ProjectRollbackForm.from_formdata(request)
+    form: Any = await ProjectRollbackDeploymentForm.from_formdata(request)
 
     if request.method == "POST" and await form.validate_on_submit():
         try:
@@ -744,7 +804,7 @@ async def project_rollback(
 # ):
 #     team, membership = team_and_membership
 
-#     form: Any = await ProjectRollbackForm.from_formdata(request)
+#     form: Any = await ProjectRollbackDeploymentForm.from_formdata(request)
 
 #     if request.method == "POST" and await form.validate_on_submit():
 #         try:
@@ -1103,18 +1163,18 @@ async def project_settings(
         data={
             "framework": project.config.get("framework"),
             "runtime": project.config.get("runtime"),
-            "use_custom_root_directory": project.config.get("root_directory")
-            is not None,
             "root_directory": project.config.get("root_directory"),
-            "use_custom_build_command": project.config.get("build_command") is not None,
             "build_command": project.config.get("build_command"),
-            "use_custom_pre_deploy_command": project.config.get("pre_deploy_command")
-            is not None,
             "pre_deploy_command": project.config.get("pre_deploy_command"),
-            "use_custom_start_command": project.config.get("start_command") is not None,
             "start_command": project.config.get("start_command"),
         },
     )
+
+    framework_choices = []
+    for framework in settings.frameworks:
+        framework_choices.append((framework["slug"], framework["name"]))
+
+    build_and_deploy_form.framework.choices = framework_choices
 
     if fragment == "build_and_deploy":
         if await build_and_deploy_form.validate_on_submit():
@@ -1122,15 +1182,9 @@ async def project_settings(
                 "framework": build_and_deploy_form.framework.data,
                 "runtime": build_and_deploy_form.runtime.data,
                 "root_directory": build_and_deploy_form.root_directory.data,
-                "build_command": build_and_deploy_form.build_command.data
-                if build_and_deploy_form.use_custom_build_command.data
-                else None,
-                "pre_deploy_command": build_and_deploy_form.pre_deploy_command.data
-                if build_and_deploy_form.use_custom_pre_deploy_command.data
-                else None,
-                "start_command": build_and_deploy_form.start_command.data
-                if build_and_deploy_form.use_custom_start_command.data
-                else None,
+                "build_command": build_and_deploy_form.build_command.data,
+                "pre_deploy_command": build_and_deploy_form.pre_deploy_command.data,
+                "start_command": build_and_deploy_form.start_command.data,
             }
             await db.commit()
             flash(request, _("Build & Deploy settings updated."), "success")
@@ -1148,6 +1202,13 @@ async def project_settings(
                 },
             )
 
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team
+    )
+    latest_projects = await get_latest_projects(
+        db=db, team=team, current_project=project
+    )
+
     return TemplateResponse(
         request=request,
         name="project/pages/settings.html",
@@ -1164,17 +1225,19 @@ async def project_settings(
             "delete_project_form": delete_project_form,
             "colors": COLORS,
             "frameworks": settings.frameworks,
+            "latest_projects": latest_projects,
+            "latest_teams": latest_teams,
         },
     )
 
 
-@router.get(
+@router.api_route(
     "/{team_slug}/projects/{project_name}/deployments/{deployment_id}",
+    methods=["GET", "POST"],
     name="project_deployment",
 )
 async def project_deployment(
     request: Request,
-    deployment_id: str,
     fragment: str = Query(None),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
@@ -1185,9 +1248,46 @@ async def project_deployment(
 ):
     team, membership = team_and_membership
 
+    cancel_form = None
+    if not deployment.conclusion:
+        cancel_form: Any = await ProjectCancelDeploymentForm.from_formdata(request)
+
     env_aliases = await project.get_environment_aliases(db=db)
 
     if request.headers.get("HX-Request") and fragment == "header":
+        if request.method == "POST" and await cancel_form.validate_on_submit():
+            deployment_queue = get_deployment_queue(request)
+            redis_client = get_redis_client()
+
+            try:
+                await DeploymentService().cancel(
+                    project=project,
+                    deployment=deployment,
+                    deployment_queue=deployment_queue,
+                    redis_client=redis_client,
+                    db=db,
+                )
+
+                flash(
+                    request,
+                    _(
+                        'Deployment "%(deployment_id)s" canceled.',
+                        deployment_id=deployment.id,
+                    ),
+                    "success",
+                )
+
+            except Exception as e:
+                logger.error(f"Error canceling deployment: {str(e)}")
+                flash(
+                    request,
+                    _(
+                        "Error canceling deployment %(deployment_id)s.",
+                        deployment_id=deployment.id,
+                    ),
+                    "error",
+                )
+
         return TemplateResponse(
             request=request,
             name="deployment/partials/_header.html",
@@ -1197,6 +1297,7 @@ async def project_deployment(
                 "project": project,
                 "deployment": deployment,
                 "env_aliases": env_aliases,
+                "cancel_form": cancel_form,
             },
         )
 
@@ -1223,6 +1324,7 @@ async def project_deployment(
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,
             "latest_deployments": latest_deployments,
+            "cancel_form": cancel_form,
         },
     )
 
@@ -1332,20 +1434,32 @@ async def project_logs(
             end_timestamp = int(datetime.now(timezone.utc).timestamp() * 1e9)
 
         loki_service = LokiService()
-        logs = await loki_service.get_project_logs(
-            project_id=project.id,
-            limit=limit,
-            start_timestamp=str(start_timestamp) if start_timestamp else None,
-            end_timestamp=str(end_timestamp) if end_timestamp else None,
-            deployment_id=deployment_id,
-            environment_id=environment_id,
-            branch=branch,
-            keyword=keyword,
-        )
+        logs = []
+        try:
+            logs = await loki_service.get_logs(
+                project_id=project.id,
+                limit=limit,
+                start_timestamp=str(start_timestamp) if start_timestamp else None,
+                end_timestamp=str(end_timestamp) if end_timestamp else None,
+                deployment_id=deployment_id,
+                environment_id=environment_id,
+                branch=branch,
+                keyword=keyword,
+                timeout=10.0,
+            )
+        except httpx.TimeoutException as e:
+            logger.error(f"Logs query timed out: {e}")
+            flash(request, _("Logs query timed out."), "error")
+        except httpx.ConnectError as e:
+            logger.error(f"Failed to connect to Loki: {e}")
+            flash(request, _("Failed to retrieve logs."), "error")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Failed to retrieve logs: {e}")
+            flash(request, _("Failed to retrieve logs."), "error")
 
         next_batch_url = None
         if logs and len(logs) == limit:
-            next_batch_end_timestamp = int(logs[-1]["timestamp"]) - 1
+            next_batch_end_timestamp = int(logs[0]["timestamp"]) - 1
             next_batch_url = request.url.include_query_params(
                 end_timestamp=next_batch_end_timestamp,
                 fragment="batch",
@@ -1387,6 +1501,13 @@ async def project_logs(
     if deployment_id:
         deployments.insert(0, deployment)
 
+    latest_teams = await get_latest_teams(
+        db=db, current_user=current_user, current_team=team
+    )
+    latest_projects = await get_latest_projects(
+        db=db, team=team, current_project=project
+    )
+
     return TemplateResponse(
         request=request,
         name="project/pages/logs.html",
@@ -1406,5 +1527,7 @@ async def project_logs(
             "branches": branches,
             "deployments": deployments,
             "fragment": fragment,
+            "latest_projects": latest_projects,
+            "latest_teams": latest_teams,
         },
     )

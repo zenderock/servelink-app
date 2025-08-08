@@ -1,6 +1,6 @@
 <div
   hx-ext="sse"
-  sse-connect="{{ url_for('api_project_events', team_slug=team.slug, project_id=project.id) }}"
+  sse-connect="{{ url_for('api_project_events', team_id=team.id, project_id=project.id) }}"
   sse-close="sse:stream_closed"
 >
   <div

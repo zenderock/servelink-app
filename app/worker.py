@@ -28,3 +28,4 @@ class WorkerSettings:
     job_timeout = settings.job_timeout
     job_completion_wait = settings.job_completion_wait
     health_check_interval = 65  # Greater than 60s to avoid health check timeout
+    allow_abort_jobs = True

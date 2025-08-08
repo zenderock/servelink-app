@@ -23,7 +23,9 @@
   listbox_attrs={},
   input_attrs={},
   search_placeholder="Search entries...",
-  is_combobox=false
+  is_combobox=false,
+  header=None,
+  footer=None
 ) %}
 {% set id = id or ("select-" + (range(100000, 999999) | random | string)) %}
 
@@ -87,6 +89,7 @@
       {{ key }}="{{ value }}"
     {% endfor %}
   >
+    {% if header %}{{ header }}{% endif %}
     {% if is_combobox %}
     <header>
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -120,11 +123,12 @@
         {{ caller() if caller }}
       {% endif %}
     </div>
+    {% if footer %}{{ footer }}{% endif %}
   </div>
   <input
     type="hidden"
     name="{{ name or id ~ '-value' }}"
-    value="{{ (default_option.value if default_option) or '' }}"
+    value="{{ (default_option.value if items and default_option else selected) or '' }}"
     {% for key, value in input_attrs.items() %}
       {% if key != 'name' and key != 'value' %}{{ key }}="{{ value }}"{% endif %}
     {% endfor %}
@@ -161,8 +165,7 @@
       <div
         id="{{ item_id }}"
         role="option"
-        data-value="{{ item.value }}"
-        {% if selected == item.value %}aria-selected="true"{% endif %}
+        {% if item.value is defined %}data-value="{{ item.value }}"{% endif %}
         {% if item.attrs %}
           {% for key, value in item.attrs.items() %}
             {{ key }}="{{ value }}"

@@ -231,6 +231,29 @@ async def get_team_by_slug(
     return team, team_member
 
 
+async def get_team_by_id(
+    team_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> tuple[Team, TeamMember]:
+    result = await db.execute(
+        select(Team, TeamMember)
+        .join(TeamMember)
+        .where(
+            Team.id == team_id,
+            TeamMember.user_id == current_user.id,
+            TeamMember.role.in_(["owner", "member"]),
+        )
+        .limit(1)
+    )
+    team_and_membership = result.first()
+    if not team_and_membership:
+        raise HTTPException(status_code=404, detail="Team not found or access denied")
+
+    team, team_member = team_and_membership
+    return team, team_member
+
+
 async def get_project_by_name(
     project_name: str,
     db: AsyncSession = Depends(get_db),
@@ -265,17 +288,12 @@ async def get_optional_project_by_name(
 
 
 async def get_project_by_id(
-    project_id: str,
-    db: AsyncSession = Depends(get_db),
-    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    project_id: str, db: AsyncSession = Depends(get_db)
 ) -> Project:
-    team, membership = team_and_membership
-
     result = await db.execute(
         select(Project)
         .where(
             Project.id == project_id,
-            Project.team_id == team.id,
             Project.status != "deleted",
         )
         .limit(1)
@@ -355,12 +373,10 @@ def RedirectResponseX(
     """
 
     if request is not None and request.headers.get("HX-Request"):
-        print(request.headers.get("HX-Request"))
         return FastAPIResponse(
             status_code=200,
             headers={"HX-Redirect": str(url), **(headers or {})},
         )
-    print("NOPE")
     return FastAPIRedirect(url=url, status_code=status_code, headers=headers)
 
 

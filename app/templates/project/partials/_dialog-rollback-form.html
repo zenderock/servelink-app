@@ -30,7 +30,7 @@
     hx-post="{{ url_for('project_rollback', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id) }}"
     hx-disabled-elt="button"
     hx-swap="none"
-    hx-indicator=".htmx-indicator"
+    hx-indicator="find .htmx-indicator"
     x-init
     @htmx:after-request="$el.closest('dialog').close()"
   >

@@ -64,7 +64,7 @@
         <button
           type="button"
           class="btn-sm"
-          x-init @click="
+          onclick="
             const dialog = document.getElementById('dialog-deploy');
             dialog.dispatchEvent(new Event('dialog:opened'));
             dialog.showModal();

@@ -1,0 +1,6 @@
+- [ ] Clean up log-list.html (too many params)
+- [ ] Add cancel and skip
+- Mobile design
+- [ ] Review logs page
+- Check Redis messages in project vs deploymentservice
+- Fix selected in Basecoat (if no items). Check for dropdown too

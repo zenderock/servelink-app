@@ -1,7 +1,16 @@
-<div hx-ext="sse" sse-connect="{{ url_for('api_deployment_events', team_slug=team.slug, deployment_id=deployment.id) }}"
-  sse-close="deployment_concluded">
-  <div sse-swap="deployment_log" hx-target="#deployment-logs" hx-swap="beforeend"></div>
-  <div hx-trigger="sse:deployment_concluded" hx-target="#deployment-page-header"
-    hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}">
-  </div>
+<div
+  hx-ext="sse"
+  sse-connect="{{ url_for('api_deployment_events', team_id=team.id, project_id=project.id, deployment_id=deployment.id) }}"
+  sse-close="deployment_log_closed"
+>
+  <div
+    sse-swap="deployment_log"
+    hx-target="#deployment-logs"
+    hx-swap="beforeend"
+  ></div>
+  <div
+    hx-trigger="sse:deployment_concluded"
+    hx-target="#deployment-page-header"
+    hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
+  ></div>
 </div>

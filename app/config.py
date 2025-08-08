@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     upload_dir: str = "/upload"
     traefik_config_dir: str = "/data/traefik"
     default_cpu_quota: int = 100000
-    default_memory_mb: int = 512
+    default_memory_mb: int = 4096
     frameworks: list[dict] = []
     job_timeout: int = 320
     job_completion_wait: int = 300

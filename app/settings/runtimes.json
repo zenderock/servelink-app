@@ -1,0 +1,10 @@
+{
+  "python": [
+    "python-3",
+    "pypy-3"
+  ],
+  "node": [
+    "node-20",
+    "bun-1"
+  ]
+}

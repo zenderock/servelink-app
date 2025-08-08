@@ -7,18 +7,26 @@
     {% include "deployment/partials/_header.html" with context %}
   </div>
 
-  <details open class="w-full rounded-lg border group">
-    <summary class="px-4 h-12 w-full flex items-center gap-x-2 [&>svg]:size-4 group-open:[&>svg]:rotate-90 [&>svg]:transition-transform hover:bg-muted/50 rounded-lg transition-colors group-open:rounded-b-none">
-      {% include "icons/chevron-right.svg" %}
-      {{ _('Build logs') }}
-    </summary>
-    {% if not deployment.conclusion %}
-      {% include "deployment/partials/_sse-logs.html" %}
-    {% endif%}
+  <section class="w-full rounded-lg border group">
+    <header class="px-4 h-10 w-full flex items-center gap-x-2">
+      {{ _('Logs') }}
+      <a
+        href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(deployment_id=deployment.id) }}"
+        class="btn-sm-icon-ghost ml-auto"
+        data-tooltip="{{ _('All logs') }}"
+        data-alight="end"
+        aria-label="{{ _('All logs') }}"
+      >
+        {% include "icons/logs.svg" %}
+      </a>
+    </header>
+
+    {% include "deployment/partials/_sse-logs.html" %}
     <div
       id="deployment-logs"
-      class="overflow-y-auto h-[500px] relative p-4 border-t scrollbar-thin scrollbar"
+      class="overflow-y-auto h-[500px] relative p-2 border-t scrollbar-thin scrollbar"
       x-init="$el.scrollTop = $el.scrollHeight"
+      hx-on::after-swap="this.scrollTop = this.scrollHeight"
       x-data="{
         getTime(timestamp) {
           return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -32,18 +40,13 @@
           ':data-side': '\'right\''
         }
       }"
-      {% if not deployment.conclusion %}hx-on::after-swap="this.scrollTop = this.scrollHeight"{% endif %}
     >
-      {% if not deployment.conclusion %}
-        <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
-          <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
-            {% include "icons/loader.svg" %}
-            {{ _('Waiting for logs') }}
-          </div>
+      <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
+        <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
+          {% include "icons/loader.svg" %}
+          {{ _('Waiting for logs') }}
         </div>
-      {% endif %}
-      {% from "deployment/macros/log-list.html" import log_list %}
-      {{ log_list(deployment.parsed_logs) }}
+      </div>
     </div>
   </details>
 </div>

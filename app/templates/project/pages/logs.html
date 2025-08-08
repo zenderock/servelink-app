@@ -45,10 +45,10 @@
       hx-get="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(fragment='logs') }}"
       hx-target="#logs"
       hx-indicator=".htmx-indicator"
-      hx-trigger="input delay:500ms, change delay:10ms, reset delay:10ms, logs:refresh from:document, load"
+      hx-trigger="input delay:500ms, change from:[type='date'] from:[type='time'] from:div.select delay:10ms, logs:refresh from:document, load"
       hx-push-url="true"
       hx-swap="innerHTML"
-      @logs:reset.document="resetFilters()"
+      @logs:reset.document="console.log('reset');resetFilters()"
       x-data="{
         isDirty: false,
         timezone_offset: new Date().getTimezoneOffset() * -1,
@@ -125,6 +125,7 @@
         }) %}
       {% endfor %}
       {{ select(
+        id="filter-deployment",
         name="deployment_id",
         selected=request.query_params.get("deployment_id"),
         items=items,
@@ -143,6 +144,7 @@
         }) %}
       {% endfor %}
       {{ select(
+        id="filter-environment",
         name="environment_id",
         selected=request.query_params.get("environment_id"),
         items=items,
@@ -170,10 +172,7 @@
       {% endset %}
       {% call popover(
         trigger=date_range_trigger,
-        trigger_attrs={
-          "class": "btn-outline font-normal gap-1.5 h-8 px-3",
-          ":class": "dateFrom || dateTo ? 'bg-muted' : ''"
-        },
+        trigger_attrs={"class": "btn-outline font-normal gap-1.5 h-8 px-3"},
         popover_attrs={
           "class": "form p-4 space-y-4 min-w-auto",
           "data-align": "start"
@@ -254,6 +253,7 @@
         }) %}
       {% endfor %}
       {{ select(
+        id="filter-branch",
         name="branch",
         selected=request.query_params.get("branch"),
         items=items,
@@ -270,14 +270,26 @@
       >
         {% include "icons/circle-x.svg" %}
       </button>
-      <div class="htmx-indicator size-4 flex items-center justify-center [&>svg]:animate-spin [&>svg]:text-muted-foreground">
-        {% include "icons/loader.svg" %}
-      </div>
     </form>
 
-    <div
-      id="logs"
-      x-data="{
+    <div class="relative">
+      <div
+        id="logs"
+        class="overflow-y-auto h-[500px] relative p-2 border rounded-lg scrollbar-thin scrollbar scroll-auto"
+        x-init="$el.scrollTop = $el.scrollHeight"
+        hx-on::before-swap="
+          scrollBottom = this.scrollHeight - this.scrollTop;
+        "
+        hx-on::after-swap="
+          if (event.detail.requestConfig.triggeringEvent?.type == 'intersect') {
+            this.scrollTop = this.scrollHeight - scrollBottom;
+          } else {
+            this.scrollTop = this.scrollHeight;
+          }
+        "
+        x-data="{
+          scrollBottom: 0,
+          loaderHeight: 0,
           getTime(timestamp) {
             return new Date(timestamp).toLocaleTimeString('default', { month: 'short', day: 'numeric', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
           },
@@ -290,8 +302,15 @@
             ':data-side': '\'right\''
           }
         }"
-    >
-      {% include "project/partials/_logs-batch-skeleton.html" %}
+      >
+        {% include "project/partials/_logs-batch-skeleton.html" %}
+      </div>
+      <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
+        <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
+          {% include "icons/loader.svg" %}
+          <span>{{ _('Retrieving logs') }}</span>
+        </div>
+      </div>
     </div>
   </section>
 </div>

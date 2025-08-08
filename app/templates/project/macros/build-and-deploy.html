@@ -1,64 +1,49 @@
 {% macro render_build_and_deploy(form, frameworks) %}
 <div class="space-y-6" x-data="{
     frameworks: {{ frameworks | tojson | replace('"', "'") | safe }},
-    selectedFramework: '{{ form.framework.data or '' }}',
-    get selectedFrameworkObject() {
-      return this.frameworks.find(f => f.slug === this.selectedFramework);
-    },
-    runtime: '{{ form.runtime.data }}',
-    rootDirectoryLocked: {{ 'true' if not form.use_custom_root_directory.data else 'false' }},
-    buildCommand: {
-      placeholder: '',
-      locked: {{ 'true' if not form.use_custom_build_command.data else 'false' }}
-    },
-    preDeployCommand: {
-      placeholder: '',
-      locked: {{ 'true' if not form.use_custom_pre_deploy_command.data else 'false' }}
-    },
-    startCommand: {
-      placeholder: '',
-      locked: {{ 'true' if not form.use_custom_start_command.data else 'false' }}
-    },
-    setPreset(framework) {
-      this.selectedFramework = framework || this.frameworks[0].slug;
+    setPreset(value) {
+      const preset = this.frameworks.find(f => f.slug === value);      
+      if (!preset) {
+        console.error('Can not find framework preset.');
+        return;
+      }
       
-      const preset = this.frameworks.find(f => f.slug === this.selectedFramework);
-      
-      if (!preset) return;
-      
-      this.buildCommand.placeholder = preset.build_command || '';
-      this.preDeployCommand.placeholder = preset.pre_deploy_command || '';
-      this.startCommand.placeholder = preset.start_command || '';
+      if ($refs.rootDirectoryInput) $refs.rootDirectoryInput.value = preset.root_directory || '';
+      if ($refs.buildCommandInput) $refs.buildCommandInput.value = preset.build_command || '';
+      if ($refs.preDeployCommandInput) $refs.preDeployCommandInput.value = preset.pre_deploy_command || '';
+      if ($refs.startCommandInput) $refs.startCommandInput.value = preset.start_command || '';
     }
-  }" x-init="setPreset()" @select:change="(e) => setPreset(e.detail.value)">
+  }"
+>
   {# FRAMEWORK PRESET #}
   <div class="space-y-3">
-    {{ form.framework.label() }}
+    <label for="framework">{{ _('Framework presets') }}</label>
     {% from "macros/select.html" import select %}
     {% call select(
-    name="framework",
-    selected=form.framework.data
+      name="framework",
+      selected=form.framework.data,
+      main_attrs={'@change': 'setPreset(event.detail.value)'}
     ) %}
-    {% for framework in frameworks %}
-    <div role="option" data-value="{{ framework.slug }}">
-      <span class="flex items-center gap-x-2">
-        {{ framework.logo | safe }}
-        {{ framework.name | safe }}
-      </span>
-    </div>
-    {% endfor %}
+      {% for framework in frameworks %}
+        <div role="option" data-value="{{ framework.slug }}">
+          <span class="flex items-center gap-x-2">
+            {{ framework.logo | safe }}
+            {{ framework.name | safe }}
+          </span>
+        </div>
+      {% endfor %}
     {% endcall %}
     {% for error in form.framework.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
 
   {# RUNTIME #}
   <div class="space-y-3">
     {{ form.runtime.label() }}
-    {{ form.runtime(class="font-mono") }}
+    {{ form.runtime(class="font-mono text-[13px]") }}
     {% for error in form.runtime.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
 
@@ -67,37 +52,14 @@
     {{ form.root_directory.label() }}
     <div class="relative">
       {{ form.root_directory(
-        class="w-full font-mono",
+        class="w-full font-mono text-[13px]",
         pattern="^\.?/?([a-zA-Z0-9_\-]+/?)*$",
         placeholder="./",
-        **{
-          'aria-invalid': 'true' if form.root_directory.errors,
-          ':readonly': 'rootDirectoryLocked',
-          'x-ref': 'rootDirectoryInput'
-        }
+        **{'x-ref': 'rootDirectoryInput'}
       ) }}
-      <button
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground [&>svg]:size-4"
-        type="button" @click="
-          rootDirectoryLocked = !rootDirectoryLocked;
-          $refs.rootDirectoryInput.value = rootDirectoryLocked ? null : $refs.rootDirectoryInput.placeholder;
-          $el.closest('form').dispatchEvent(new Event('change'));
-        " :data-tooltip="rootDirectoryLocked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
-        data-tooltip-position="top-right">
-        <template x-if="rootDirectoryLocked">
-          {% include "icons/pencil.svg" %}
-        </template>
-        <template x-if="!rootDirectoryLocked">
-          {% include "icons/x.svg" %}
-        </template>
-      </button>
     </div>
-    {{ form.use_custom_root_directory(
-      class="hidden",
-      **{':value': '!rootDirectoryLocked'}
-    ) }}
     {% for error in form.root_directory.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Commands will run from this directory.') }}
@@ -109,35 +71,12 @@
     {{ form.build_command.label() }}
     <div class="relative">
       {{ form.build_command(
-        class="w-full font-mono !pr-9",
-        **{
-          ':readonly': 'buildCommand.locked',
-          ':placeholder': 'buildCommand.placeholder',
-          'x-ref': 'buildCommandInput'
-        }
-      ) }}
-      <button
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground [&>svg]:size-4"
-        type="button" @click="
-          buildCommand.locked = !buildCommand.locked;
-          $refs.buildCommandInput.value = buildCommand.locked ? null : $refs.buildCommandInput.placeholder;
-          $el.closest('form').dispatchEvent(new Event('change'));
-        " :data-tooltip="buildCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
-        data-tooltip-position="top-right">
-        <template x-if="buildCommand.locked">
-          {% include "icons/pencil.svg" %}
-        </template>
-        <template x-if="!buildCommand.locked">
-          {% include "icons/x.svg" %}
-        </template>
-      </button>
-      {{ form.use_custom_build_command(
-        class="hidden",
-        **{':value': '!buildCommand.locked', 'aria-invalid': 'true'}
+        class="w-full font-mono text-[13px]",
+        **{'x-ref': 'buildCommandInput'}
       ) }}
     </div>
     {% for error in form.build_command.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Install dependencies and build the project.') }}
@@ -149,35 +88,12 @@
     {{ form.pre_deploy_command.label() }}
     <div class="relative">
       {{ form.pre_deploy_command(
-        class="w-full font-mono !pr-9",
-        **{
-        ':readonly': 'preDeployCommand.locked',
-        ':placeholder': 'preDeployCommand.placeholder',
-        'x-ref': 'preDeployCommandInput'
-        }
-      ) }}
-      <button
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground [&>svg]:size-4"
-        type="button" @click="
-          preDeployCommand.locked = !preDeployCommand.locked;
-          $refs.preDeployCommandInput.value = preDeployCommand.locked ? null : $refs.preDeployCommandInput.placeholder;
-          $el.closest('form').dispatchEvent(new Event('change'));
-        " :data-tooltip="preDeployCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
-        data-tooltip-position="top-right">
-        <template x-if="preDeployCommand.locked">
-          {% include "icons/pencil.svg" %}
-        </template>
-        <template x-if="!preDeployCommand.locked">
-          {% include "icons/x.svg" %}
-        </template>
-      </button>
-      {{ form.use_custom_pre_deploy_command(
-      class="hidden",
-      **{':value': '!preDeployCommand.locked'}
+        class="w-full font-mono text-[13px]",
+        **{'x-ref': 'preDeployCommandInput'}
       ) }}
     </div>
     {% for error in form.pre_deploy_command.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Run commands before we start the app (e.g. migrate database).') }}
@@ -189,35 +105,12 @@
     {{ form.start_command.label() }}
     <div class="relative">
       {{ form.start_command(
-        class="w-full font-mono !pr-9",
-        **{
-          ':readonly': 'startCommand.locked',
-          ':placeholder': 'startCommand.placeholder',
-          'x-ref': 'startCommandInput'
-        }
-      ) }}
-      <button
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground [&>svg]:size-4"
-        type="button" @click="
-          startCommand.locked = !startCommand.locked;
-          $refs.startCommandInput.value = startCommand.locked ? null : $refs.startCommandInput.placeholder;
-          $el.closest('form').dispatchEvent(new Event('change'));
-        " :data-tooltip="startCommand.locked ? '{{ _('Edit') }}' : '{{ _('Reset') }}'"
-        data-tooltip-position="top-right">
-        <template x-if="startCommand.locked">
-          {% include "icons/pencil.svg" %}
-        </template>
-        <template x-if="!startCommand.locked">
-          {% include "icons/x.svg" %}
-        </template>
-      </button>
-      {{ form.use_custom_start_command(
-        class="hidden",
-        **{':value': '!startCommand.locked'}
+        class="w-full font-mono text-[13px]",
+        **{'x-ref': 'startCommandInput'}
       ) }}
     </div>
     {% for error in form.start_command.errors %}
-    <p class="text-sm text-destructive">{{ error }}</p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') | safe }}

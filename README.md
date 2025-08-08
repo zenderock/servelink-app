@@ -1,164 +1,114 @@
-This is a simple and opiniated boilerplate for Flask apps (mostly ripped off from [Miguel Grinberg's awesome Flask Mega-Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world)).
+# DevPush
 
-# Main features
+A modern 
 
-- Code organized in [Blueprints](https://flask.palletsprojects.com/en/stable/blueprints/)
-- i18n support with [Flask-Babel](https://python-babel.github.io/flask-babel/)
-- Forms with [Flask-WTForms](https://flask-wtf.readthedocs.io/en/1.2.x/)
-- Database ORM with SQLAlchemy (defaults to SQLite).
-- Email with [Resend](https://resend.com) and email templates with [MJML](https://mjml.io/).
-- CSS with [Tailwind CSS](https://tailwindcss.com/).
-- Javascript with [Alpine.js](https://alpinejs.dev/) and (optionally) [HTMX](https://htmx.org/).
+## Stack
 
-# Prerequisites
+- Docker & [Docker Compose](https://github.com/docker/compose)
+- [Traefik](https://github.com/traefik/traefik)
+- [Loki](https://github.com/grafana/loki)
+- [PostreSQL](https://www.postgresql.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [arq](https://arq-docs.helpmanual.io/)
+- [HTMX](https://htmx.org)
+- [Alpine.js](https://alpinejs.dev/)
+- [Basecoat](https://basecoatui.com)
+- [Ansible](https://github.com/ansible/ansible)
+- [Terraform](https://github.com/hashicorp/terraform)
 
-- Python 3.
-- Node.js/npm for developement (CSS, email template, favicons, ...).
+## Overview
 
-# Install & Run
+- **App**: The app handles all of the user-facing logic (managing teams/projects, authenticating, searching logs...). It communicates with the workers via Redis/
+- **Job queue/Worker**: When we create a new deployment, we queue a deploy job using arq/Redis. The workers (in the worker container) execute them and report back in real-time to the app via Redis Streams. These workers are also used to run certain batch jobs (e.g. deleting a team, cleaning up inactive deployments and their containers).
+- **Logs**: build logs are streamed from the workers via Redis Streams, and served to the user via an SSE endpoint in the app. Runtime logs are all logged in Loki and made available per project through the app.
+- **Runners**: User apps are deployed on one of the runner containers (e.g. `Docker/runner/Dockerfile.python-3`). They are created in the deploy job (`app/tasks/deploy.py`) and then run a series of commands based on the user configuration.
+- **Reverse proxy**: We have Traefik sitting in front of both app and the deployed runner containers. All routing is done using Traefik labels, but we also maintain environment and branch aliases (e.g. `my-project-env-staging.devpush.app`) maintaing Traefik config files.
 
-1. **[Make a copy of this template](https://github.com/hunvreus/flask-basics/generate)** and `git clone` the repository you created.
-2. Create your virtual environment and activate it:
-    ```
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-3. Install the dependencies:
-    ```
-    pip install -r requirements.txt 
-    ```
-4. Initiate your database migrations and create the tables:
-    ```
-    flask db migrate # This will create a "migrations/" folder
-    flask db upgrade # This may create an "app.db" file
-    ```
-5. Create your local environment configuration file:
-    ```
-    cp .env.example .env
-    ```
-6. Start the app:
-    ```
-    flask run
-    ```
-7. Need Redis (what port?) and have it running +` rq worker deployments`
+## File structure
 
-# Environment variables
+- **`app/`**: The main FastAPI application (see Readme file).
+- **`devops/`**: Ansible playbooks and Terraform for production setup.
+- **`Docker/`**: Container definitions and entrypoint scripts. Includes local developement specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker.dev.sh`).
+- **`scripts/`**: Helper scripts for local (macOS) and production environments
+- **`docker-compose.yml`**: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.dev.yml`) and production (`docker-compose.dprod.yml`).
 
-Variable | Default | Description
---- | --- | ---
-`APP_NAME` | `"App name"` | The name of the app displayed in the header, emails, user messagse, etc.
-`APP_DESCRIPTION` | `None` | The default `<meta>` description, can be overriden for any route by defining the description template variable.
-`APP_SOCIAL_IMAGE` | `'/social.png'` | The image used for social cards.
-`MAIL_SENDER_NAME` | `APP_NAME` | The name used when sending emails.
-`MAIL_SENDER_EMAIL` | `'noreply@example.com'` | The email used when sending emails.
-`MAIL_LOGO` | `'/logo/logo-72x72.png'` | Logo used in the HTML email template (see `app/templates/email/login.html`).
-`MAIL_FOOTER` | `None` | A text to be included in the footer of your emails (e.g. your business address).
-`SECRET_KEY` | `'random-unique-secret-key'` | [Secret key used for signing session cookies](https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY). On MacOS/Linux, you can generate it with `openssl rand -base64 32`.
-`SQLALCHEMY_DATABASE_URI` | `None` | [A valid database connection URI](https://flask-sqlalchemy.readthedocs.io/en/stable/config/#flask_sqlalchemy.config.SQLALCHEMY_DATABASE_URI). If undefined, the app will use an SQLite database saved at `app.db`.
-`RESEND_API_KEY` | `None` | The [Resend](https://resend.com) API key. If no key is provided (e.g. when developing on local), the content of the emails sent will be displayed in your terminal.
-`TEMPLATES_AUTO_RELOAD` | `False` | [Hot reload templates](https://flask.palletsprojects.com/en/stable/config/#TEMPLATES_AUTO_RELOAD) when they change (for development).
+## Install & run
 
-# Models
+### Local development (MacOS)
 
-Models are defined in `/app/models.py`. After making any change you will need to:
+1. **Install Colima with the Loki driver** with [Homebrew](https://brew.sh):
+   ```bash
+   ./scripts/local/intall.sh
+   ```
 
-1. Create the migration script:
-    ```
-    flask db migrate -m "users table"
-    ```
-2. Run the migration:
-    ```
-    flask db upgrade #undo with "downgrade"
-    ```
+2. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   ```
 
-# i18n
+3. **Start your containers**:
+   ```bash
+   ./scripts/local/start.sh
+   ```
 
-To create translations of your app strings:
+4. **Initialize your database** once the containers are up:
+   ```bash
+   ./scripts/local/db-migrate.sh
+   ```
 
-1. Generate the `.pot` file:
-    ```
-    pybabel extract -F babel.cfg -k _l -o messages.pot .
-    ```
-2. Generate a language catalog for a language (in this example Spanish with `es`):
-    ```
-    pybabel init -i messages.pot -d app/translations -l es
-    ```
-3. Once you've added your translations in the language catalog generated in the previous step, you can compile translations to be used by Flask:
-    ```
-    pybabel compile -d app/translations
-    ```
+5. **(Optional) Start ngrok**:
+   ```bash
+   ./scripts/local/ngrok.sh
+   ```
 
-You'll need to add the support for additional languages in the `LANGUAGES` array in '`config.py`.
+Once installed, you can start the app with `./scripts/local/clean.sh`. You can clean up your local dev environment (files, Docker images/networks, ...) with `./scripts/local/clean.sh`.
 
-Later on, if you need ot update translations you can run: 
+You can also use `./scripts/local/db-reset.sh` if you want to drop the database and start fresh. You'll need to run `./scripts/local/db-migrate.sh` again afterwards.
 
-```
-pybabel extract -F babel.cfg -k _l -o messages.pot .
-pybabel update -i messages.pot -d app/translations
-```
+### Production
 
-# Assets (CSS, images, email template)
+1. **Add your [Hetzner](https://hetzner.com) API key**:
+   ```bash
+   cp .env.devops.example .env.devops
+   ```
 
-*To run any of the npm commands listed below, you need to install the dev depdendencies with `npm install`.*
+2. **Create the server on Hetzner** (CPX31 in Hillsboro):
+   ```bash
+   ./scripts/prod/create.sh
+   ```
 
-- **CSS**: You can modify the `/app/src/main.css` file and run the build process with `npm run css:build`, or `npm run css:dev` if you want to watch changes.
-- **Favicon**: These files are saved in `app/static/favicon/`. You can generate these files by editing the `src/favicon.svg` file and then running `npm run favicon`.
-- **Social cards** (OG and Twitter/X): These files are saved in `app/static/social/`. You can generate these files by editing the `src/social.svg` file and then running `npm run social`.
-- **Logo**: The logo is saved in both SVG and PNG formats at multiple resolutions in `app/static/logo`. You can generate these files by editing the `src/logo.svg` file and then running `npm run logo`.
-- **Email template**: The login email templates (HTML and text) are saved in `app/templates/email/`. The HTML version can be generated from the [MJML](https://mjml.io/) template defined at `src/login.mjml` by running the `npm run email` command.
+3. **Set up the IP address**. Just add the IP address you got from Hetzner to the `.env.devops` file (`SERVER_IP`).
 
-You can generate all assets at once by running the `npm run build` command.
+4. **Set up the server**:
+   ./scripts/prod/setup.sh
+   ```
 
+5. **(Optional) Set up the deploy key**. If you are using a private GitHub repository for the codebase, you should have gotten a key to add to your repo in the output of the previous step.
 
-ENCRYPTION_KEY python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+6. **Set up deploy environment variables**. Set teh GitHub repository (`GITHUB_REPO`) and [Let's Encrypt](https://letsencrypt.org/) email (`LE_EMAIL`) for the SSL setup.
+   
+7. **Deploy and start the app**:
+   ```bash
+   ./scripts/prod/deploy.sh
+   ```
 
+8. **Initialize your database** once the containers are up:
+   ```bash
+   ./scripts/prod/migrate.sh
+   ```
 
-colima start
+You can use `./scripts/prod/ssh-tunnel.sh` to establish an SSH tunnel to access the PostgreSQL database locally (via `localhost:15432`).
 
-docker build -t app-deploy -f docker/Dockerfile.deploy .
+## Update
 
-APP_ENV=dev docker-compose up --build
+### Local development
 
-docker-compose up --build
+The app is mounted inside of its container, so any change will show up immediately. However,certain parts of the app are using SSE so changes may not appear until you closed the tabs with the app open (FastAPI won't reload until all active connections are closed).
 
+The worker is also mounted but will usually require a restart: `docker-compose restart worker`.
 
-NUKE 
+### Production
 
-# Stop all containers (running or stopped)
-docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) -f
+Simple run `./scripts/prod/update.sh` and select whether you want to update the app or worker container.
 
-# Remove all containers
-
-
-# Now you can remove images
-
-
-docker ps --filter "label=app.deployment_id=Qo0IS_JJgaHRI3q7xirdgA"
-
-
-
-
-
-Check logs from loki: 
-
-colima start --feature docker --log-driver loki --log-opt loki-url=http://host.docker.internal:3100/loki/api/v1/push
-
-`docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -a -q) -f`
-`docker-compose build runner && docker-compose down -v && docker-compose up --build --force-recreate`
-
-
-
-{ width: 1200, height: 630, name: 'social-card.png' }
-
-
-
-
-docker exec -it api bash
-
-uv run alembic revision --autogenerate -m "initial"
-uv run alembic upgrade head
-
-postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}
-
-
-POSTGRES_HOST=localhost uv run alembic revision --autogenerate -m "initial"
+This will run a blue-green update process with Ansible (no downtime). This may take a while for the worker as it waits for all active jobs to be finished before cleaning up the old container.

@@ -50,7 +50,7 @@ function parseEnvFile(content) {
   hx-get="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='env_vars') }}"
   hx-trigger="environments:updated from:window"
   hx-swap="outerHTML"
-  hx-indicator=".htmx-indicator"
+  hx-indicator="find .htmx-indicator"
 >
   <form method="POST"
     action="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='env_vars') }}"

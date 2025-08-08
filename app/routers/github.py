@@ -476,7 +476,7 @@ async def github_webhook(
 
                 for project in projects:
                     try:
-                        deployment = await deployment_service.create_deployment(
+                        deployment = await deployment_service.create(
                             project=project,
                             branch=branch,
                             commit=commit_data,

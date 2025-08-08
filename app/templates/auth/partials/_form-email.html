@@ -4,7 +4,7 @@
   class="form grid gap-4"
   hx-post="{{ url_for('auth_login') }}"
   hx-swap="outerHTML"
-  hx-indicator=".htmx-indicator"
+  hx-indicator="find .htmx-indicator"
   hx-swap="outerHTML"
   x-init="loading = null"
   @htmx:before-send="loading = 'email'"

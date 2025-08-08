@@ -9,4 +9,4 @@ docker rmi $(docker images -a -q) -f && \
 docker network rm devpush_default || true && \
 docker network rm devpush_internal || true && \
 rm -rf ./data/traefik/* && \
-mkdir -p ./data/{db,traefik,upload}
+mkdir -p ./data/{traefik,upload}

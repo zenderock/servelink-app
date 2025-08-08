@@ -18,7 +18,7 @@
           hx-post="{{ url_for('user_notifications').include_query_params(fragment='accept_invite') }}"
           hx-swap="none"
           hx-disabled-elt="button"
-          hx-indicator=".htmx-indicator"
+          hx-indicator="find .htmx-indicator"
           x-init
           @htmx:after-request="$el.closest('dialog').close()"
         >

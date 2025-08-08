@@ -49,30 +49,6 @@ def process_env_vars(form, formdata):
     form.env_vars._fields = {str(i): e for i, e in enumerate(filtered)}
 
 
-def process_commands_and_root_directory(form, formdata):
-    if formdata:
-        if (
-            hasattr(form, "use_custom_build_command")
-            and not form.use_custom_build_command.data
-        ):
-            form.build_command.data = None
-        if (
-            hasattr(form, "use_custom_pre_deploy_command")
-            and not form.use_custom_pre_deploy_command.data
-        ):
-            form.pre_deploy_command.data = None
-        if (
-            hasattr(form, "use_custom_start_command")
-            and not form.use_custom_start_command.data
-        ):
-            form.start_command.data = None
-        if (
-            hasattr(form, "use_custom_root_directory")
-            and not form.use_custom_root_directory.data
-        ):
-            form.root_directory.data = None
-
-
 class ProjectEnvVarForm(Form):
     env_var_id = HiddenField()
     key = StringField(
@@ -210,24 +186,19 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
 class ProjectBuildAndProjectDeployForm(StarletteForm):
     framework = SelectField(
         _l("Framework presets"),
-        choices=[
-            ("flask", "Flask"),
-            ("django", "Django"),
-            ("fastapi", "FastAPI"),
-            ("python", "Python"),
-        ],
+        choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     runtime = SelectField(
         _l("Runtime"),
         choices=[
             ("python-3", "Python 3"),
+            ("node-20", "Node.js 20"),
             ("python-2", "Python 2", {"disabled": True}),
             ("pypy", "PyPy", {"disabled": True}),
         ],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    use_custom_root_directory = BooleanField(_l("Custom root directory"), default=False)
     root_directory = StringField(
         _l("Root directory"),
         validators=[
@@ -240,20 +211,13 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
             ),
         ],
     )
-    use_custom_build_command = BooleanField(_l("Custom build command"), default=False)
-    use_custom_pre_deploy_command = BooleanField(
-        _l("Custom pre-deploy command"), default=False
-    )
-    use_custom_start_command = BooleanField(_l("Custom start command"), default=False)
     build_command = StringField(_l("Build command"))
     pre_deploy_command = StringField(_l("Pre-deploy command"))
-    start_command = StringField(_l("Start command"))
+    start_command = StringField(
+        _l("Start command"), validators=[DataRequired(), Length(min=1)]
+    )
 
     validate_root_directory = validate_root_directory
-
-    def process(self, formdata=None, obj=None, data=None, **kwargs):
-        super().process(formdata, obj, data, **kwargs)
-        process_commands_and_root_directory(self, formdata)
 
 
 class ProjectGeneralForm(StarletteForm):
@@ -335,24 +299,19 @@ class NewProjectForm(StarletteForm):
     )
     framework = SelectField(
         _l("Framework presets"),
-        choices=[
-            ("flask", "Flask"),
-            ("django", "Django"),
-            ("fastapi", "FastAPI"),
-            ("python", "Python"),
-        ],
+        choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     runtime = SelectField(
         _l("Runtime"),
         choices=[
             ("python-3", "Python 3"),
+            ("node-20", "Node.js 20"),
             ("python-2", "Python 2", {"disabled": True}),
             ("pypy", "PyPy", {"disabled": True}),
         ],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    use_custom_root_directory = BooleanField(_l("Custom root directory"), default=False)
     root_directory = StringField(
         _l("Root directory"),
         validators=[
@@ -365,14 +324,11 @@ class NewProjectForm(StarletteForm):
             ),
         ],
     )
-    use_custom_build_command = BooleanField(_l("Custom build command"), default=False)
-    use_custom_pre_deploy_command = BooleanField(
-        _l("Custom pre-deploy command"), default=False
-    )
-    use_custom_start_command = BooleanField(_l("Custom start command"), default=False)
     build_command = StringField(_l("Build command"))
     pre_deploy_command = StringField(_l("Pre-deploy command"))
-    start_command = StringField(_l("Start command"))
+    start_command = StringField(
+        _l("Start command"), validators=[DataRequired(), Length(min=1)]
+    )
     env_vars = FieldList(FormField(ProjectEnvVarForm))
     submit = SubmitField(_l("Save"))
 
@@ -386,7 +342,7 @@ class NewProjectForm(StarletteForm):
     def process(self, formdata=None, obj=None, data=None, **kwargs):
         super().process(formdata, obj, data, **kwargs)
         process_env_vars(self, formdata)
-        process_commands_and_root_directory(self, formdata)
+        # process_commands_and_root_directory(self, formdata)
 
     async def async_validate_name(self, field):
         if self.db and self.team:
@@ -418,12 +374,16 @@ class ProjectDeployForm(StarletteForm):
     submit = SubmitField(_l("Deploy"))
 
 
-class ProjectRollbackForm(StarletteForm):
+class ProjectCancelDeploymentForm(StarletteForm):
+    submit = SubmitField(_l("Cancel"))
+
+
+class ProjectRollbackDeploymentForm(StarletteForm):
     environment_id = HiddenField(_l("Environment ID"), validators=[DataRequired()])
     submit = SubmitField(_l("Rollback"))
 
 
-class ProjectPromoteForm(StarletteForm):
+class ProjectPromoteDeploymentForm(StarletteForm):
     environment_id = HiddenField(_l("Environment ID"), validators=[DataRequired()])
     deployment_id = HiddenField(_l("Deployment ID"), validators=[DataRequired()])
     submit = SubmitField(_l("Promote"))

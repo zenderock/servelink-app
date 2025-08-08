@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: 201d6e892790
+Revision ID: ddefe8c6f68b
 Revises: 
-Create Date: 2025-07-24 04:00:45.949901
+Create Date: 2025-08-04 04:35:37.115066
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '201d6e892790'
+revision: str = 'ddefe8c6f68b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -105,6 +105,7 @@ def upgrade() -> None:
     sa.Column('commit_meta', sa.JSON(), nullable=False),
     sa.Column('config', sa.JSON(), nullable=False),
     sa.Column('env_vars', sa.Text(), nullable=False),
+    sa.Column('job_id', sa.String(length=36), nullable=True),
     sa.Column('container_id', sa.String(length=64), nullable=True),
     sa.Column('container_status', sa.Enum('running', 'stopped', 'removed', name='deployment_container_status'), nullable=True),
     sa.Column('status', sa.Enum('queued', 'in_progress', 'completed', name='deployment_status'), nullable=False),
@@ -113,7 +114,6 @@ def upgrade() -> None:
     sa.Column('created_by_user_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('concluded_at', sa.DateTime(), nullable=True),
-    sa.Column('build_logs', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['created_by_user_id'], ['user.id'], ondelete='SET NULL', use_alter=True),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
     sa.PrimaryKeyConstraint('id')

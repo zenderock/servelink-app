@@ -1,5 +1,5 @@
 <form action="" method="post" hx-post="" hx-swap=" outerHTML" hx-disabled-elt="input, select, button"
-  class="form flex flex-col gap-y-6" hx-indicator=".htmx-indicator">
+  class="form flex flex-col gap-y-6" hx-indicator="find .htmx-indicator">
   {{ form.csrf_token() }}
   {{ form.repo_id(class_="hidden") }}
   <div class="space-y-6">
@@ -27,14 +27,14 @@
     <div class="space-y-3">
       {{ form.name.label() }}
       {{ form.name(
-      size=100,
-      class="w-full",
-      required=True,
-      placeholder="e.g. my-project",
-      **({'aria-invalid': 'true'} if form.name.errors else {})
+        size=100,
+        class="w-full",
+        required=True,
+        placeholder="e.g. my-project",
+        **({'aria-invalid': 'true'} if form.name.errors else {})
       ) }}
       {% for error in form.name.errors %}
-      <p class="text-destructive text-sm">{{ error }}</p>
+        <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     </div>
 

@@ -27,7 +27,7 @@
         <h3 class="font-medium">{{ _('Commit info:') }}</h3>
         <div class="flex gap-x-6 items-center border px-4 h-12 rounded-lg">
           <span class="bg-accent animate-pulse h-4 flex-1 rounded max-w-3/5"></span>
-          <button class="btn-sm-icon-ghost ml-auto" disabled>
+          <button type="button" class="btn-sm-icon-ghost ml-auto" disabled>
             {% include "icons/arrow-up-right.svg" %}
           </button>
         </div>
@@ -58,7 +58,7 @@
     >
       <div class="flex gap-x-6 items-center border px-4 h-12 rounded-lg">
         <span class="bg-accent animate-pulse h-4 flex-1 rounded max-w-3/5"></span>
-        <button class="btn-sm-icon-ghost ml-auto" disabled>
+        <button type="button" class="btn-sm-icon-ghost ml-auto" disabled>
           {% include "icons/arrow-up-right.svg" %}
         </button>
       </div>
@@ -71,6 +71,7 @@
 {% endif %}
 
 <button
+  type="button"
   role="menuitem"
   onclick="
     const dialog = document.getElementById('dialog-rollback');
@@ -93,6 +94,7 @@
 </button> #}
 
 <button
+  type="button"
   role="menuitem"
   onclick="
     const dialog = document.getElementById('dialog-redeploy');
