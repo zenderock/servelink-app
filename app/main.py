@@ -16,6 +16,7 @@ from config import get_settings, Settings
 from db import get_db, AsyncSessionLocal
 from models import User, Team, Deployment, Project
 from dependencies import get_current_user, TemplateResponse
+from services.loki import LokiService
 
 
 class CachedStaticFiles(StaticFiles):
@@ -37,10 +38,15 @@ if log_level > logging.DEBUG:
 async def lifespan(app: FastAPI):
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     app.state.redis_pool = await create_pool(redis_settings)
+    app.state.loki_service = LokiService()
     try:
         yield
     finally:
-        await app.state.redis_pool.close()
+        try:
+            await app.state.loki_service.client.aclose()
+            await app.state.redis_pool.close()
+        except Exception:
+            pass
 
 
 app = FastAPI(

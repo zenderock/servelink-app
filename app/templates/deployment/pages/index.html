@@ -21,12 +21,23 @@
       </a>
     </header>
 
-    {% include "deployment/partials/_sse-logs.html" %}
     <div
       id="deployment-logs"
       class="overflow-y-auto h-[500px] relative p-2 border-t scrollbar-thin scrollbar"
+      hx-trigger="load"
+      hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id).include_query_params(fragment='logs') }}"
+      hx-swap="beforeend"
       x-init="$el.scrollTop = $el.scrollHeight"
-      hx-on::after-swap="this.scrollTop = this.scrollHeight"
+      hx-on::before-swap="
+        scrollBottom = this.scrollHeight - this.scrollTop;
+      "
+      hx-on::after-swap="
+        if (event?.detail?.requestConfig?.triggeringEvent?.type == 'intersect') {
+          this.scrollTop = this.scrollHeight - scrollBottom;
+        } else {
+          this.scrollTop = this.scrollHeight;
+        }
+      "
       x-data="{
         getTime(timestamp) {
           return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -48,6 +59,6 @@
         </div>
       </div>
     </div>
-  </details>
+  </section>
 </div>
 {% endblock %}

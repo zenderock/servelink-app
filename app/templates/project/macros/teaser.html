@@ -3,6 +3,7 @@
   <a
     href="{{ url_for('project_index', team_slug=team.slug, project_name=project.name) }}"
     class="flex items-center gap-x-2.5 min-w-0"
+    hx-boost="true"
   >
     {% from "macros/avatar.html" import avatar with context %}
     {{ avatar(item=project, prefix="project", name=project.name) }}

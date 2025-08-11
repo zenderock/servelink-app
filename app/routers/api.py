@@ -1,12 +1,12 @@
 import logging
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import StreamingResponse
 from redis.asyncio import Redis
 import asyncio
 import time
 from typing import Any
 
-from models import Team, Project, Deployment, User
+from models import Team, Project, Deployment, User, utc_now
 from dependencies import (
     get_current_user,
     get_deployment_by_id,
@@ -15,19 +15,12 @@ from dependencies import (
     get_team_by_id,
     templates,
 )
-from services.loki import LokiService
 
 router = APIRouter(prefix="/api")
 
 logger = logging.getLogger(__name__)
 
-
 STREAM_TTL = 900
-
-LOKI_WS = "ws://loki:3100/loki/api/v1/tail"
-
-
-loki_service = LokiService()
 
 
 @router.get(
@@ -36,6 +29,7 @@ loki_service = LokiService()
 )
 async def api_deployment_events(
     request: Request,
+    start_timestamp: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     team: Team = Depends(get_team_by_id),
     project: Project = Depends(get_project_by_id),
@@ -49,16 +43,21 @@ async def api_deployment_events(
         status_start_position = "0-0"
 
         last_event_id = request.headers.get("Last-Event-ID")  # Reconnection
-        logs_start_timestamp = int(last_event_id) if last_event_id else None
+        logs_start_timestamp = (
+            int(last_event_id)
+            if last_event_id
+            else start_timestamp
+            if start_timestamp
+            else None
+        )
 
         logs_template = templates.get_template("deployment/macros/log-list.html")
 
         deployment_conclusion = None
-        deployment_conclusion_time = None
 
         try:
             while True:
-                logs = await loki_service.get_logs(
+                logs = await request.app.state.loki_service.get_logs(
                     project_id=deployment.project_id,
                     deployment_id=deployment.id,
                     start_timestamp=logs_start_timestamp,
@@ -73,12 +72,13 @@ async def api_deployment_events(
                         max(int(log["timestamp"]) for log in logs) + 1
                     )
 
-                # If the deployment didn't succeed, we close the stream after 5 seconds (to
-                # make sure all logs are read)
-                if (
-                    deployment_conclusion != "succeeded"
-                    and deployment_conclusion_time
-                    and time.time() - deployment_conclusion_time > 5
+                if not (
+                    deployment.status != "completed"
+                    or deployment.container_status == "running"
+                    or (
+                        deployment.concluded_at
+                        and (utc_now() - deployment.concluded_at).total_seconds() < 5
+                    )
                 ):
                     yield "event: deployment_log_closed\n"
                     yield f"data: {deployment_conclusion}\n\n"
@@ -100,7 +100,6 @@ async def api_deployment_events(
                                     deployment_conclusion = message_fields.get(
                                         "deployment_status"
                                     )
-                                    deployment_conclusion_time = time.time()
                                     yield "event: deployment_concluded\n"
                                     yield f"data: {deployment_conclusion}\n\n"
                                 status_start_position = message_id

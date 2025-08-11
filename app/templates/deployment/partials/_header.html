@@ -27,7 +27,7 @@
   </h1>
 
   <div class="flex items-center gap-x-2 ml-auto">
-    {% if cancel_form %}
+    {# {% if cancel_form %}
       <form
         method="post"
         action="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
@@ -43,7 +43,7 @@
           <div class="htmx-indicator [&>svg]:size-4 [&>svg]:animate-spin">{% include "icons/loader.svg" %}</div>
         </button>
       </form>
-    {% endif %}
+    {% endif %} #}
 
     {% if deployment.conclusion == 'succeeded' and deployment.container_status == 'running' %}
       <div class="flex items-center">
@@ -153,6 +153,7 @@
         href="{{ url_for('project_deployments', team_slug=team.slug, project_name=deployment.project.name).include_query_params(environment=deployment.environment.slug) }}"
         class="flex items-center gap-x-2 text-muted-foreground hover:text-foreground transition-colors"
         data-tooltip="{{ _('Environment') }}"
+        hx-boost="true"
       >
         {{ environment_label(environment=deployment.environment) }}
       </a>

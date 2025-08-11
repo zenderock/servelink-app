@@ -39,7 +39,7 @@
   </ol>
 
   <div
-    hx-get="{{ url_for('github_repo_select') }}"
+    hx-get="{{ url_for('github_repo_select').include_query_params(type='new_project') }}"
     hx-trigger="load"
     hx-swap="outerHTML"    
     class="flex items-center justify-center h-[292px] w-full"

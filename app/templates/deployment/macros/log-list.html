@@ -15,6 +15,7 @@
       class="font-sans"
       data-tooltip="{{ _('Deployment') }}"
       aria-label="{{ _('Deployment') }}"
+      hx-boost="true"
     >
       <span class="badge-outline px-1.5 py-0 text-muted-foreground hover:text-foreground font-mono">{{ log.labels.deployment_id[:7] }}</span>
     </a>

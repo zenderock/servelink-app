@@ -67,7 +67,6 @@
   <script src="{{ url_for('static', path='/assets/alpine.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='/assets/htmx-sse.min.js') }}" defer></script>
-  <script src="{{ url_for('static', path='/assets/htmx-preload.min.js') }}" defer></script>
   <script>
     document.addEventListener('htmx:historyRestore', () => {
       if (window.basecoat) window.basecoat.initAll();
@@ -81,9 +80,25 @@
       })
     })
   </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.addEventListener('htmx:beforeRequest', (event) => {
+      if (event.detail.boosted === true) {
+        console.log('booster on')
+        document.body.classList.add('loading')
+      }
+    })
+    document.body.addEventListener('htmx:afterRequest', (event) => {
+      if (event.detail.boosted === true) {
+        console.log('booster off')
+        document.body.classList.remove('loading')
+      }
+    })
+  })
+  </script>
   {% block head %}{% endblock %}
 </head>
-<body class="relative h-full text-sm" hx-ext="preload">
+<body class="relative h-full text-sm" >
   {% block base_content %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

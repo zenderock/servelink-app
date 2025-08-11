@@ -10,7 +10,6 @@ from urllib.parse import urlparse, parse_qs
 import logging
 import os
 from typing import Any
-import httpx
 
 from dependencies import (
     get_current_user,
@@ -53,7 +52,6 @@ from db import get_db
 from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
 from services.deployment import DeploymentService
-from services.loki import LokiService
 from utils.project import get_latest_projects, get_latest_deployments
 from utils.team import get_latest_teams
 from utils.pagination import paginate
@@ -114,11 +112,8 @@ async def new_project_details(
 
     form: Any = await NewProjectForm.from_formdata(request, db=db, team=team)
 
-    framework_choices = []
-    for framework in settings.frameworks:
-        framework_choices.append((framework["slug"], framework["name"]))
-
-    form.framework.choices = framework_choices
+    if not form.framework.data:
+        form.framework.data = settings.frameworks[0]["slug"]
 
     if request.method == "GET":
         form.repo_id.data = int(repo_id)
@@ -205,7 +200,7 @@ async def new_project_details(
     return TemplateResponse(
         request=request,
         name="project/partials/_form-new-project.html"
-        if request.headers.get("HX-Request")
+        if request.headers.get("HX-Request") and request.method == "POST"
         else "project/pages/new-details.html",
         context={
             "current_user": current_user,
@@ -213,6 +208,7 @@ async def new_project_details(
             "form": form,
             "repo_full_name": f"{repo_owner or ''}/{repo_name or ''}",
             "frameworks": settings.frameworks,
+            "runtimes": settings.runtimes,
             "environments": [
                 {"color": "blue", "name": "Production", "slug": "production"}
             ],
@@ -1199,6 +1195,7 @@ async def project_settings(
                     "project": project,
                     "build_and_deploy_form": build_and_deploy_form,
                     "frameworks": settings.frameworks,
+                    "runtimes": settings.runtimes,
                 },
             )
 
@@ -1225,6 +1222,7 @@ async def project_settings(
             "delete_project_form": delete_project_form,
             "colors": COLORS,
             "frameworks": settings.frameworks,
+            "runtimes": settings.runtimes,
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,
         },
@@ -1239,6 +1237,7 @@ async def project_settings(
 async def project_deployment(
     request: Request,
     fragment: str = Query(None),
+    end_timestamp: int | None = Query(None),
     project: Project = Depends(get_project_by_name),
     current_user: User = Depends(get_current_user),
     role: str = Depends(get_role),
@@ -1301,6 +1300,77 @@ async def project_deployment(
             },
         )
 
+    if request.headers.get("HX-Request") and (
+        fragment == "logs" or fragment == "logs-next"
+    ):
+        logs = []
+        limit = 50
+        try:
+            start_timestamp = None
+            if fragment == "logs":
+                start_timestamp = (
+                    int(
+                        deployment.created_at.replace(tzinfo=timezone.utc).timestamp()
+                        * 1e9
+                    )
+                    if deployment.created_at
+                    else None
+                )
+            logs = await request.app.state.loki_service.get_logs(
+                limit=limit,
+                project_id=project.id,
+                deployment_id=deployment.id,
+                end_timestamp=end_timestamp,
+                start_timestamp=start_timestamp,
+                timeout=10.0,
+            )
+        except Exception as e:
+            logger.error(f"Failed to retrieve logs: {e}")
+            flash(request, _("Failed to retrieve logs."), "error")
+
+        next_batch_url = None
+        if logs and len(logs) == limit:
+            next_batch_end_timestamp = int(logs[0]["timestamp"]) - 1
+            next_batch_url = request.url.include_query_params(
+                end_timestamp=next_batch_end_timestamp,
+                fragment="logs-next",
+            )
+
+        sse_connect_url = None
+        if fragment == "logs" and (
+            deployment.status != "completed"
+            or deployment.container_status == "running"
+            or (
+                deployment.concluded_at
+                and (utc_now() - deployment.concluded_at).total_seconds() < 5
+            )
+        ):
+            sse_connect_url = request.url_for(
+                "api_deployment_events",
+                team_id=team.id,
+                project_id=project.id,
+                deployment_id=deployment.id,
+            )
+            if logs:
+                sse_start_timestamp = int(logs[-1]["timestamp"]) + 1
+                sse_connect_url = sse_connect_url.include_query_params(
+                    start_timestamp=sse_start_timestamp
+                )
+
+        return TemplateResponse(
+            request=request,
+            name="deployment/partials/_logs-batch.html",
+            context={
+                "logs": logs,
+                "next_batch_url": next_batch_url,
+                "fragment": fragment,
+                "team": team,
+                "project": project,
+                "deployment": deployment,
+                "sse_connect_url": sse_connect_url,
+            },
+        )
+
     latest_teams = await get_latest_teams(
         db=db, current_user=current_user, current_team=team
     )
@@ -1354,7 +1424,6 @@ async def project_logs(
     db: AsyncSession = Depends(get_db),
 ):
     team, membership = team_and_membership
-    limit = 50
 
     deployment = None
     if deployment_id:
@@ -1386,7 +1455,7 @@ async def project_logs(
         )
 
     if request.headers.get("HX-Request") and (
-        fragment == "batch" or fragment == "logs"
+        fragment == "logs" or fragment == "logs-next"
     ):
         if not end_timestamp:
             if date_to:
@@ -1433,10 +1502,25 @@ async def project_logs(
         if start_timestamp and not end_timestamp:
             end_timestamp = int(datetime.now(timezone.utc).timestamp() * 1e9)
 
-        loki_service = LokiService()
+        if not start_timestamp and not end_timestamp:
+            result = await db.execute(
+                select(Deployment.created_at)
+                .where(Deployment.project_id == project.id)
+                .order_by(Deployment.created_at.desc())
+                .limit(10)
+            )
+            rows = result.scalars().all()
+            if rows:
+                oldest_deployment = rows[-1]
+                start_timestamp = int(
+                    oldest_deployment.replace(tzinfo=timezone.utc).timestamp() * 1e9
+                )
+                end_timestamp = int(datetime.now(timezone.utc).timestamp() * 1e9)
+
+        limit = 50
         logs = []
         try:
-            logs = await loki_service.get_logs(
+            logs = await request.app.state.loki_service.get_logs(
                 project_id=project.id,
                 limit=limit,
                 start_timestamp=str(start_timestamp) if start_timestamp else None,
@@ -1447,13 +1531,7 @@ async def project_logs(
                 keyword=keyword,
                 timeout=10.0,
             )
-        except httpx.TimeoutException as e:
-            logger.error(f"Logs query timed out: {e}")
-            flash(request, _("Logs query timed out."), "error")
-        except httpx.ConnectError as e:
-            logger.error(f"Failed to connect to Loki: {e}")
-            flash(request, _("Failed to retrieve logs."), "error")
-        except httpx.HTTPStatusError as e:
+        except Exception as e:
             logger.error(f"Failed to retrieve logs: {e}")
             flash(request, _("Failed to retrieve logs."), "error")
 
@@ -1462,8 +1540,9 @@ async def project_logs(
             next_batch_end_timestamp = int(logs[0]["timestamp"]) - 1
             next_batch_url = request.url.include_query_params(
                 end_timestamp=next_batch_end_timestamp,
-                fragment="batch",
+                fragment="logs-next",
             )
+
         return TemplateResponse(
             request=request,
             name="project/partials/_logs-batch.html",

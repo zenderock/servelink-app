@@ -44,7 +44,7 @@
       action="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name) }}"
       hx-get="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(fragment='logs') }}"
       hx-target="#logs"
-      hx-indicator=".htmx-indicator"
+      hx-indicator="next .htmx-indicator"
       hx-trigger="input delay:500ms, change from:[type='date'] from:[type='time'] from:div.select delay:10ms, logs:refresh from:document, load"
       hx-push-url="true"
       hx-swap="innerHTML"
@@ -288,8 +288,6 @@
           }
         "
         x-data="{
-          scrollBottom: 0,
-          loaderHeight: 0,
           getTime(timestamp) {
             return new Date(timestamp).toLocaleTimeString('default', { month: 'short', day: 'numeric', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
           },
@@ -303,10 +301,10 @@
           }
         }"
       >
-        {% include "project/partials/_logs-batch-skeleton.html" %}
+        {# {% include "project/partials/_logs-batch-skeleton.html" %} #}
       </div>
-      <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20">
-        <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4">
+      <div class="htmx-indicator bg-background/90 absolute inset-0 flex items-center justify-center rounded-lg z-20 border rounded-lg">
+        <div class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:animate-spin">
           {% include "icons/loader.svg" %}
           <span>{{ _('Retrieving logs') }}</span>
         </div>

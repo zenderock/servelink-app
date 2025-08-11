@@ -12,7 +12,7 @@
   @apply visible opacity-100;
 }
 
-/* @keyframes progress-bar {
+@keyframes progress-bar {
   0% {
     width: 0%
   }
@@ -40,17 +40,17 @@
 
 body {
   &:after {
-    @apply content-[''] fixed top-0 left-0 h-1 bg-blue-600 dark:bg-blue-500 z-[999] opacity-0 w-0 transition-[opacity|width] pointer-events-none;
+    @apply content-[''] fixed top-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-500 z-[999] opacity-0 w-0 transition-[opacity|width] pointer-events-none;
   }
 
-  &.hx-boost-loading:after {
+  &.loading:after {
     @apply opacity-100 animate-[progress-bar_4s_linear_forwards];
   }
 
-  &:not(.hx-boost-loading):after {
+  &:not(.loading):after {
     @apply w-full opacity-0 transition-[width|opacity] duration-300 ease-in-out;
   }
-} */
+}
 
 .h1,
 .h2,

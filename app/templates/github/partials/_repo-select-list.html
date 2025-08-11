@@ -15,18 +15,24 @@
       {% if repo.updated_at %}
         <p class="text-muted-foreground truncate">{{ repo.updated_at | time_ago }}</p>
       {% endif %}
-      <button
-        @click="$dispatch('repo-selected', { 
-          id: {{ repo.id }}, 
-          owner: '{{ repo.owner.login }}',
-          name: '{{ repo.name }}',
-          defaultBranch: '{{ repo.default_branch }}',
-          fullName: '{{ repo.full_name }}'
-        })"
-        class="btn-sm ml-auto"
-      >
-        {{ _('Select') }}
-      </button>
+      {% if request.query_params.get('type') == 'new_project' %}
+        <a href="./new-project/details?repo_id={{ repo.id }}&repo_owner={{ repo.owner.login }}&repo_name={{ repo.name }}&repo_default_branch={{ repo.default_branch }}" class="btn-sm ml-auto" hx-boost="true">
+          {{ _('Select') }}
+        </a>
+      {% else %}
+        <button
+          @click="$dispatch('repo-selected', { 
+            id: {{ repo.id }}, 
+            owner: '{{ repo.owner.login }}',
+            name: '{{ repo.name }}',
+            defaultBranch: '{{ repo.default_branch }}',
+            fullName: '{{ repo.full_name }}'
+          })"
+          class="btn-sm ml-auto"
+        >
+          {{ _('Select') }}
+        </button>
+      {% endif %}
     </li>
   {% endfor %}
 </ul>

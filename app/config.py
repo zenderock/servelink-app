@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     default_cpu_quota: int = 100000
     default_memory_mb: int = 4096
     frameworks: list[dict] = []
+    runtimes: list[dict] = []
     job_timeout: int = 320
     job_completion_wait: int = 300
     deployment_timeout: int = 300
@@ -49,10 +50,13 @@ class Settings(BaseSettings):
 def get_settings():
     settings = Settings()
 
-    frameworks_file = Path("settings/frameworks.json")
+    presets_file = Path("settings/presets.json")
+    runtimes_file = Path("settings/runtimes.json")
     try:
-        settings.frameworks = json.loads(frameworks_file.read_text(encoding="utf-8"))
+        settings.frameworks = json.loads(presets_file.read_text(encoding="utf-8"))
+        settings.runtimes = json.loads(runtimes_file.read_text(encoding="utf-8"))
     except Exception:
         settings.frameworks = []
+        settings.runtimes = []
 
     return settings

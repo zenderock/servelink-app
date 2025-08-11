@@ -1,6 +1,9 @@
-{% macro render_build_and_deploy(form, frameworks) %}
-<div class="space-y-6" x-data="{
+{% macro render_build_and_deploy(form, frameworks, runtimes) %}
+<div
+  class="space-y-6"
+  x-data="{
     frameworks: {{ frameworks | tojson | replace('"', "'") | safe }},
+    runtimes: {{ runtimes | tojson | replace('"', "'") | safe }},
     setPreset(value) {
       const preset = this.frameworks.find(f => f.slug === value);      
       if (!preset) {
@@ -12,12 +15,23 @@
       if ($refs.buildCommandInput) $refs.buildCommandInput.value = preset.build_command || '';
       if ($refs.preDeployCommandInput) $refs.preDeployCommandInput.value = preset.pre_deploy_command || '';
       if ($refs.startCommandInput) $refs.startCommandInput.value = preset.start_command || '';
-    }
+      
+      const availableRuntimes = this.runtimes[preset.runtime];
+      if ($refs.runtimeInput) $refs.runtimeInput.value = availableRuntimes[0].slug;
+      $refs.runtimeInput.querySelectorAll('option').forEach(option => {
+          if (option.value && !availableRuntimes.find(r => r.slug === option.value)) {
+              option.disabled = true;
+          } else {
+              option.disabled = false;
+          }
+      });
+    },
   }"
+  x-init="setPreset('{{ form.framework.data }}')"
 >
   {# FRAMEWORK PRESET #}
   <div class="space-y-3">
-    <label for="framework">{{ _('Framework presets') }}</label>
+    <label for="framework">{{ _('Framework preset') }}</label>
     {% from "macros/select.html" import select %}
     {% call select(
       name="framework",
@@ -41,7 +55,7 @@
   {# RUNTIME #}
   <div class="space-y-3">
     {{ form.runtime.label() }}
-    {{ form.runtime(class="font-mono text-[13px]") }}
+    {{ form.runtime(class="font-mono text-[13px]", **{'x-ref': 'runtimeInput'}) }}
     {% for error in form.runtime.errors %}
       <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}

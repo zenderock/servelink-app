@@ -17,8 +17,33 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies import get_translation as _, get_lazy_translation as _l
+from config import get_settings
 from models import Project, Team
 from utils.color import COLORS
+
+
+def validate_runtime(self, field):
+    framework_runtime = next(
+        (
+            framework["runtime"]
+            for framework in self._frameworks
+            if framework["slug"] == self.framework.data
+        ),
+        None,
+    )
+    if not framework_runtime:
+        return
+    runtime_group = self._runtimes.get(framework_runtime)
+    if not runtime_group:
+        return
+    if self.runtime.data and self.runtime.data not in {
+        runtime["slug"] for runtime in runtime_group
+    }:
+        raise ValidationError(
+            _(
+                "Invalid runtime for this framework. Please select a runtime from the list."
+            )
+        )
 
 
 def validate_root_directory(form, field):
@@ -186,17 +211,10 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
 class ProjectBuildAndProjectDeployForm(StarletteForm):
     framework = SelectField(
         _l("Framework presets"),
-        choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     runtime = SelectField(
         _l("Runtime"),
-        choices=[
-            ("python-3", "Python 3"),
-            ("node-20", "Node.js 20"),
-            ("python-2", "Python 2", {"disabled": True}),
-            ("pypy", "PyPy", {"disabled": True}),
-        ],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     root_directory = StringField(
@@ -216,6 +234,21 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
     start_command = StringField(
         _l("Start command"), validators=[DataRequired(), Length(min=1)]
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        settings = get_settings()
+        self._runtimes = settings.runtimes
+        self._frameworks = settings.frameworks
+        self.framework.choices = [
+            (framework["slug"], framework["name"]) for framework in self._frameworks
+        ]
+        self.runtime.choices = {
+            group: [(runtime["slug"], runtime["name"]) for runtime in items]
+            for group, items in self._runtimes.items()
+        }
+
+    validate_runtime = validate_runtime
 
     validate_root_directory = validate_root_directory
 
@@ -304,12 +337,7 @@ class NewProjectForm(StarletteForm):
     )
     runtime = SelectField(
         _l("Runtime"),
-        choices=[
-            ("python-3", "Python 3"),
-            ("node-20", "Node.js 20"),
-            ("python-2", "Python 2", {"disabled": True}),
-            ("pypy", "PyPy", {"disabled": True}),
-        ],
+        choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     root_directory = StringField(
@@ -338,6 +366,16 @@ class NewProjectForm(StarletteForm):
         super().__init__(*args, **kwargs)
         self.db = db
         self.team = team
+        settings = get_settings()
+        self._runtimes = settings.runtimes
+        self._frameworks = settings.frameworks
+        self.framework.choices = [
+            (framework["slug"], framework["name"]) for framework in self._frameworks
+        ]
+        self.runtime.choices = {
+            group: [(runtime["slug"], runtime["name"]) for runtime in items]
+            for group, items in self._runtimes.items()
+        }
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
         super().process(formdata, obj, data, **kwargs)
@@ -357,6 +395,8 @@ class NewProjectForm(StarletteForm):
                 raise ValidationError(
                     _("A project with this name already exists in this team.")
                 )
+
+    validate_runtime = validate_runtime
 
 
 class ProjectDeleteForm(StarletteForm):

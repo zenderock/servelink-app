@@ -1,7 +1,6 @@
 import httpx
 import re
 from typing import List, Dict, Any
-from datetime import datetime, timezone, timedelta
 import logging
 
 from utils.log import epoch_nano_to_iso
@@ -72,13 +71,6 @@ class LokiService:
         timeout: float = 10.0,
     ) -> List[Dict[str, Any]]:
         """Get logs from Loki."""
-
-        if not start_timestamp:
-            start_timestamp = str(
-                int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1e9)
-            )
-        if not end_timestamp:
-            end_timestamp = str(int(datetime.now(timezone.utc).timestamp() * 1e9))
 
         query_parts = [f'project_id="{project_id}"']
 

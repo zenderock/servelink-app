@@ -23,7 +23,7 @@
 <header class="sticky top-0 bg-background z-20 border-b px-8 flex flex-col gap-y-2">
 	<div class="flex items-center justify-between gap-x-4 h-16">
 		<nav class="flex items-center gap-x-2.5">
-			<a href="/" class="w-6 h-8 shrink-0 flex items-center justify-center" aria-label="{{ settings.app_name }}">
+			<a href="/" class="w-6 h-8 shrink-0 flex items-center justify-center" aria-label="{{ settings.app_name }}" hx-boost="true">
 				<svg width="120" height="120" viewBox="0 0 120 120" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 					<path d="M39.9265 17L16.5652 103.791H0L23.3612 17H39.9265Z" />
 					<path
@@ -35,7 +35,7 @@
 				{% if team %}
 				<div class="text-muted-foreground/25 text-xl">/</div>
 				<div class="flex items-center">
-					<a href="{{ url_for('team_index', team_slug=team.slug) }}" class="btn-sm-ghost">
+					<a href="{{ url_for('team_index', team_slug=team.slug) }}" class="btn-sm-ghost" hx-boost="true">
 						{{ avatar(item=team, prefix="team", name=team.name, size="xs", class="-ml-1") }}
 						{{ team.name }}
 					</a>
@@ -53,7 +53,7 @@
 				<div class="text-muted-foreground/25 text-xl">/</div>
 
 				<div class="flex items-center">
-					<a href="{{ url_for('project_index', team_slug=team.slug, project_name=project.name) }}" class="btn-sm-ghost">
+					<a href="{{ url_for('project_index', team_slug=team.slug, project_name=project.name) }}" class="btn-sm-ghost" hx-boost="true">
 						{% from "macros/avatar.html" import avatar with context %}
 						{{ avatar(item=project, prefix="project", name=project.name, size="xs", class="-ml-1") }}
 						{{ project.name }}
@@ -73,7 +73,7 @@
 
 					<div class="flex items-center">
 						<a href="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id) }}"
-							class="btn-sm-ghost">
+							class="btn-sm-ghost" hx-boost="true">
 							{% from "deployment/macros/status.html" import status %}
 							{{ status(
 								conclusion=deployment.conclusion,

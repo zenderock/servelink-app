@@ -400,9 +400,6 @@
   .right-0\.5 {
     right: calc(var(--spacing) * 0.5);
   }
-  .right-3 {
-    right: calc(var(--spacing) * 3);
-  }
   .left-3 {
     left: calc(var(--spacing) * 3);
   }
@@ -1375,8 +1372,8 @@
   .pt-4 {
     padding-top: calc(var(--spacing) * 4);
   }
-  .\!pr-9 {
-    padding-right: calc(var(--spacing) * 9) !important;
+  .pr-3 {
+    padding-right: calc(var(--spacing) * 3);
   }
   .pb-1\.5 {
     padding-bottom: calc(var(--spacing) * 1.5);
@@ -1386,6 +1383,12 @@
   }
   .\!pl-9 {
     padding-left: calc(var(--spacing) * 9) !important;
+  }
+  .pl-1\.5 {
+    padding-left: calc(var(--spacing) * 1.5);
+  }
+  .pl-2 {
+    padding-left: calc(var(--spacing) * 2);
   }
   .pl-4 {
     padding-left: calc(var(--spacing) * 4);
@@ -4935,6 +4938,62 @@
 .htmx-request, .htmx-request.htmx-indicator {
   visibility: visible;
   opacity: 100%;
+}
+@keyframes progress-bar {
+  0% {
+    width: 0%;
+  }
+  10% {
+    width: 40%;
+  }
+  30% {
+    width: 60%;
+  }
+  60% {
+    width: 70%;
+  }
+  90% {
+    width: 75%;
+  }
+  100% {
+    width: 78%;
+  }
+}
+body {
+  &:after {
+    pointer-events: none;
+    position: fixed;
+    top: calc(var(--spacing) * 0);
+    left: calc(var(--spacing) * 0);
+    z-index: 999;
+    height: calc(var(--spacing) * 0.5);
+    width: calc(var(--spacing) * 0);
+    background-color: var(--color-blue-600);
+    opacity: 0%;
+    transition-property: opacity|width;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-content: '';
+    content: var(--tw-content);
+    &:is(.dark *) {
+      background-color: var(--color-blue-500);
+    }
+  }
+  &.loading:after {
+    animation: progress-bar 4s linear forwards;
+    opacity: 100%;
+  }
+  &:not(.loading):after {
+    width: 100%;
+    opacity: 0%;
+    transition-property: width|opacity;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-duration: 300ms;
+    transition-duration: 300ms;
+    --tw-ease: var(--ease-in-out);
+    transition-timing-function: var(--ease-in-out);
+  }
 }
 .h1, .h2, .h3, .h4, .h5, .h6 {
   --tw-leading: var(--leading-tight);

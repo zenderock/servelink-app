@@ -2,7 +2,7 @@
   {
     "slug": "python",
     "name": "Python",
-    "runtime": "python-3",
+    "runtime": "Python",
     "build_command": "pip install -r requirements.txt",
     "pre_deploy_command": "",
     "start_command": "gunicorn -w 3 -b 0.0.0.0:8000 main:app",
@@ -11,7 +11,7 @@
   {
     "slug": "flask",
     "name": "Flask",
-    "runtime": "python-3",
+    "runtime": "Python",
     "build_command": "pip install -r requirements.txt",
     "pre_deploy_command": "",
     "start_command": "gunicorn -w 3 -b 0.0.0.0:8000 main:app",
@@ -20,7 +20,7 @@
   {
     "slug": "django",
     "name": "Django",
-    "runtime": "python-3",
+    "runtime": "Python",
     "build_command": "pip install -r requirements.txt",
     "pre_deploy_command": "python manage.py migrate",
     "start_command": "gunicorn -w 3 -b 0.0.0.0:8000 myproject.wsgi:application",
@@ -29,7 +29,7 @@
   {
     "slug": "fastapi",
     "name": "FastAPI",
-    "runtime": "python-3",
+    "runtime": "Python",
     "build_command": "pip install -r requirements.txt",
     "pre_deploy_command": "",
     "start_command": "gunicorn -w 3 -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker main:app",
@@ -38,7 +38,7 @@
   {
     "slug": "nextjs",
     "name": "Next.js",
-    "runtime": "node-20",
+    "runtime": "JavaScript",
     "build_command": "npm install && npm run build",
     "pre_deploy_command": "",
     "start_command": "npm start",
