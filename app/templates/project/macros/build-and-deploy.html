@@ -1,20 +1,15 @@
-{% macro render_build_and_deploy(form, frameworks, runtimes) %}
+{% macro render_build_and_deploy(form, presets, runtimes) %}
 <div
   class="space-y-6"
   x-data="{
-    frameworks: {{ frameworks | tojson | replace('"', "'") | safe }},
+    presets: {{ presets | tojson | replace('"', "'") | safe }},
     runtimes: {{ runtimes | tojson | replace('"', "'") | safe }},
-    setPreset(value) {
-      const preset = this.frameworks.find(f => f.slug === value);      
+    setPreset(value, onlyRuntime = false) {
+      const preset = this.presets.find(p => p.slug === value);
       if (!preset) {
         console.error('Can not find framework preset.');
         return;
       }
-      
-      if ($refs.rootDirectoryInput) $refs.rootDirectoryInput.value = preset.root_directory || '';
-      if ($refs.buildCommandInput) $refs.buildCommandInput.value = preset.build_command || '';
-      if ($refs.preDeployCommandInput) $refs.preDeployCommandInput.value = preset.pre_deploy_command || '';
-      if ($refs.startCommandInput) $refs.startCommandInput.value = preset.start_command || '';
       
       const availableRuntimes = this.runtimes[preset.runtime];
       if ($refs.runtimeInput) $refs.runtimeInput.value = availableRuntimes[0].slug;
@@ -25,29 +20,36 @@
               option.disabled = false;
           }
       });
+
+      if (onlyRuntime) return;
+
+      if ($refs.rootDirectoryInput) $refs.rootDirectoryInput.value = preset.root_directory || '';
+      if ($refs.buildCommandInput) $refs.buildCommandInput.value = preset.build_command || '';
+      if ($refs.preDeployCommandInput) $refs.preDeployCommandInput.value = preset.pre_deploy_command || '';
+      if ($refs.startCommandInput) $refs.startCommandInput.value = preset.start_command || '';
     },
   }"
-  x-init="setPreset('{{ form.framework.data }}')"
+  x-init="setPreset(presets[0].slug, !!'{{ form.preset.data or '' }}')"
 >
   {# FRAMEWORK PRESET #}
   <div class="space-y-3">
-    <label for="framework">{{ _('Framework preset') }}</label>
+    <label for="preset">{{ _('Framework preset') }}</label>
     {% from "macros/select.html" import select %}
     {% call select(
-      name="framework",
-      selected=form.framework.data,
+      name="preset",
+      selected=form.preset.data,
       main_attrs={'@change': 'setPreset(event.detail.value)'}
     ) %}
-      {% for framework in frameworks %}
-        <div role="option" data-value="{{ framework.slug }}">
+      {% for preset in presets %}
+        <div role="option" data-value="{{ preset.slug }}">
           <span class="flex items-center gap-x-2">
-            {{ framework.logo | safe }}
-            {{ framework.name | safe }}
+            {{ preset.logo | safe }}
+            {{ preset.name | safe }}
           </span>
         </div>
       {% endfor %}
     {% endcall %}
-    {% for error in form.framework.errors %}
+    {% for error in form.preset.errors %}
       <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
@@ -55,7 +57,11 @@
   {# RUNTIME #}
   <div class="space-y-3">
     {{ form.runtime.label() }}
-    {{ form.runtime(class="font-mono text-[13px]", **{'x-ref': 'runtimeInput'}) }}
+    {{ form.runtime(
+      id=False,
+      class="font-mono text-[13px]",
+      **{'x-ref': 'runtimeInput'}
+    ) }}
     {% for error in form.runtime.errors %}
       <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
@@ -66,6 +72,7 @@
     {{ form.root_directory.label() }}
     <div class="relative">
       {{ form.root_directory(
+        id=False,
         class="w-full font-mono text-[13px]",
         pattern="^\.?/?([a-zA-Z0-9_\-]+/?)*$",
         placeholder="./",
@@ -85,6 +92,7 @@
     {{ form.build_command.label() }}
     <div class="relative">
       {{ form.build_command(
+        id=False,
         class="w-full font-mono text-[13px]",
         **{'x-ref': 'buildCommandInput'}
       ) }}
@@ -102,6 +110,7 @@
     {{ form.pre_deploy_command.label() }}
     <div class="relative">
       {{ form.pre_deploy_command(
+        id=False,
         class="w-full font-mono text-[13px]",
         **{'x-ref': 'preDeployCommandInput'}
       ) }}
@@ -119,6 +128,7 @@
     {{ form.start_command.label() }}
     <div class="relative">
       {{ form.start_command(
+        id=False,
         class="w-full font-mono text-[13px]",
         **{'x-ref': 'startCommandInput'}
       ) }}

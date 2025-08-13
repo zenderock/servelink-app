@@ -44,6 +44,7 @@
   hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='general') }}"
   hx-indicator="next .htmx-indicator"
   hx-swap="outerHTML"
+  hx-on::before-request="document.activeElement && document.activeElement.blur()"
   x-data="{
     changed: false,
     repoId: {{ project.repo_id }},
@@ -61,7 +62,7 @@
   @change="changed = true"
   class="card"
 >
-  {{ general_form.csrf_token() }}
+  {{ general_form.csrf_token(id=False) }}
   <header class="border-b">
     <h2>{{ _("General") }}</h2>
     <p>{{ _("General settings for the project including the Git repository.") }}</p>
@@ -70,7 +71,10 @@
   <section class="space-y-6">
     <div class="space-y-3">
       {{ general_form.name.label() }}
-      {{ general_form.name(class="input w-full") }}
+      {{ general_form.name(
+        id=False,
+        class="input w-full"
+      ) }}
       {% for error in general_form.name.errors %}
         <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
@@ -99,6 +103,7 @@
     <div class="space-y-3">
       <label for="name">{{ _("Git repository") }}</label>
       {{ general_form.repo_id(
+        id=False,
         class_="hidden",
         **{":value": "repoId"}
       ) }}

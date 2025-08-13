@@ -10,13 +10,13 @@
 <div class="space-y-2">
   <h3 class="font-medium">{{ _('Commit info:') }}</h3>
   <div class="flex gap-x-6 items-center border px-4 h-12 rounded-lg">
-    <span class="font-medium font-mono">{{ deployment.commit_sha[:7] }}</span>
+    <span class="font-medium font-mono text-[13px]">{{ deployment.commit_sha[:7] }}</span>
     <span
-      class="flex items-center gap-x-2 text-muted-foreground min-w-0 [&>svg]:size-4 [&>svg]:opacity-50 dark:[&>svg]:opacity-60 [&>svg]:shrink-0"
+      class="flex items-center gap-x-2 text-muted-foreground [&>svg]:size-4 [&>svg]:opacity-50 dark:[&>svg]:opacity-60 [&>svg]:shrink-0"
       data-tooltip="{{ _('Branch') }}"
     >
       {% include "icons/git-branch.svg" %}
-      <span class="truncate">{{ deployment.branch }}</span>
+      {{ deployment.branch }}
     </span>
     <span
       class="flex items-center gap-x-2 text-muted-foreground min-w-0 [&>svg]:size-4 [&>svg]:opacity-50 dark:[&>svg]:opacity-60 [&>svg]:shrink-0"

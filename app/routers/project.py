@@ -112,9 +112,6 @@ async def new_project_details(
 
     form: Any = await NewProjectForm.from_formdata(request, db=db, team=team)
 
-    if not form.framework.data:
-        form.framework.data = settings.frameworks[0]["slug"]
-
     if request.method == "GET":
         form.repo_id.data = int(repo_id)
         form.name.data = repo_name
@@ -162,7 +159,7 @@ async def new_project_details(
             repo_full_name=repo["full_name"],
             github_installation=github_installation,
             config={
-                "framework": form.framework.data,
+                "preset": form.preset.data,
                 "runtime": form.runtime.data,
                 "root_directory": form.root_directory.data,
                 "build_command": form.build_command.data,
@@ -207,7 +204,7 @@ async def new_project_details(
             "team": team,
             "form": form,
             "repo_full_name": f"{repo_owner or ''}/{repo_name or ''}",
-            "frameworks": settings.frameworks,
+            "presets": settings.presets,
             "runtimes": settings.runtimes,
             "environments": [
                 {"color": "blue", "name": "Production", "slug": "production"}
@@ -1157,7 +1154,7 @@ async def project_settings(
     build_and_deploy_form: Any = await ProjectBuildAndProjectDeployForm.from_formdata(
         request,
         data={
-            "framework": project.config.get("framework"),
+            "preset": project.config.get("preset"),
             "runtime": project.config.get("runtime"),
             "root_directory": project.config.get("root_directory"),
             "build_command": project.config.get("build_command"),
@@ -1166,16 +1163,16 @@ async def project_settings(
         },
     )
 
-    framework_choices = []
-    for framework in settings.frameworks:
-        framework_choices.append((framework["slug"], framework["name"]))
+    preset_choices = []
+    for preset in settings.presets:
+        preset_choices.append((preset["slug"], preset["name"]))
 
-    build_and_deploy_form.framework.choices = framework_choices
+    build_and_deploy_form.preset.choices = preset_choices
 
     if fragment == "build_and_deploy":
         if await build_and_deploy_form.validate_on_submit():
             project.config = {
-                "framework": build_and_deploy_form.framework.data,
+                "preset": build_and_deploy_form.preset.data,
                 "runtime": build_and_deploy_form.runtime.data,
                 "root_directory": build_and_deploy_form.root_directory.data,
                 "build_command": build_and_deploy_form.build_command.data,
@@ -1194,7 +1191,7 @@ async def project_settings(
                     "team": team,
                     "project": project,
                     "build_and_deploy_form": build_and_deploy_form,
-                    "frameworks": settings.frameworks,
+                    "presets": settings.presets,
                     "runtimes": settings.runtimes,
                 },
             )
@@ -1221,7 +1218,7 @@ async def project_settings(
             "env_vars_form": env_vars_form,
             "delete_project_form": delete_project_form,
             "colors": COLORS,
-            "frameworks": settings.frameworks,
+            "presets": settings.presets,
             "runtimes": settings.runtimes,
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,

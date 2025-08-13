@@ -123,6 +123,7 @@
       loop:
         - /srv/devpush/traefik
         - /srv/devpush/upload
+        - /srv/devpush/settings
       file:
         path: "{{ item }}"
         state: directory

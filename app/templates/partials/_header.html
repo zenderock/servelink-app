@@ -23,7 +23,7 @@
 <header class="sticky top-0 bg-background z-20 border-b px-8 flex flex-col gap-y-2">
 	<div class="flex items-center justify-between gap-x-4 h-16">
 		<nav class="flex items-center gap-x-2.5">
-			<a href="/" class="w-6 h-8 shrink-0 flex items-center justify-center" aria-label="{{ settings.app_name }}" hx-boost="true">
+			<a href="/" class="w-6 h-8 shrink-0 flex items-center justify-center" aria-label="{{ app_name }}" hx-boost="true">
 				<svg width="120" height="120" viewBox="0 0 120 120" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 					<path d="M39.9265 17L16.5652 103.791H0L23.3612 17H39.9265Z" />
 					<path
@@ -80,7 +80,7 @@
 								compact=True,
 								attrs={ 'data-deployment-status': deployment.id }
 							) }}
-							<span class="font-mono">{{ deployment.id[:7] }}</span>
+							<span class="font-mono text-[13px]">{{ deployment.id[:7] }}</span>
 						</a>
 						{% call dropdown_menu(
 							trigger=trigger,

@@ -15,6 +15,8 @@ from wtforms import (
 from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+import re
+from starlette.datastructures import FormData
 
 from dependencies import get_translation as _, get_lazy_translation as _l
 from config import get_settings
@@ -23,26 +25,24 @@ from utils.color import COLORS
 
 
 def validate_runtime(self, field):
-    framework_runtime = next(
+    preset_runtime = next(
         (
-            framework["runtime"]
-            for framework in self._frameworks
-            if framework["slug"] == self.framework.data
+            preset["runtime"]
+            for preset in self._presets
+            if preset["slug"] == self.preset.data
         ),
         None,
     )
-    if not framework_runtime:
+    if not preset_runtime:
         return
-    runtime_group = self._runtimes.get(framework_runtime)
+    runtime_group = self._runtimes.get(preset_runtime)
     if not runtime_group:
         return
     if self.runtime.data and self.runtime.data not in {
         runtime["slug"] for runtime in runtime_group
     }:
         raise ValidationError(
-            _(
-                "Invalid runtime for this framework. Please select a runtime from the list."
-            )
+            _("Invalid runtime for this preset. Please select a runtime from the list.")
         )
 
 
@@ -60,18 +60,45 @@ def validate_root_directory(form, field):
         field.data = path
 
 
-def process_env_vars(form, formdata):
-    if not hasattr(form, "env_vars"):
-        return
+def _normalize_env_vars_formdata(formdata):
+    def getlist(key):
+        try:
+            return formdata.getlist(key)
+        except AttributeError:
+            value = formdata.get(key)
+            if value is None:
+                return []
+            return value if isinstance(value, list) else [value]
 
-    filtered = [
-        e
-        for e in form.env_vars.entries
-        if not e.delete.data and (e.key.data.strip() or e.value.data.strip())
-    ]
+    indexes = set()
+    for key in formdata:
+        match = re.match(r"env_vars-(\d+)-", key)
+        if match:
+            indexes.add(int(match.group(1)))
 
-    form.env_vars.entries = filtered
-    form.env_vars._fields = {str(i): e for i, e in enumerate(filtered)}
+    pairs = []
+    new_i = 0
+
+    for i in sorted(indexes):
+        if getlist(f"env_vars-{i}-delete"):
+            continue
+
+        key_value = (getlist(f"env_vars-{i}-key") or [""])[0]
+        value_value = (getlist(f"env_vars-{i}-value") or [""])[0]
+        environment_value = (getlist(f"env_vars-{i}-environment") or [""])[0]
+
+        if key_value or value_value:
+            pairs.append((f"env_vars-{new_i}-key", key_value))
+            pairs.append((f"env_vars-{new_i}-value", value_value))
+            pairs.append((f"env_vars-{new_i}-environment", environment_value))
+            new_i += 1
+
+    for key in formdata:
+        if not key.startswith("env_vars-"):
+            for value in getlist(key):
+                pairs.append((key, value))
+
+    return FormData(pairs)
 
 
 class ProjectEnvVarForm(Form):
@@ -102,8 +129,9 @@ class ProjectEnvVarsForm(StarletteForm):
     env_vars = FieldList(FormField(ProjectEnvVarForm), min_entries=0)
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
+        if formdata is not None:
+            formdata = _normalize_env_vars_formdata(formdata)
         super().process(formdata, obj, data, **kwargs)
-        process_env_vars(self, formdata)
 
     def validate_env_vars(self, field):
         processed_pairs = set()
@@ -122,7 +150,7 @@ class ProjectEnvVarsForm(StarletteForm):
                 duplicates_found = True
                 entry_form.key.errors.append(
                     _(
-                        'Duplicate key "{key_name}" for environment "{env_name}".',
+                        'Duplicate key "%(key_name)s" for environment "%(env_name)s".',
                         key_name=key_data,
                         env_name=env_data or _("All environments"),
                     )
@@ -209,7 +237,7 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
 
 
 class ProjectBuildAndProjectDeployForm(StarletteForm):
-    framework = SelectField(
+    preset = SelectField(
         _l("Framework presets"),
         validators=[DataRequired(), Length(min=1, max=255)],
     )
@@ -239,9 +267,9 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
         super().__init__(*args, **kwargs)
         settings = get_settings()
         self._runtimes = settings.runtimes
-        self._frameworks = settings.frameworks
-        self.framework.choices = [
-            (framework["slug"], framework["name"]) for framework in self._frameworks
+        self._presets = settings.presets
+        self.preset.choices = [
+            (preset["slug"], preset["name"]) for preset in self._presets
         ]
         self.runtime.choices = {
             group: [(runtime["slug"], runtime["name"]) for runtime in items]
@@ -330,7 +358,7 @@ class NewProjectForm(StarletteForm):
     production_branch = StringField(
         _l("Production branch"), validators=[DataRequired(), Length(min=1, max=255)]
     )
-    framework = SelectField(
+    preset = SelectField(
         _l("Framework presets"),
         choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
@@ -368,9 +396,9 @@ class NewProjectForm(StarletteForm):
         self.team = team
         settings = get_settings()
         self._runtimes = settings.runtimes
-        self._frameworks = settings.frameworks
-        self.framework.choices = [
-            (framework["slug"], framework["name"]) for framework in self._frameworks
+        self._presets = settings.presets
+        self.preset.choices = [
+            (preset["slug"], preset["name"]) for preset in self._presets
         ]
         self.runtime.choices = {
             group: [(runtime["slug"], runtime["name"]) for runtime in items]
@@ -378,8 +406,9 @@ class NewProjectForm(StarletteForm):
         }
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
+        if formdata is not None:
+            formdata = _normalize_env_vars_formdata(formdata)
         super().process(formdata, obj, data, **kwargs)
-        process_env_vars(self, formdata)
         # process_commands_and_root_directory(self, formdata)
 
     async def async_validate_name(self, field):

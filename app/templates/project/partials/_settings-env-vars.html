@@ -7,6 +7,7 @@
     :disabled="!envFile"
     @click="
       document.dispatchEvent(new CustomEvent('env-vars:insert', { detail: parseEnvFile(envFile) }));
+      envFile = '';
       $el.closest('dialog').close();
     "
   >
@@ -58,12 +59,13 @@ function parseEnvFile(content) {
     hx-indicator="next .htmx-indicator"
     hx-target="closest div"
     hx-swap="outerHTML"
+    hx-on::before-request="document.activeElement && document.activeElement.blur()"
     x-data="{ changed: false }"
     @input="changed = true"
     @change="changed = true"
     class="card"
   >
-    {{ env_vars_form.csrf_token() }}
+    {{ env_vars_form.csrf_token(id=False) }}
     <header class="border-b">
       <h2>{{ _('Environment variables') }}</h2>
       <p>{{ _('Variables available at build time and runtime. Changes will take effect after a new deployment.') }}</p>

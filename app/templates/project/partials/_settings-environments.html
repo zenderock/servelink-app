@@ -14,6 +14,7 @@
     hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='environment') }}"
     hx-target="closest .card"
     hx-swap="outerHTML"
+    hx-on::before-request="document.activeElement && document.activeElement.blur()"
     hx-indicator="next .htmx-indicator"
     @htmx:after-request="$dispatch('environments:updated')"
     x-show="activeForm === {{ index }}"
@@ -29,9 +30,13 @@
     "
     class="flex items-start gap-x-2 border-b border-border/50 pb-2"
   >
-    {{ environment_form.csrf_token }}
-    {{ environment_form.environment_id(value=environment.id) }}
+    {{ environment_form.csrf_token(id=False) }}
+    {{ environment_form.environment_id(
+      id=False,
+      value=environment.id
+    ) }}
     {{ environment_form.color(
+      id=False,
       class='w-full hidden',
       **{':value': 'color'}
     ) }}
@@ -54,6 +59,7 @@
 
     <div class="flex-1 space-y-2">
       {{ environment_form.name(
+        id=False,
         class='w-full',
         value=environment_form.name.data if is_active else environment.name if environment else '',
         readonly=environment.get('id') == 'prod',
@@ -70,6 +76,7 @@
     </div>
     <div class="flex-1 space-y-2">
       {{ environment_form.slug(
+        id=False,
         class='w-full font-mono',
         value=environment_form.slug.data if is_active else environment.slug if environment else '',
         readonly=environment.get('id') == 'prod',
@@ -86,6 +93,7 @@
     </div>
     <div class="field flex-1">
       {{ environment_form.branch(
+        id=False,
         class='w-full font-mono',
         value=environment_form.branch.data if is_active else environment.branch if environment else '',
         **({
@@ -164,28 +172,37 @@
               ) %}
                 <div class="space-y-4" x-data="{ confirm: '' }">
                   <p>{{ _('This will delete the environment and all related environment variables. This action cannot be undone.') }}</p>
-                  <p>{{ _('To confirm, enter the environment identifier <b>"%(slug)s"</b> below.', slug=environment.slug) }}
+                  <p>{{ _('To confirm, enter the environment identifier <b>"%(slug)s"</b> below.', slug=environment.slug) | safe }}
                   </p>
                   <form
                     method="post"
                     action="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='delete_environment') }}"
                     hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='delete_environment') }}"
                     hx-swap="outerHTML"
+                    hx-on::before-request="document.activeElement && document.activeElement.blur()"
                     hx-target="closest .card"
                     hx-indicator="next .htmx-indicator"
                     @htmx:after-request="$dispatch('environments:updated')"
                     @submit.prevent="!confirm"
                   >
-                    {{ delete_environment_form.csrf_token }}
-                    {{ delete_environment_form.environment_id(value=environment.id) }}
+                    {{ delete_environment_form.csrf_token(id=False) }}
+                    {{ delete_environment_form.environment_id(
+                      id=False,
+                      value=environment.id
+                    ) }}
                     {{ delete_environment_form.confirm(
+                      id=False,
                       class_='w-full',
                       placeholder=_('Type the environment identifier to confirm'),
                       **{'x-model': 'confirm'}
                     ) }}
                     <footer class="flex justify-end gap-x-2 pt-4">
                       <button class="btn-ghost" onclick="this.closest('dialog').close()">{{ _('Cancel') }}</button>
-                      {{ delete_environment_form.submit(class_="btn-destructive", **{':disabled': "confirm !== '" + environment.slug + "'"}) }}
+                      {{ delete_environment_form.submit(
+                        id=False,
+                        class_="btn-destructive",
+                        **{':disabled': "confirm !== '" + environment.slug + "'"}
+                      ) }}
                     </footer>
                   </form>
                 </div>

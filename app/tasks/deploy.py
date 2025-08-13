@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from typing import Any
 import socket
+import httpx
 
 from models import Deployment, Alias, Project
 from db import AsyncSessionLocal
@@ -43,6 +44,16 @@ async def _tcp_probe(ip: str, port: int, timeout: float = 5) -> bool:
         )
         return True
     except OSError:
+        return False
+
+
+async def _http_probe(ip: str, port: int, timeout: float = 5) -> bool:
+    """Check if the app responds to HTTP requests."""
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(f"http://{ip}:{port}/")
+            return response.status_code < 500  # Accept 2xx, 3xx, 4xx
+    except Exception:
         return False
 
 
@@ -269,7 +280,7 @@ async def deploy(ctx, deployment_id: str):
                                 await asyncio.sleep(0.5)
                                 continue
 
-                            if await _tcp_probe(container_ip, 8000):
+                            if await _http_probe(container_ip, 8000):
                                 deployment.conclusion = "succeeded"
                                 break
 

@@ -31,7 +31,7 @@
           data-tooltip="{{ _('Deployment ID') }}"
           hx-boost="true"
         >
-          <span class="font-medium font-mono">{{ deployment.id[:7] }}</span>
+          <span class="font-medium font-mono text-[13px]">{{ deployment.id[:7] }}</span>
         </a>
 
         {% if display_project %}
@@ -129,15 +129,13 @@
           {% include "icons/chevrons-left.svg" %}
         </button>
       {% else %}
-        <a href="{{ request.url.include_query_params(page=1) }}" class="btn-sm-icon-outline"
-          aria-label="{{ _('Newest deployments') }}">
+        <a href="{{ request.url.include_query_params(page=1) }}" class="btn-sm-icon-outline" aria-label="{{ _('Newest deployments') }}" hx-boost="true">
           {% include "icons/chevrons-left.svg" %}
         </a>
       {% endif %}
 
       {% if pagination.has_prev %}
-        <a href="{{ request.url.include_query_params(page=pagination.prev_num) }}" class="btn-sm-icon-outline"
-          aria-label="{{ _('Newer deployments') }}">
+        <a href="{{ request.url.include_query_params(page=pagination.prev_num) }}" class="btn-sm-icon-outline" aria-label="{{ _('Newer deployments') }}" hx-boost="true">
           {% include "icons/chevron-left.svg" %}
         </a>
       {% else %}
@@ -147,7 +145,7 @@
       {% endif %}
 
       {% if pagination.has_next %}
-        <a href="{{ request.url.include_query_params(page=pagination.next_num) }}" class="btn-sm-icon-outline" aria-label="{{ _('Older deployments') }}" disabled>
+        <a href="{{ request.url.include_query_params(page=pagination.next_num) }}" class="btn-sm-icon-outline" aria-label="{{ _('Older deployments') }}" hx-boost="true">
           {% include "icons/chevron-right.svg" %}
         </a>
       {% else %}
@@ -162,8 +160,7 @@
           {% include "icons/chevrons-right.svg" %}
         </button>
       {% else %}
-        <a href="{{ request.url.include_query_params(page=pagination.pages) }}" class="btn-sm-icon-outline"
-          aria-label="{{ _('Oldest deployments') }}">
+        <a href="{{ request.url.include_query_params(page=pagination.pages) }}" class="btn-sm-icon-outline" aria-label="{{ _('Oldest deployments') }}" hx-boost="true">
           {% include "icons/chevrons-right.svg" %}
         </a>
       {% endif %}

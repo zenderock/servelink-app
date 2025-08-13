@@ -6,7 +6,9 @@ from pathlib import Path
 
 class Settings(BaseSettings):
     app_name: str = "/dev/push"
-    app_description: str = "Build and deploy your Python app without touching a server."
+    app_description: str = (
+        "Open-source platform to build, preview, and ship your apps from GitHub."
+    )
     url_scheme: str = "http"
     hostname: str = "localhost"
     deploy_domain: str = "localhost"
@@ -34,7 +36,7 @@ class Settings(BaseSettings):
     traefik_config_dir: str = "/data/traefik"
     default_cpu_quota: int = 100000
     default_memory_mb: int = 4096
-    frameworks: list[dict] = []
+    presets: list[dict] = []
     runtimes: list[dict] = []
     job_timeout: int = 320
     job_completion_wait: int = 300
@@ -42,6 +44,9 @@ class Settings(BaseSettings):
     db_echo: bool = False
     log_level: str = "WARNING"
     env: str = "development"
+    access_rules_path: str = "settings/access.json"
+    access_denied_message: str = "Sign-in not allowed for this email."
+    access_denied_webhook: str = ""
 
     model_config = SettingsConfigDict(extra="ignore")
 
@@ -53,10 +58,10 @@ def get_settings():
     presets_file = Path("settings/presets.json")
     runtimes_file = Path("settings/runtimes.json")
     try:
-        settings.frameworks = json.loads(presets_file.read_text(encoding="utf-8"))
+        settings.presets = json.loads(presets_file.read_text(encoding="utf-8"))
         settings.runtimes = json.loads(runtimes_file.read_text(encoding="utf-8"))
     except Exception:
-        settings.frameworks = []
+        settings.presets = []
         settings.runtimes = []
 
     return settings

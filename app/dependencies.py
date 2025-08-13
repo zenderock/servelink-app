@@ -76,6 +76,9 @@ async def get_github_primary_email(oauth_client: OAuth, token: dict) -> str | No
 @lru_cache
 def get_google_oauth_client() -> OAuth:
     settings = get_settings()
+    if not settings.google_client_id or not settings.google_client_secret:
+        return None
+
     oauth = OAuth()
     oauth.register(
         "google",
@@ -387,11 +390,13 @@ def time_ago_filter(value):
     return humanize.naturaltime(value)
 
 
+settings = get_settings()
 templates = Jinja2Templates(
-    directory="templates", auto_reload=get_settings().env == "development"
+    directory="templates", auto_reload=settings.env == "development"
 )
 templates.env.globals["_"] = get_translation
-templates.env.globals["settings"] = get_settings()
+templates.env.globals["app_name"] = settings.app_name
+templates.env.globals["app_description"] = settings.app_description
 templates.env.globals["get_flashed_messages"] = get_flashed_messages
 templates.env.filters["time_ago"] = time_ago_filter
 templates.env.globals["get_access"] = get_access

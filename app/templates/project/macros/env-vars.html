@@ -1,6 +1,5 @@
 {% macro render_env_vars(form, environments) %}
 {% from "macros/select.html" import select %}
-{% from "macros/dialog.html" import dialog %}
 {% from "project/macros/environment-label.html" import environment_label %}
 <div
   class="space-y-2"
@@ -20,6 +19,7 @@
   <div class="flex gap-x-2 items-start" x-data="{ remove: false }">
     <div class="flex-1 space-y-2">
       {{ env_var.key(
+        id=False,
         class="input w-full font-mono",
         placeholder="e.g. MY_VAR",
         pattern="[A-Za-z_][A-Za-z0-9_]*",
@@ -32,13 +32,34 @@
       <p class="text-sm text-destructive">{{ error }}</p>
       {% endfor %}
     </div>
-    <div class="flex-1 space-y-2">
+    <div
+      class="flex-1 space-y-2"
+      x-data="{ secret: true }"
+    > 
+      <input
+        type="password"
+        value="**********"
+        class="font-mono text-[13px] mb-0"
+        @focus="
+          secret = false;
+          $nextTick(() => {
+            if ($el.nextElementSibling?.tagName === 'TEXTAREA') {
+              $el.nextElementSibling.focus();
+            }
+          })
+        "
+        :disabled="remove"
+        :hidden="!secret"
+      >
       {{ env_var.value(
-        class="textarea w-full font-mono min-h-9 py-[7px] break-all",
+        id=False,
+        class="textarea w-full font-mono text-[13px] min-h-9 py-[7px] break-all",
         pattern="[A-Za-z_][A-Za-z0-9_]*",
         **{
           "aria-invalid": "true" if env_var.value.errors,
-          ":disabled": "remove"
+          ":disabled": "remove",
+          "@focusout": "secret = true",
+          ":hidden": "secret"
         }
       ) }}
       {% for error in env_var.value.errors %}
@@ -95,12 +116,24 @@
         remove: false
       }">
       <div class="flex-1">
-        <input type="text" :name="'env_vars-' + actualIndex + '-key'" :disabled="remove" class="input w-full font-mono"
-          placeholder="e.g. MY_VAR" pattern="[A-Za-z_][A-Za-z0-9_]*" :value="item.key" />
+        <input
+          type="text"
+          :name="'env_vars-' + actualIndex + '-key'"
+          :disabled="remove"
+          class="input w-full font-mono"
+          placeholder="e.g. MY_VAR"
+          pattern="[A-Za-z_][A-Za-z0-9_]*"
+          :value="item.key"
+        />
       </div>
       <div class="flex-1">
-        <textarea :name="'env_vars-' + actualIndex + '-value'" :disabled="remove"
-          class="textarea w-full font-mono min-h-9 py-[7px] break-all" pattern="[A-Za-z_][A-Za-z0-9_]*" :value="item.value"></textarea>
+        <textarea
+          :name="'env_vars-' + actualIndex + '-value'"
+          :disabled="remove"
+          class="textarea w-full font-mono min-h-9 py-[7px] break-all"
+          pattern="[A-Za-z_][A-Za-z0-9_]*"
+          :value="item.value"
+        ></textarea>
       </div>
       <div class="field flex-1 min-w-0">
         {% set items = [{

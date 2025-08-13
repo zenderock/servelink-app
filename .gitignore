@@ -2,7 +2,6 @@
 .*
 !.gitignore
 !.dockerignore
-!.flaskenv
 !.env.example
 !.env.devops.example
 !.env.prod.example
@@ -12,15 +11,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Docker
-docker-compose.override.yml
-
 # Supervisor
 supervisord.log
 supervisord.pid
 
 # Data (uploads and Traefik)
 /data/
+
+# Access rules
+/access.json
 
 # Node
 node_modules/

@@ -1,7 +1,7 @@
 from typing import Annotated
 import logging
 from fastapi import APIRouter, Request, Depends, HTTPException
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import RedirectResponse
 from authlib.jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,6 +19,7 @@ from dependencies import (
     TemplateResponse,
     templates,
     get_current_user,
+    RedirectResponseX,
     get_github_oauth_client,
     get_github_primary_email,
     get_google_oauth_client,
@@ -28,6 +29,7 @@ from db import get_db
 from models import User, UserIdentity, TeamInvite, TeamMember, Team, utc_now
 from forms.auth import EmailLoginForm
 from utils.user import sanitize_username, get_user_by_email, get_user_by_provider
+from utils.access import is_email_allowed, notify_denied
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +118,19 @@ async def auth_login(
 
     if request.method == "POST" and await form.validate_on_submit():
         email = form.email.data
+        if not is_email_allowed(email, settings.access_rules_path):
+            await notify_denied(
+                email,
+                "email",
+                request,
+                settings.access_denied_webhook,
+            )
+            flash(request, _(settings.access_denied_message), "error")
+            return RedirectResponseX(
+                request.url_for("auth_login"),
+                status_code=303,
+                request=request,
+            )
         expires_at = utc_now() + timedelta(minutes=15)
         token_payload = {
             "email": email,
@@ -165,13 +180,9 @@ async def auth_login(
                 ),
                 "success",
             )
-            if request.headers.get("HX-Request"):
-                return Response(
-                    status_code=200,
-                    headers={"HX-Redirect": str(request.url_for("auth_login"))},
-                )
-            else:
-                return RedirectResponse(request.url_for("auth_login"))
+            return RedirectResponseX(
+                request.url_for("auth_login"), status_code=303, request=request
+            )
 
         except Exception as e:
             logger.error(f"Failed to send email: {str(e)}")
@@ -189,7 +200,12 @@ async def auth_login(
         name="auth/partials/_form-email.html"
         if request.headers.get("HX-Request")
         else "auth/pages/login.html",
-        context={"form": form},
+        context={
+            "form": form,
+            "has_google_login": bool(
+                settings.google_client_id and settings.google_client_secret
+            ),
+        },
     )
 
 
@@ -230,6 +246,15 @@ async def auth_email_verify(
 
             user = await get_user_by_email(db, email)
             if not user:
+                if not is_email_allowed(email, settings.access_rules_path):
+                    await notify_denied(
+                        email,
+                        "email",
+                        request,
+                        settings.access_denied_webhook,
+                    )
+                    flash(request, _(settings.access_denied_message), "error")
+                    return RedirectResponse("/auth/login", status_code=303)
                 user = await _create_user_with_team(db, email)
                 await db.commit()
                 await db.refresh(user)
@@ -389,6 +414,15 @@ async def auth_github_callback(
             user = await get_user_by_email(db, email)
 
         if not user:
+            if email and not is_email_allowed(email, settings.access_rules_path):
+                await notify_denied(
+                    email,
+                    "github",
+                    request,
+                    settings.access_denied_webhook,
+                )
+                flash(request, _(settings.access_denied_message), "error")
+                return RedirectResponse("/auth/login", status_code=303)
             user = await _create_user_with_team(
                 db,
                 email=email or f"{gh_user['login']}@github.local",
@@ -417,6 +451,7 @@ async def auth_github_callback(
 async def auth_google_login(
     request: Request,
     oauth_client=Depends(get_google_oauth_client),
+    settings: Settings = Depends(get_settings),
 ):
     if not oauth_client.google:
         raise HTTPException(
@@ -468,6 +503,15 @@ async def auth_google_callback(
             user = await get_user_by_email(db, email)
 
             if not user:
+                if not is_email_allowed(email, settings.access_rules_path):
+                    await notify_denied(
+                        email,
+                        "google",
+                        request,
+                        settings.access_denied_webhook,
+                    )
+                    flash(request, _(settings.access_denied_message), "error")
+                    return RedirectResponse("/auth/login", status_code=303)
                 user = await _create_user_with_team(
                     db,
                     email=email,
