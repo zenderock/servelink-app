@@ -7,7 +7,7 @@ A modern deployment platform that automates container deployments with real-time
 - Docker & [Docker Compose](https://github.com/docker/compose)
 - [Traefik](https://github.com/traefik/traefik)
 - [Loki](https://github.com/grafana/loki)
-- [PostreSQL](https://www.postgresql.org/)
+- [PostgreSQL](https://www.postgresql.org/)
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [arq](https://arq-docs.helpmanual.io/)
 - [HTMX](https://htmx.org)
@@ -22,15 +22,15 @@ A modern deployment platform that automates container deployments with real-time
 - **Job queue/Worker**: When we create a new deployment, we queue a deploy job using arq/Redis. The workers (in the worker container) execute them and report back in real-time to the app via Redis Streams. These workers are also used to run certain batch jobs (e.g. deleting a team, cleaning up inactive deployments and their containers).
 - **Logs**: build logs are streamed from the workers via Redis Streams, and served to the user via an SSE endpoint in the app. Runtime logs are all logged in Loki and made available per project through the app.
 - **Runners**: User apps are deployed on one of the runner containers (e.g. `Docker/runner/Dockerfile.python-3`). They are created in the deploy job (`app/tasks/deploy.py`) and then run a series of commands based on the user configuration.
-- **Reverse proxy**: We have Traefik sitting in front of both app and the deployed runner containers. All routing is done using Traefik labels, but we also maintain environment and branch aliases (e.g. `my-project-env-staging.devpush.app`) maintaing Traefik config files.
+- **Reverse proxy**: We have Traefik sitting in front of both app and the deployed runner containers. All routing is done using Traefik labels, but we also maintain environment and branch aliases (e.g. `my-project-env-staging.devpush.app`) maintaining Traefik config files.
 
 ## File structure
 
 - **`app/`**: The main FastAPI application (see Readme file).
 - **`devops/`**: Ansible playbooks and Terraform for production setup.
-- **`Docker/`**: Container definitions and entrypoint scripts. Includes local developement specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker.dev.sh`).
+- **`Docker/`**: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker.dev.sh`).
 - **`scripts/`**: Helper scripts for local (macOS) and production environments
-- **`docker-compose.yml`**: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.dev.yml`) and production (`docker-compose.dprod.yml`).
+- **`docker-compose.yml`**: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`) and production (`docker-compose.override.prod.yml`).
 
 ## Install & run
 
@@ -38,7 +38,7 @@ A modern deployment platform that automates container deployments with real-time
 
 1. **Install Colima with the Loki driver** with [Homebrew](https://brew.sh):
    ```bash
-   ./scripts/local/intall.sh
+   ./scripts/local/install.sh
    ```
 
 2. **Set up environment variables** (see [Environment variables](#environment-variables)):
@@ -61,7 +61,7 @@ A modern deployment platform that automates container deployments with real-time
    ./scripts/local/ngrok.sh
    ```
 
-Once installed, you can start the app with `./scripts/local/clean.sh`. You can clean up your local dev environment (files, Docker images/networks, ...) with `./scripts/local/clean.sh`.
+Start the app with `./scripts/local/start.sh`. You can clean up your local dev environment (files, Docker images/networks, ...) with `./scripts/local/clean.sh`.
 
 You can also use `./scripts/local/db-reset.sh` if you want to drop the database and start fresh. You'll need to run `./scripts/local/db-migrate.sh` again afterwards.
 
@@ -106,7 +106,7 @@ You can use `./scripts/prod/ssh-tunnel.sh` to establish an SSH tunnel to access 
 
 ### Local development
 
-The app is mounted inside of its container, so any change will show up immediately. However,certain parts of the app are using SSE so changes may not appear until you closed the tabs with the app open (FastAPI won't reload until all active connections are closed).
+The app is mounted inside of its container, so any change will show up immediately. However, certain parts of the app are using SSE so changes may not appear until you closed the tabs with the app open (FastAPI won't reload until all active connections are closed).
 
 The worker is also mounted but will usually require a restart: `docker-compose restart worker`.
 
@@ -213,7 +213,7 @@ The file can contain a list of emails, a list of allowed email domains, globs an
 
 Globs use shell-style wildcards, regex are Python patterns. If the rules file is missing or empty, all valid emails are allowed.
 
-Additionally, if you set the `ACCESS_EMAIL_DENIED_WEBHOOK_URL` environment variable](#environment-variables), defnied sign-in attempts will be posted to the provided URL with the following payload:
+Additionally, if you set the `ACCESS_EMAIL_DENIED_WEBHOOK_URL` [environment variable](#environment-variables), denied sign-in attempts will be posted to the provided URL with the following payload:
 
 ```json
 {
