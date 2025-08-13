@@ -80,6 +80,7 @@ You can also use `./scripts/local/db-reset.sh` if you want to drop the database 
 3. **Set up the IP address**. Just add the IP address you got from Hetzner to the `.env.devops` file (`SERVER_IP`).
 
 4. **Set up the server**:
+   ```bash
    ./scripts/prod/setup.sh
    ```
 
