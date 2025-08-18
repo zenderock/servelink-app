@@ -1,5 +1,4 @@
 {% from "macros/dropdown-menu.html" import dropdown_menu %}
-{% from "macros/select.html" import select %}
 {% from "macros/dialog.html" import dialog %}
 
 {% macro render_environment_form(environment={}, index=0, update=False) %}
@@ -126,14 +125,17 @@
   </header>
 
   <section class="space-y-6">
-    <div class="space-y-2" x-data='{
+    <div
+      class="space-y-2"
+      x-data='{
         activeForm: null,
         getEnvironmentColor: (index) => {
           const colors = {{ colors|tojson }};
           const colorIndex = (3 * (index - 1)) % colors.length;
           return colors[colorIndex];
         }
-      }'>
+      }'
+    >
       <div class="flex gap-x-2 border-b border-border/50 pb-2">
         <div class="shrink-0 w-10"></div>
         <div class="flex-1 label">{{ _('Name') }}</div>

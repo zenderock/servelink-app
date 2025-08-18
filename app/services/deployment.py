@@ -8,7 +8,7 @@ from redis.asyncio import Redis
 from arq.connections import ArqRedis
 from arq.jobs import Job
 
-from models import Deployment, Alias, Project, User
+from models import Deployment, Alias, Project, User, Domain
 from utils.environment import get_environment_for_branch
 from config import Settings
 
@@ -25,9 +25,10 @@ class DeploymentService:
         db: AsyncSession,
         settings: Settings,
     ) -> None:
-        """Update Traefik config for a project."""
-
+        """Update Traefik config for a project including domains."""
         path = os.path.join(settings.traefik_config_dir, f"project_{project.id}.yml")
+
+        # Get aliases
         result = await db.execute(
             select(Alias)
             .join(Deployment, Alias.deployment_id == Deployment.id)
@@ -37,25 +38,97 @@ class DeploymentService:
             )
         )
         aliases = result.scalars().all()
-        if not aliases and os.path.exists(path):
+
+        # Get active domains
+        domains_result = await db.execute(
+            select(Domain).where(
+                Domain.project_id == project.id, Domain.status == "active"
+            )
+        )
+        domains = domains_result.scalars().all()
+
+        # Remove config if no aliases or domains
+        if not aliases and not domains and os.path.exists(path):
             os.remove(path)
-        else:
-            routers = {}
-            for a in aliases:
-                router_cfg = {
-                    "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
-                    "service": f"deployment-{a.deployment_id}@docker",
-                    "entryPoints": [
-                        "websecure" if settings.url_scheme == "https" else "web"
-                    ],
+            return
+
+        routers = {}
+        services = {}
+        middlewares = {}
+
+        # Aliases
+        for a in aliases:
+            router_config = {
+                "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
+                "service": f"deployment-{a.deployment_id}@docker",
+                "entryPoints": [
+                    "websecure" if settings.url_scheme == "https" else "web"
+                ],
+            }
+            if settings.url_scheme == "https":
+                router_config["tls"] = {"certResolver": "le"}
+            routers[f"router-alias-{a.id}"] = router_config
+
+        # Domains
+        for domain in domains:
+            if domain.type == "proxy":
+                service_name = f"project-{project.id}-env-{domain.environment_id}"
+
+                router_config = {
+                    "rule": f"Host(`{domain.hostname}`)",
+                    "service": service_name,
+                    "entryPoints": ["web", "websecure"],
                 }
                 if settings.url_scheme == "https":
-                    router_cfg["tls"] = {"certResolver": "le"}
+                    router_config["tls"] = {"certResolver": "le"}
 
-                routers[f"router-alias-{a.id}"] = router_cfg
-            os.makedirs(settings.traefik_config_dir, exist_ok=True)
-            with open(path, "w") as f:
-                yaml.dump({"http": {"routers": routers}}, f, sort_keys=False, indent=2)
+                routers[f"router-domain-{domain.id}"] = router_config
+
+                services[service_name] = {
+                    "loadBalancer": {
+                        "servers": [
+                            {
+                                "url": f"http://project-{project.id}-{domain.environment_id}:8000"
+                            }
+                        ]
+                    }
+                }
+
+            elif domain.type in ["301", "302", "307", "308"]:
+                if domain.redirect_to_domain_id:
+                    redirect_domain = next(
+                        (d for d in domains if d.id == domain.redirect_to_domain_id),
+                        None,
+                    )
+                    if redirect_domain:
+                        middleware_name = f"redirect-{domain.id}"
+
+                        router_cfg = {
+                            "rule": f"Host(`{domain.hostname}`)",
+                            "service": "noop@internal",
+                            "middlewares": [middleware_name],
+                            "entryPoints": ["web", "websecure"],
+                        }
+                        routers[f"router-redirect-{domain.id}"] = router_cfg
+
+                        middlewares[middleware_name] = {
+                            "redirectRegex": {
+                                "regex": f"^https?://{domain.hostname}/(.*)",
+                                "replacement": f"https://{redirect_domain.hostname}/$1",
+                                "permanent": domain.type in ["301", "308"],
+                            }
+                        }
+
+        # Write config
+        os.makedirs(settings.traefik_config_dir, exist_ok=True)
+        config = {"http": {"routers": routers}}
+        if services:
+            config["http"]["services"] = services
+        if "middlewares" in locals():
+            config["http"]["middlewares"] = middlewares
+
+        with open(path, "w") as f:
+            yaml.dump(config, f, sort_keys=False, indent=2)
 
     async def create(
         self,

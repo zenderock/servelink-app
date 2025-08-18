@@ -1,6 +1,6 @@
 <div
   hx-ext="sse"
-  sse-connect="{{ url_for('api_deployment_events', team_id=team.id, project_id=project.id, deployment_id=deployment.id) }}"
+  sse-connect="{{ url_for('deployment_event', team_id=team.id, project_id=project.id, deployment_id=deployment.id) }}"
   sse-close="deployment_log_closed"
 >
   <div

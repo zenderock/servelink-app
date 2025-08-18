@@ -63,7 +63,10 @@ A modern deployment platform that automates container deployments with real-time
 
 Start the app with `./scripts/local/start.sh`. You can clean up your local dev environment (files, Docker images/networks, ...) with `./scripts/local/clean.sh`.
 
-You can also use `./scripts/local/db-reset.sh` if you want to drop the database and start fresh. You'll need to run `./scripts/local/db-migrate.sh` again afterwards.
+You can also use:
+
+- `./scripts/local/db-reset.sh` to drop the database and start fresh.
+- `./scripts/local/db-generate.sh` to generate a new migration file if you've made changes to the models.
 
 ### Production
 
@@ -98,7 +101,7 @@ You can also use `./scripts/local/db-reset.sh` if you want to drop the database 
 
 8. **Initialize your database** once the containers are up:
    ```bash
-   ./scripts/prod/migrate.sh
+   ./scripts/prod/db-migrate.sh
    ```
 
 You can use `./scripts/prod/ssh-tunnel.sh` to establish an SSH tunnel to access the PostgreSQL database locally (via `localhost:15432`).
@@ -127,6 +130,7 @@ Variable | Comments | Default
 `LE_EMAIL` | Email used to register the Let's Encrypt (ACME) account in Traefik; receives certificate issuance/renewal/expiry notifications. | `dev@devpu.sh`
 `HOSTNAME` | Hostname for the app (e.g. `app.devpu.sh`). | `localhost`
 `DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `localhost`
+`SERVER_UP` | Public IP of the server | `127.0.0.1`
 `SECRET_KEY` | Secret key for JWT tokens, sessions, and CSRF protection. | `secret-key`
 `ENCRYPTION_KEY` | Encryption key for sensitive data (e.g. GitHub tokens). | `encryption-key`
 `EMAIL_LOGO` | URL for email logo image. Only helpful for testing, as the app will use `app/logo-email.png` if left empty. | `""`
@@ -159,6 +163,7 @@ Variable | Comments | Default
 `ENV` | Environment (development/production). | `development`
 `ACCESS_EMAIL_DENIED_MESSAGE` | Message shown to users who are denied access based on  [sign-in access control](#sign-in-access-control). | `Sign-in not allowed for this email.`
 `ACCESS_EMAIL_DENIED_WEBHOOK_URL` | Optional webhook to receive denied events (read more about [Sign-in access control](#sign-in-access-control)). | `""`
+`NGROK_CUSTOM_DOMAIN` | **Local development only**. Used by `scripts/local/ngrok.sh` to start the [ngrok](https://ngrok.com/) http tunnel. | 
 
 ### GitHub App
 

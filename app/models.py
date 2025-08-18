@@ -356,6 +356,7 @@ class Project(Base):
     created_by_user: Mapped[User | None] = relationship(
         foreign_keys=[created_by_user_id]
     )
+    domains: Mapped[list["Domain"]] = relationship(back_populates="project")
 
     __table_args__ = (UniqueConstraint("team_id", "name", name="uq_project_team_name"),)
 
@@ -515,6 +516,26 @@ class Project(Base):
         """Get environment by slug"""
         environments = self.active_environments if active_only else self.environments
         return next((env for env in environments if env["slug"] == slug), None)
+
+    async def get_domain_by_id(self, db, domain_id: int) -> dict | None:
+        """Get domain by ID"""
+        result = await db.execute(
+            select(Domain).where(
+                Domain.id == domain_id,
+                Domain.project_id == self.id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_domain_by_hostname(self, db, hostname: str) -> dict | None:
+        """Get domain by hostname"""
+        result = await db.execute(
+            select(Domain).where(
+                Domain.hostname == hostname,
+                Domain.project_id == self.id,
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def get_environment_aliases(self, db) -> dict[str, "Alias"]:
         """Get environment aliases for this project"""
@@ -772,3 +793,38 @@ class Alias(Base):
     @override
     def __repr__(self):
         return f"<Alias {self.subdomain}>"
+
+
+class Domain(Base):
+    __tablename__: str = "domain"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id"), index=True)
+    hostname: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(
+        SQLAEnum("proxy", "301", "302", "307", "308", name="domain_type"),
+        nullable=False,
+    )
+    environment_id: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    redirect_to_domain_id: Mapped[int | None] = mapped_column(
+        ForeignKey("domain.id"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("pending", "active", "disabled", "failed", name="domain_status"),
+        nullable=False,
+        default="pending",
+    )
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    project: Mapped[Project] = relationship(back_populates="domains")
+    redirect_to_domain: Mapped["Domain | None"] = relationship(
+        "Domain", foreign_keys=[redirect_to_domain_id], remote_side=[id]
+    )
+
+    @override
+    def __repr__(self):
+        return f"<Domain {self.hostname}>"

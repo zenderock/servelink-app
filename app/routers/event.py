@@ -16,7 +16,7 @@ from dependencies import (
     templates,
 )
 
-router = APIRouter(prefix="/api")
+router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,9 @@ STREAM_TTL = 900
 
 @router.get(
     "/{team_id}/projects/{project_id}/deployments/{deployment_id}/events",
-    name="api_deployment_events",
+    name="deployment_event",
 )
-async def api_deployment_events(
+async def deployment_event(
     request: Request,
     start_timestamp: int | None = Query(None),
     current_user: User = Depends(get_current_user),
@@ -118,8 +118,8 @@ async def api_deployment_events(
     )
 
 
-@router.get("/{team_id}/projects/{project_id}/events", name="api_project_events")
-async def api_project_events(
+@router.get("/{team_id}/projects/{project_id}/events", name="project_event")
+async def project_event(
     request: Request,
     current_user: User = Depends(get_current_user),
     team: Team = Depends(get_team_by_id),

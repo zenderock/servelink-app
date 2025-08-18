@@ -18,6 +18,7 @@
       <a href="#general" class="btn-sm-ghost justify-start">{{ _('General') }}</a>
       <a href="#environment-variables" class="btn-sm-ghost justify-start">{{ _('Environment variables') }}</a>
       <a href="#environments" class="btn-sm-ghost justify-start">{{ _('Environments') }}</a>
+      <a href="#domains" class="btn-sm-ghost justify-start">{{ _('Domains') }}</a>
       <a href="#build-and-deploy" class="btn-sm-ghost justify-start">{{ _('Build & Deploy') }}</a>
       <a href="#danger"
         class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 focus:bg-destructive/10 dark:focus:bg-destructive/20 focus:text-destructive">{{
@@ -38,6 +39,11 @@
       {# ENVIRONMENTS #}
       <section class="relative rounded-xl scroll-mt-[101px]" id="environments">
         {% include "project/partials/_settings-environments.html" %}
+      </section>
+
+      {# DOMAINS #}
+      <section class="relative rounded-xl scroll-mt-[101px]" id="domains">
+        {% include "project/partials/_settings-domains.html" %}
       </section>
 
       {# BUILD & DEPLOY #}

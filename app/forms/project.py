@@ -20,7 +20,7 @@ from starlette.datastructures import FormData
 
 from dependencies import get_translation as _, get_lazy_translation as _l
 from config import get_settings
-from models import Project, Team
+from models import Project, Team, Domain
 from utils.color import COLORS
 
 
@@ -234,6 +234,154 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
             raise ValidationError(
                 _("Environment identifier confirmation did not match.")
             )
+
+
+class ProjectDomainForm(StarletteForm):
+    domain_id = HiddenField()
+    hostname = StringField(
+        _l("Domain"),
+        validators=[
+            DataRequired(),
+            Length(min=1, max=255),
+            Regexp(
+                r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$",
+                message=_l("Please enter a valid domain name"),
+            ),
+        ],
+    )
+    type = SelectField(
+        _l("Type"),
+        validators=[DataRequired()],
+        choices={
+            _l("Routing"): [("proxy", _l("Proxy"))],
+            _l("Permanent Redirect"): [
+                ("301", _l("301 - Moved Permanently")),
+                ("308", _l("308 - Permanent Redirect")),
+            ],
+            _l("Temporary Redirect"): [
+                ("302", _l("302 - Found")),
+                ("307", _l("307 - Temporary Redirect")),
+            ],
+        },
+    )
+    environment_id = SelectField(_l("Environment"), choices=[])
+    redirect_to_domain_id = SelectField(_l("Domain"), choices=[])
+
+    def __init__(
+        self,
+        *args,
+        project: Project,
+        domains: list[Domain] | None = None,
+        db: AsyncSession,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.project = project
+        self.domains = domains or []
+        self.db = db
+
+        self.environment_id.choices = [
+            (env["id"], env["name"]) for env in project.active_environments
+        ]
+
+        active_domains = [domain for domain in domains if domain.status == "active"]
+
+        if not active_domains:
+            self.type.choices = [("proxy", _l("Proxy"))]
+            self.redirect_to_domain_id.choices = [("", "")]
+        else:
+            self.redirect_to_domain_id.choices = [
+                (domain.id, domain.hostname) for domain in active_domains
+            ]
+
+    async def async_validate_hostname(self, field):
+        if field.data:
+            query = select(Domain).where(
+                func.lower(Domain.hostname) == field.data.lower()
+            )
+            if self.domain_id.data:
+                query = query.where(Domain.id != int(self.domain_id.data))
+            result = await self.db.execute(query)
+            domain = result.scalar_one_or_none()
+            if domain:
+                raise ValidationError(_("This domain is already in use."))
+
+    def validate_environment_id(self, field):
+        if self.type.data != "proxy":
+            return
+
+        if self.type.data == "proxy" and not field.data:
+            raise ValidationError(_("Environment is required for routing type."))
+
+        if field.data:
+            environment = self.project.get_environment_by_id(field.data)
+            if not environment:
+                raise ValidationError(_("Environment not found."))
+
+    def validate_redirect_to_domain_id(self, field):
+        if self.type.data == "proxy":
+            return
+
+        if self.type.data != "proxy" and not field.data:
+            raise ValidationError(
+                _("Domain is required for redirect type. s(type)%", type=self.type.data)
+            )
+
+        if field.data:
+            domain = next(
+                (domain for domain in self.domains if domain.id == int(field.data)),
+                None,
+            )
+            if not domain:
+                raise ValidationError(_("Domain not found."))
+            if domain.hostname == self.hostname.data:
+                raise ValidationError(_("Domain cannot redirect to itself."))
+
+
+class ProjectRemoveDomainForm(StarletteForm):
+    domain_id = HiddenField(validators=[DataRequired()])
+    confirm = StringField(_l("Confirmation"), validators=[DataRequired()])
+
+    def __init__(self, *args, project: Project, domains: list[Domain], **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project = project
+        self.domains = domains
+
+    def validate_domain_id(self, field):
+        domain = next(
+            (domain for domain in self.domains if domain.id == int(field.data)), None
+        )
+        if not domain:
+            raise ValidationError(_("Domain not found."))
+
+    def validate_confirm(self, field):
+        domain = next(
+            (
+                domain
+                for domain in self.domains
+                if domain.id == int(self.domain_id.data)
+            ),
+            None,
+        )
+        if not domain:
+            raise ValidationError(_("Domain not found."))
+        if field.data != domain.hostname:
+            raise ValidationError(_("Domain confirmation did not match."))
+
+
+class ProjectVerifyDomainForm(StarletteForm):
+    domain_id = HiddenField(validators=[DataRequired()])
+
+    def __init__(self, *args, domains: list[Domain], **kwargs):
+        super().__init__(*args, **kwargs)
+        self.domains = domains
+
+    def validate_domain_id(self, field):
+        domain = next(
+            (domain for domain in self.domains if domain.id == int(field.data)), None
+        )
+        if not domain:
+            raise ValidationError(_("Domain not found."))
 
 
 class ProjectBuildAndProjectDeployForm(StarletteForm):

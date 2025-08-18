@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: ddefe8c6f68b
+Revision ID: aaa23f37d7c8
 Revises: 
-Create Date: 2025-08-04 04:35:37.115066
+Create Date: 2025-08-17 07:10:41.322913
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ddefe8c6f68b'
+revision: str = 'aaa23f37d7c8'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -125,6 +125,24 @@ def upgrade() -> None:
     op.create_index(op.f('ix_deployment_project_id'), 'deployment', ['project_id'], unique=False)
     op.create_index(op.f('ix_deployment_repo_full_name'), 'deployment', ['repo_full_name'], unique=False)
     op.create_index(op.f('ix_deployment_repo_id'), 'deployment', ['repo_id'], unique=False)
+    op.create_table('domain',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('project_id', sa.String(length=32), nullable=False),
+    sa.Column('hostname', sa.String(length=255), nullable=False),
+    sa.Column('type', sa.Enum('proxy', '301', '302', '307', '308', name='domain_type'), nullable=False),
+    sa.Column('environment_id', sa.String(length=8), nullable=True),
+    sa.Column('redirect_to_domain_id', sa.Integer(), nullable=True),
+    sa.Column('status', sa.Enum('pending', 'active', 'disabled', 'failed', name='domain_status'), nullable=False),
+    sa.Column('message', sa.Text(), nullable=True),
+    sa.Column('last_checked_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
+    sa.ForeignKeyConstraint(['redirect_to_domain_id'], ['domain.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_domain_hostname'), 'domain', ['hostname'], unique=False)
+    op.create_index(op.f('ix_domain_project_id'), 'domain', ['project_id'], unique=False)
     op.create_table('team_invite',
     sa.Column('id', sa.String(length=32), nullable=False),
     sa.Column('team_id', sa.String(length=32), nullable=False),
@@ -209,6 +227,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_team_invite_inviter_id'), table_name='team_invite')
     op.drop_index(op.f('ix_team_invite_email'), table_name='team_invite')
     op.drop_table('team_invite')
+    op.drop_index(op.f('ix_domain_project_id'), table_name='domain')
+    op.drop_index(op.f('ix_domain_hostname'), table_name='domain')
+    op.drop_table('domain')
     op.drop_index(op.f('ix_deployment_repo_id'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_repo_full_name'), table_name='deployment')
     op.drop_index(op.f('ix_deployment_project_id'), table_name='deployment')

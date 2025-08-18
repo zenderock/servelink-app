@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import Response, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta, timezone
@@ -30,6 +30,7 @@ from dependencies import (
 from models import (
     Project,
     Deployment,
+    Domain,
     User,
     Team,
     TeamMember,
@@ -46,12 +47,16 @@ from forms.project import (
     ProjectBuildAndProjectDeployForm,
     ProjectCancelDeploymentForm,
     ProjectRollbackDeploymentForm,
+    ProjectDomainForm,
+    ProjectRemoveDomainForm,
+    ProjectVerifyDomainForm,
 )
 from config import get_settings, Settings
 from db import get_db
 from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
 from services.deployment import DeploymentService
+from services.domain import DomainService
 from utils.project import get_latest_projects, get_latest_deployments
 from utils.team import get_latest_teams
 from utils.pagination import paginate
@@ -1083,24 +1088,22 @@ async def project_settings(
         if await environment_form.validate_on_submit():
             try:
                 if environment_form.environment_id.data:
-                    # Update existing environment using ID
                     environment_id = environment_form.environment_id.data
                     env = project.get_environment_by_id(environment_id)
+                    if not env:
+                        raise ValueError(_("Environment not found."))
 
-                    if env:
-                        values = {
-                            "color": environment_form.color.data,
-                            "name": environment_form.name.data,
-                            "slug": environment_form.slug.data,
-                            "branch": environment_form.branch.data,
-                        }
+                    values = {
+                        "color": environment_form.color.data,
+                        "name": environment_form.name.data,
+                        "slug": environment_form.slug.data,
+                        "branch": environment_form.branch.data,
+                    }
 
-                        project.update_environment(environment_id, values)
-                        await db.commit()
-                        flash(request, _("Environment updated."), "success")
-                        environments_updated = True
-                    else:
-                        flash(request, _("Environment not found."), "error")
+                    project.update_environment(environment_id, values)
+                    await db.commit()
+                    flash(request, _("Environment updated."), "success")
+                    environments_updated = True
                 else:
                     # Create new environment
                     if env := project.create_environment(
@@ -1113,9 +1116,10 @@ async def project_settings(
                         flash(request, _("Environment added."), "success")
                         environments_updated = True
                     else:
-                        flash(request, _("Failed to create environment."), "error")
+                        raise ValueError(_("Failed to create environment."))
             except ValueError as e:
-                logger.error(f"Error creating environment: {str(e)}")
+                await db.rollback()
+                logger.error(f"Error editing environments: {str(e)}")
                 flash(request, _("Something went wrong. Please try again."), "error")
 
     if fragment == "delete_environment":
@@ -1196,6 +1200,187 @@ async def project_settings(
                 },
             )
 
+    # Domains
+    domains = await db.execute(select(Domain).where(Domain.project_id == project.id))
+    domains = domains.scalars().all()
+    domains_changed = False
+
+    logger.info(f"domains: {domains}")
+    domain_form: Any = await ProjectDomainForm.from_formdata(
+        request=request, project=project, domains=domains, db=db
+    )
+    remove_domain_form: Any = await ProjectRemoveDomainForm.from_formdata(
+        request=request, project=project, domains=domains
+    )
+    verify_domain_form: Any = await ProjectVerifyDomainForm.from_formdata(
+        request=request, domains=domains
+    )
+
+    if fragment == "domain":
+        if await domain_form.validate_on_submit():
+            try:
+                if domain_form.domain_id.data:
+                    result = await db.execute(
+                        select(Domain).where(
+                            Domain.id == int(domain_form.domain_id.data)
+                        )
+                    )
+                    domain = result.scalar_one_or_none()
+                    if not domain:
+                        raise ValueError(_("Domain not found."))
+
+                    domain.hostname = domain_form.hostname.data.lower()
+                    domain.type = domain_form.type.data
+                    if domain.type == "proxy":
+                        domain.environment_id = domain_form.environment_id.data
+                        domain.redirect_to_domain_id = None
+                    else:
+                        domain.environment_id = None
+                        domain.redirect_to_domain_id = (
+                            domain_form.redirect_to_domain_id.data
+                        )
+                    await db.commit()
+                    flash(request, _("Domain updated."), "success")
+                else:
+                    logger.info("New domain being created")
+                    domain = Domain(
+                        hostname=domain_form.hostname.data.lower(),
+                        type=domain_form.type.data,
+                        environment_id=domain_form.environment_id.data
+                        if domain_form.type.data == "proxy"
+                        else None,
+                        redirect_to_domain_id=int(
+                            domain_form.redirect_to_domain_id.data
+                        )
+                        if domain_form.type.data != "proxy"
+                        else None,
+                        project_id=project.id,
+                        status="pending",
+                    )
+                    db.add(domain)
+                    await db.commit()
+                    flash(request, _("Domain added."), "success")
+                    domains.append(domain)
+            except ValueError as e:
+                await db.rollback()
+                logger.error(f"Error editing domains: {str(e)}")
+                flash(request, _("Something went wrong. Please try again."), "error")
+
+    if fragment == "remove_domain":
+        if await remove_domain_form.validate_on_submit():
+            try:
+                domain = next(
+                    (
+                        domain
+                        for domain in domains
+                        if domain.id == int(remove_domain_form.domain_id.data)
+                    ),
+                    None,
+                )
+                if not domain:
+                    raise ValueError(_("Domain not found."))
+                await db.delete(domain)
+                await db.commit()
+                flash(request, _("Domain removed."), "success")
+                domains.remove(domain)
+
+                domains_changed = True
+            except ValueError as e:
+                logger.error(f"Error removing domain: {str(e)}")
+                flash(request, _("Something went wrong. Please try again."), "error")
+        else:
+            logger.error(f"Error removing domain: {remove_domain_form.errors}")
+
+    if fragment == "verify_domain":
+        if await verify_domain_form.validate_on_submit():
+            domain = next(
+                (
+                    domain
+                    for domain in domains
+                    if domain.id == int(verify_domain_form.domain_id.data)
+                ),
+                None,
+            )
+            if not domain:
+                raise ValueError(_("Domain not found."))
+
+            verified, message, details = await DomainService(settings).verify_domain(
+                hostname=domain.hostname,
+                project_id=project.id,
+            )
+            if verified:
+                domain.status = "active"
+                domain.last_checked_at = utc_now()
+                domain.message = None
+
+                await db.execute(
+                    update(Domain)
+                    .where(
+                        Domain.hostname == domain.hostname,
+                        Domain.id != domain.id,
+                        Domain.status.in_(["pending", "active", "failed"]),
+                    )
+                    .values(
+                        status="disabled",
+                        message="Another domain was verified for this hostname",
+                        last_checked_at=utc_now(),
+                    )
+                )
+
+                flash(
+                    request,
+                    title=_("Domain verified."),
+                    category="success",
+                    description=details,
+                )
+
+                domains_changed = True
+            else:
+                domain.status = "failed"
+                domain.last_checked_at = utc_now()
+                domain.message = details
+
+                flash(
+                    request,
+                    title=message,
+                    category="error",
+                    description=details,
+                )
+
+            await db.commit()
+
+    if domains_changed:
+        try:
+            deployment_service = DeploymentService()
+            await deployment_service.update_traefik_config(project, db, settings)
+        except Exception as e:
+            logger.error(f"Failed to update Traefik config: {e}")
+            flash(
+                request,
+                _("Traefik config update failed."),
+                "warning",
+            )
+
+    domains.sort(key=lambda x: x.hostname)
+
+    if fragment in ("domain", "remove_domain", "verify_domain") and request.headers.get(
+        "HX-Request"
+    ):
+        return TemplateResponse(
+            request=request,
+            name="project/partials/_settings-domains.html",
+            context={
+                "current_user": current_user,
+                "team": team,
+                "project": project,
+                "domains": domains,
+                "domain_form": domain_form,
+                "remove_domain_form": remove_domain_form,
+                "verify_domain_form": verify_domain_form,
+                "server_ip": settings.server_ip,
+            },
+        )
+
     latest_teams = await get_latest_teams(
         db=db, current_user=current_user, current_team=team
     )
@@ -1217,6 +1402,11 @@ async def project_settings(
             "build_and_deploy_form": build_and_deploy_form,
             "env_vars_form": env_vars_form,
             "delete_project_form": delete_project_form,
+            "domain_form": domain_form,
+            "remove_domain_form": remove_domain_form,
+            "verify_domain_form": verify_domain_form,
+            "domains": domains,
+            "server_ip": settings.server_ip,
             "colors": COLORS,
             "presets": settings.presets,
             "runtimes": settings.runtimes,
@@ -1343,7 +1533,7 @@ async def project_deployment(
             )
         ):
             sse_connect_url = request.url_for(
-                "api_deployment_events",
+                "deployment_event",
                 team_id=team.id,
                 project_id=project.id,
                 deployment_id=deployment.id,
