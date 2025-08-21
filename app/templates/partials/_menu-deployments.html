@@ -1,4 +1,4 @@
-<span role="menuitem" class="flex items-center gap-x-2">
+{# <span role="menuitem" class="flex items-center gap-x-2">
   {% from "deployment/macros/status.html" import status %}
   {{ status(
   conclusion=deployment.conclusion,
@@ -31,4 +31,4 @@
 <a href="{{ url_for('project_deployments', team_slug=team.slug, project_name=deployment.project.name) }}"
   role="menuitem" hx-boost="true">
   {{ _('All deployments') }}
-</a>
+</a> #}

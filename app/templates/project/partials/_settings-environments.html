@@ -15,7 +15,7 @@
     hx-swap="outerHTML"
     hx-on::before-request="document.activeElement && document.activeElement.blur()"
     hx-indicator="next .htmx-indicator"
-    @htmx:after-request="$dispatch('environments:updated')"
+    @htmx:after-request="window.dispatchEvent(new Event('environments:updated'));"
     x-show="activeForm === {{ index }}"
     x-data="{
       color: '{{ environment_form.color.data if is_active else environment.color if environment else '' }}'
@@ -41,7 +41,7 @@
     ) }}
     <div class="size-9">
       {% set trigger %}
-        <div class="inline-block rounded size-2.5 shrink-0" :class="`bg-${color}-400 dark:bg-${color}-600`"></div>
+        <div class="inline-block rounded size-2.5 shrink-0" :class="`bg-${color}-500`"></div>
       {% endset %}
       {% call dropdown_menu(
         trigger=trigger,
@@ -50,7 +50,7 @@
       ) %}
         {% for color in colors %}
           <button class="btn-icon-ghost" :class="color === '{{ color }}' ? 'bg-muted' : ''" aria-label="{{ color }}" @click="color = '{{ color }}'" type="button" role="menuitem">
-            <div class="block rounded size-4 bg-{{ color }}-400 dark:bg-{{ color }}-600 shrink-0"></div>
+            <div class="block rounded size-4 bg-{{ color }}-500 shrink-0"></div>
           </button>
         {% endfor %}
       {% endcall %}
@@ -76,7 +76,7 @@
     <div class="flex-1 space-y-2">
       {{ environment_form.slug(
         id=False,
-        class='w-full font-mono',
+        class='w-full',
         value=environment_form.slug.data if is_active else environment.slug if environment else '',
         readonly=environment.get('id') == 'prod',
         **({
@@ -93,7 +93,7 @@
     <div class="field flex-1">
       {{ environment_form.branch(
         id=False,
-        class='w-full font-mono',
+        class='w-full',
         value=environment_form.branch.data if is_active else environment.branch if environment else '',
         **({
           'aria-invalid': 'true' if is_active and environment_form.branch.errors else '',
@@ -148,11 +148,11 @@
         <div x-show="activeForm !== {{ loop.index }}" class="flex items-center gap-x-2 border-b border-border/50 pb-2">
           <div class="flex items-center justify-center size-9">
             <span
-              class="inline-block rounded size-2.5 shrink-0 bg-{{ environment.color }}-400 dark:bg-{{ environment.color }}-600"></span>
+              class="inline-block rounded size-2.5 shrink-0 bg-{{ environment.color }}-500"></span>
           </div>
           <div class="flex-1 font-medium">{{ environment.name }}</div>
-          <div class="flex-1 font-mono text-muted-foreground">{{ environment.slug }}</div>
-          <div class="flex-1 font-mono text-muted-foreground">{{ environment.branch }}</div>
+          <div class="flex-1 text-muted-foreground">{{ environment.slug }}</div>
+          <div class="flex-1 text-muted-foreground">{{ environment.branch }}</div>
           <div class="flex items-center w-20">
             <button type="button" class="btn-icon-ghost" aria-label="{{ _('Edit') }}" data-tooltip="{{ _('Edit') }}" @click="activeForm = {{ loop.index }}" :disabled="activeForm">
               {% include "icons/pencil.svg" %}
@@ -184,7 +184,7 @@
                     hx-on::before-request="document.activeElement && document.activeElement.blur()"
                     hx-target="closest .card"
                     hx-indicator="next .htmx-indicator"
-                    @htmx:after-request="$dispatch('environments:updated')"
+                    @htmx:after-request="window.dispatchEvent(new Event('environments:updated'));"
                     @submit.prevent="!confirm"
                   >
                     {{ delete_environment_form.csrf_token(id=False) }}

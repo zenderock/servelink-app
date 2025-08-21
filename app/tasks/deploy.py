@@ -322,13 +322,16 @@ async def deploy(ctx, deployment_id: str):
                                 f"{log_prefix} Failed to setup branch alias: {e}"
                             )
 
-                        # Environment alias
+                        # Environment aliases
                         if deployment.environment_id == "prod":
                             env_subdomain = project.slug
                         else:
                             env_subdomain = (
                                 f"{project.slug}-env-{environment.get('slug')}"
                             )
+                        env_id_subdomain = (
+                            f"{project.slug}-env-id-{deployment.environment_id}"
+                        )
 
                         try:
                             await Alias.update_or_create(
@@ -343,6 +346,19 @@ async def deploy(ctx, deployment_id: str):
                                 container,
                                 f"Assigned environment alias ({env_subdomain}.{settings.deploy_domain})",
                             )
+                            await Alias.update_or_create(
+                                db,
+                                subdomain=env_id_subdomain,
+                                deployment_id=deployment.id,
+                                type="environment_id",
+                                value=deployment.environment_id,
+                                environment_id=deployment.environment_id,
+                            )
+                            await _log_to_container(
+                                container,
+                                f"Assigned environment id alias ({env_id_subdomain}.{settings.deploy_domain})",
+                            )
+
                         except Exception as e:
                             await _log_to_container(
                                 container,

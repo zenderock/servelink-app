@@ -6,30 +6,57 @@ from config import Settings
 class DomainService:
     def __init__(self, settings: Settings):
         self.server_ip = settings.server_ip
+        self.deploy_domain = settings.deploy_domain
+
+    def _is_apex_domain(self, hostname: str) -> bool:
+        """Check if domain is apex (no subdomain)"""
+        parts = hostname.split(".")
+        return len(parts) == 2
 
     async def verify_domain(
         self, hostname: str, project_id: str
     ) -> tuple[bool, str, str | None]:
         try:
-            a_records = dns.resolver.resolve(hostname, "A")
-            a_record_ip = str(a_records[0])
+            if self._is_apex_domain(hostname):
+                # Apex domain: check A record points to server IP
+                a_records = dns.resolver.resolve(hostname, "A")
+                a_record_ip = str(a_records[0])
 
-            if a_record_ip != self.server_ip:
-                return (
-                    False,
-                    "A record mismatch",
-                    f"A record points to {a_record_ip}, expected {self.server_ip}",
-                )
+                if a_record_ip != self.server_ip:
+                    return (
+                        False,
+                        "A record mismatch",
+                        f"A record points to {a_record_ip}, expected {self.server_ip}. "
+                        f"Add an A record pointing to {self.server_ip} or use ANAME/ALIAS if your DNS provider supports it.",
+                    )
+            else:
+                # Subdomain: check CNAME points to environment alias
+                try:
+                    cname_records = dns.resolver.resolve(hostname, "CNAME")
+                    cname_target = str(cname_records[0]).rstrip(".")
 
-            txt_records = dns.resolver.resolve(f"_devpush.{hostname}", "TXT")
-            txt_record = str(txt_records[0]).strip('"')
-
-            if txt_record != f"devpush-verify={hostname},{project_id}":
-                return (
-                    False,
-                    "TXT record mismatch",
-                    f'TXT record contains "{txt_record}", expected "devpush-verify={hostname},{project_id}"',
-                )
+                    # Check if CNAME points to our deploy domain
+                    if not cname_target.endswith(f".{self.deploy_domain}"):
+                        return (
+                            False,
+                            "CNAME target mismatch",
+                            f"CNAME points to {cname_target}, expected to point to a subdomain of {self.deploy_domain}. "
+                            f"Add a CNAME record pointing to your environment alias.",
+                        )
+                except dns.resolver.NXDOMAIN:
+                    return (
+                        False,
+                        "CNAME record not found",
+                        f"No CNAME record found for {hostname}. "
+                        f"Add a CNAME record pointing to your environment alias.",
+                    )
+                except dns.resolver.NoAnswer:
+                    return (
+                        False,
+                        "CNAME record not found",
+                        f"No CNAME record found for {hostname}. "
+                        f"Add a CNAME record pointing to your environment alias.",
+                    )
 
             return True, "Domain verified successfully", None
 

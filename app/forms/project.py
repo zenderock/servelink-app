@@ -253,7 +253,7 @@ class ProjectDomainForm(StarletteForm):
         _l("Type"),
         validators=[DataRequired()],
         choices={
-            _l("Routing"): [("proxy", _l("Proxy"))],
+            _l("Routing"): [("route", _l("Route"))],
             _l("Permanent Redirect"): [
                 ("301", _l("301 - Moved Permanently")),
                 ("308", _l("308 - Permanent Redirect")),
@@ -265,7 +265,6 @@ class ProjectDomainForm(StarletteForm):
         },
     )
     environment_id = SelectField(_l("Environment"), choices=[])
-    redirect_to_domain_id = SelectField(_l("Domain"), choices=[])
 
     def __init__(
         self,
@@ -284,16 +283,6 @@ class ProjectDomainForm(StarletteForm):
             (env["id"], env["name"]) for env in project.active_environments
         ]
 
-        active_domains = [domain for domain in domains if domain.status == "active"]
-
-        if not active_domains:
-            self.type.choices = [("proxy", _l("Proxy"))]
-            self.redirect_to_domain_id.choices = [("", "")]
-        else:
-            self.redirect_to_domain_id.choices = [
-                (domain.id, domain.hostname) for domain in active_domains
-            ]
-
     async def async_validate_hostname(self, field):
         if field.data:
             query = select(Domain).where(
@@ -307,35 +296,13 @@ class ProjectDomainForm(StarletteForm):
                 raise ValidationError(_("This domain is already in use."))
 
     def validate_environment_id(self, field):
-        if self.type.data != "proxy":
-            return
-
-        if self.type.data == "proxy" and not field.data:
+        if self.type.data == "route" and not field.data:
             raise ValidationError(_("Environment is required for routing type."))
 
         if field.data:
             environment = self.project.get_environment_by_id(field.data)
             if not environment:
                 raise ValidationError(_("Environment not found."))
-
-    def validate_redirect_to_domain_id(self, field):
-        if self.type.data == "proxy":
-            return
-
-        if self.type.data != "proxy" and not field.data:
-            raise ValidationError(
-                _("Domain is required for redirect type. s(type)%", type=self.type.data)
-            )
-
-        if field.data:
-            domain = next(
-                (domain for domain in self.domains if domain.id == int(field.data)),
-                None,
-            )
-            if not domain:
-                raise ValidationError(_("Domain not found."))
-            if domain.hostname == self.hostname.data:
-                raise ValidationError(_("Domain cannot redirect to itself."))
 
 
 class ProjectRemoveDomainForm(StarletteForm):
@@ -382,6 +349,8 @@ class ProjectVerifyDomainForm(StarletteForm):
         )
         if not domain:
             raise ValidationError(_("Domain not found."))
+        if domain.status == "active":
+            raise ValidationError(_("Domain is already verified."))
 
 
 class ProjectBuildAndProjectDeployForm(StarletteForm):

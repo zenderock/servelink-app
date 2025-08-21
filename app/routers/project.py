@@ -1125,12 +1125,33 @@ async def project_settings(
     if fragment == "delete_environment":
         if await delete_environment_form.validate_on_submit():
             try:
-                if project.delete_environment(
-                    delete_environment_form.environment_id.data
-                ):
+                environment_id = delete_environment_form.environment_id.data
+                if project.delete_environment(environment_id):
+                    domains_result = await db.execute(
+                        select(Domain).where(
+                            Domain.project_id == project.id,
+                            Domain.environment_id == environment_id,
+                            Domain.status == "active",
+                        )
+                    )
+                    domains_to_disable = domains_result.scalars().all()
+
+                    domains_disabled = False
+                    for domain in domains_to_disable:
+                        domain.status = "disabled"
+                        domain.message = f"Environment {environment_id} was deleted"
+                        domain.environment_id = None
+                        domains_disabled = True
+
                     await db.commit()
                     flash(request, _("Environment deleted."), "success")
                     environments_updated = True
+
+                    if domains_disabled:
+                        deployment_service = DeploymentService()
+                        await deployment_service.update_traefik_config(
+                            project, db, settings
+                        )
                 else:
                     flash(request, _("Environment not found."), "error")
             except ValueError as e:
@@ -1205,7 +1226,6 @@ async def project_settings(
     domains = domains.scalars().all()
     domains_changed = False
 
-    logger.info(f"domains: {domains}")
     domain_form: Any = await ProjectDomainForm.from_formdata(
         request=request, project=project, domains=domains, db=db
     )
@@ -1220,40 +1240,28 @@ async def project_settings(
         if await domain_form.validate_on_submit():
             try:
                 if domain_form.domain_id.data:
-                    result = await db.execute(
-                        select(Domain).where(
-                            Domain.id == int(domain_form.domain_id.data)
-                        )
+                    domain = await project.get_domain_by_id(
+                        db, int(domain_form.domain_id.data)
                     )
-                    domain = result.scalar_one_or_none()
                     if not domain:
                         raise ValueError(_("Domain not found."))
 
-                    domain.hostname = domain_form.hostname.data.lower()
-                    domain.type = domain_form.type.data
-                    if domain.type == "proxy":
-                        domain.environment_id = domain_form.environment_id.data
-                        domain.redirect_to_domain_id = None
-                    else:
-                        domain.environment_id = None
-                        domain.redirect_to_domain_id = (
-                            domain_form.redirect_to_domain_id.data
-                        )
+                    submitted_hostname = domain_form.hostname.data.lower()
+                    if domain.hostname != submitted_hostname:
+                        domain.hostname = submitted_hostname
+                        domain.status = "pending"
+                        domain.message = None
+                        domain.last_checked_at = None
+
+                    domain.environment_id = domain_form.environment_id.data
+
                     await db.commit()
                     flash(request, _("Domain updated."), "success")
                 else:
-                    logger.info("New domain being created")
                     domain = Domain(
                         hostname=domain_form.hostname.data.lower(),
                         type=domain_form.type.data,
-                        environment_id=domain_form.environment_id.data
-                        if domain_form.type.data == "proxy"
-                        else None,
-                        redirect_to_domain_id=int(
-                            domain_form.redirect_to_domain_id.data
-                        )
-                        if domain_form.type.data != "proxy"
-                        else None,
+                        environment_id=domain_form.environment_id.data,
                         project_id=project.id,
                         status="pending",
                     )
@@ -1288,8 +1296,6 @@ async def project_settings(
             except ValueError as e:
                 logger.error(f"Error removing domain: {str(e)}")
                 flash(request, _("Something went wrong. Please try again."), "error")
-        else:
-            logger.error(f"Error removing domain: {remove_domain_form.errors}")
 
     if fragment == "verify_domain":
         if await verify_domain_form.validate_on_submit():
@@ -1348,6 +1354,8 @@ async def project_settings(
                 )
 
             await db.commit()
+        else:
+            logger.error(f"Error verifying domain: {verify_domain_form.errors}")
 
     if domains_changed:
         try:
@@ -1360,6 +1368,9 @@ async def project_settings(
                 _("Traefik config update failed."),
                 "warning",
             )
+
+    for domain in domains:
+        domain.is_apex = len(domain.hostname.split(".")) == 2
 
     domains.sort(key=lambda x: x.hostname)
 
@@ -1378,6 +1389,7 @@ async def project_settings(
                 "remove_domain_form": remove_domain_form,
                 "verify_domain_form": verify_domain_form,
                 "server_ip": settings.server_ip,
+                "deploy_domain": settings.deploy_domain,
             },
         )
 
@@ -1407,6 +1419,7 @@ async def project_settings(
             "verify_domain_form": verify_domain_form,
             "domains": domains,
             "server_ip": settings.server_ip,
+            "deploy_domain": settings.deploy_domain,
             "colors": COLORS,
             "presets": settings.presets,
             "runtimes": settings.runtimes,

@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: aaa23f37d7c8
+Revision ID: 454328a03102
 Revises: 
-Create Date: 2025-08-17 07:10:41.322913
+Create Date: 2025-08-21 03:10:16.158338
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'aaa23f37d7c8'
+revision: str = '454328a03102'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -129,16 +129,14 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('project_id', sa.String(length=32), nullable=False),
     sa.Column('hostname', sa.String(length=255), nullable=False),
-    sa.Column('type', sa.Enum('proxy', '301', '302', '307', '308', name='domain_type'), nullable=False),
+    sa.Column('type', sa.Enum('route', '301', '302', '307', '308', name='domain_type'), nullable=False),
     sa.Column('environment_id', sa.String(length=8), nullable=True),
-    sa.Column('redirect_to_domain_id', sa.Integer(), nullable=True),
     sa.Column('status', sa.Enum('pending', 'active', 'disabled', 'failed', name='domain_status'), nullable=False),
     sa.Column('message', sa.Text(), nullable=True),
     sa.Column('last_checked_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
-    sa.ForeignKeyConstraint(['redirect_to_domain_id'], ['domain.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_domain_hostname'), 'domain', ['hostname'], unique=False)
@@ -195,7 +193,7 @@ def upgrade() -> None:
     sa.Column('subdomain', sa.String(length=63), nullable=False),
     sa.Column('deployment_id', sa.String(length=32), nullable=False),
     sa.Column('previous_deployment_id', sa.String(length=32), nullable=True),
-    sa.Column('type', sa.Enum('branch', 'environment', name='alias_type'), nullable=False),
+    sa.Column('type', sa.Enum('branch', 'environment', 'environment_id', name='alias_type'), nullable=False),
     sa.Column('value', sa.String(length=255), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['deployment_id'], ['deployment.id'], ),

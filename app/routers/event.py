@@ -5,8 +5,9 @@ from redis.asyncio import Redis
 import asyncio
 import time
 from typing import Any
+from datetime import datetime
 
-from models import Team, Project, Deployment, User, utc_now
+from models import Team, Project, Deployment, User
 from dependencies import (
     get_current_user,
     get_deployment_by_id,
@@ -53,10 +54,24 @@ async def deployment_event(
 
         logs_template = templates.get_template("deployment/macros/log-list.html")
 
-        deployment_conclusion = None
+        deployment_conclusion = deployment.conclusion
+        deployment_concluded_at = (
+            int(deployment.concluded_at.timestamp())
+            if deployment.concluded_at
+            else None
+        )
 
         try:
             while True:
+                if (
+                    deployment_conclusion
+                    and deployment_concluded_at
+                    and (int(time.time()) - deployment_concluded_at) >= 5
+                ):
+                    yield "event: deployment_log_closed\n"
+                    yield f"data: {deployment_conclusion}\n\n"
+                    break
+
                 logs = await request.app.state.loki_service.get_logs(
                     project_id=deployment.project_id,
                     deployment_id=deployment.id,
@@ -71,17 +86,6 @@ async def deployment_event(
                     logs_start_timestamp = (
                         max(int(log["timestamp"]) for log in logs) + 1
                     )
-
-                if not (
-                    deployment.status != "completed"
-                    or deployment.container_status == "running"
-                    or (
-                        deployment.concluded_at
-                        and (utc_now() - deployment.concluded_at).total_seconds() < 5
-                    )
-                ):
-                    yield "event: deployment_log_closed\n"
-                    yield f"data: {deployment_conclusion}\n\n"
 
                 if not deployment_conclusion:
                     try:
@@ -100,6 +104,19 @@ async def deployment_event(
                                     deployment_conclusion = message_fields.get(
                                         "deployment_status"
                                     )
+                                    # Update with Redis timestamp (convert string to datetime)
+                                    deployment_concluded_at_str = message_fields.get(
+                                        "timestamp"
+                                    )
+                                    if deployment_concluded_at_str:
+                                        deployment_concluded_at = int(
+                                            datetime.fromisoformat(
+                                                deployment_concluded_at_str.replace(
+                                                    "Z", "+00:00"
+                                                )
+                                            ).timestamp()
+                                        )
+
                                     yield "event: deployment_concluded\n"
                                     yield f"data: {deployment_conclusion}\n\n"
                                 status_start_position = message_id

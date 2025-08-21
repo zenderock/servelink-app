@@ -61,9 +61,9 @@ class DeploymentService:
             router_config = {
                 "rule": f"Host(`{a.subdomain}.{settings.deploy_domain}`)",
                 "service": f"deployment-{a.deployment_id}@docker",
-                "entryPoints": [
-                    "websecure" if settings.url_scheme == "https" else "web"
-                ],
+                "entryPoints": ["web", "websecure"]
+                if settings.url_scheme == "https"
+                else ["web"],
             }
             if settings.url_scheme == "https":
                 router_config["tls"] = {"certResolver": "le"}
@@ -71,60 +71,57 @@ class DeploymentService:
 
         # Domains
         for domain in domains:
-            if domain.type == "proxy":
-                service_name = f"project-{project.id}-env-{domain.environment_id}"
+            env_alias = next(
+                (
+                    a
+                    for a in aliases
+                    if a.type == "environment_id" and a.value == domain.environment_id
+                ),
+                None,
+            )
 
+            if not env_alias:
+                continue
+
+            if domain.type == "route":
                 router_config = {
                     "rule": f"Host(`{domain.hostname}`)",
-                    "service": service_name,
-                    "entryPoints": ["web", "websecure"],
+                    "service": f"deployment-{env_alias.deployment_id}@docker",
+                    "entryPoints": ["web", "websecure"]
+                    if settings.url_scheme == "https"
+                    else ["web"],
                 }
                 if settings.url_scheme == "https":
                     router_config["tls"] = {"certResolver": "le"}
-
                 routers[f"router-domain-{domain.id}"] = router_config
 
-                services[service_name] = {
-                    "loadBalancer": {
-                        "servers": [
-                            {
-                                "url": f"http://project-{project.id}-{domain.environment_id}:8000"
-                            }
-                        ]
+            elif domain.type in ["301", "302", "307", "308"]:
+                middleware_name = f"redirect-{domain.id}"
+
+                router_cfg = {
+                    "rule": f"Host(`{domain.hostname}`)",
+                    "service": "noop@internal",
+                    "middlewares": [middleware_name],
+                    "entryPoints": ["web", "websecure"]
+                    if settings.url_scheme == "https"
+                    else ["web"],
+                }
+                routers[f"router-redirect-{domain.id}"] = router_cfg
+
+                middlewares[middleware_name] = {
+                    "redirectRegex": {
+                        "regex": f"^https?://{domain.hostname}/(.*)",
+                        "replacement": f"https://{env_alias.subdomain}.{settings.deploy_domain}/$1",
+                        "permanent": domain.type in ["301", "308"],
                     }
                 }
-
-            elif domain.type in ["301", "302", "307", "308"]:
-                if domain.redirect_to_domain_id:
-                    redirect_domain = next(
-                        (d for d in domains if d.id == domain.redirect_to_domain_id),
-                        None,
-                    )
-                    if redirect_domain:
-                        middleware_name = f"redirect-{domain.id}"
-
-                        router_cfg = {
-                            "rule": f"Host(`{domain.hostname}`)",
-                            "service": "noop@internal",
-                            "middlewares": [middleware_name],
-                            "entryPoints": ["web", "websecure"],
-                        }
-                        routers[f"router-redirect-{domain.id}"] = router_cfg
-
-                        middlewares[middleware_name] = {
-                            "redirectRegex": {
-                                "regex": f"^https?://{domain.hostname}/(.*)",
-                                "replacement": f"https://{redirect_domain.hostname}/$1",
-                                "permanent": domain.type in ["301", "308"],
-                            }
-                        }
 
         # Write config
         os.makedirs(settings.traefik_config_dir, exist_ok=True)
         config = {"http": {"routers": routers}}
         if services:
             config["http"]["services"] = services
-        if "middlewares" in locals():
+        if middlewares:
             config["http"]["middlewares"] = middlewares
 
         with open(path, "w") as f:

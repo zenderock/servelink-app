@@ -229,3 +229,7 @@ Additionally, if you set the `ACCESS_EMAIL_DENIED_WEBHOOK_URL` [environment vari
   "user_agent": "Mozilla/5.0"
 }
 ```
+
+## License
+
+[MIT](/LICENSE.md)

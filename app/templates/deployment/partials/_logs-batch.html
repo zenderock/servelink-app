@@ -19,22 +19,22 @@
 {{ log_list(logs=logs) }}
 
 {% if sse_connect_url %}
-<div hx-swap-oob="afterend:#deployment-logs">
-  <div
-    hx-ext="sse"
-    sse-connect="{{ sse_connect_url }}"
-    sse-close="deployment_log_closed"
-  >
+  <div hx-swap-oob="afterend:#deployment-logs">
     <div
-      sse-swap="deployment_log"
-      hx-target="#deployment-logs"
-      hx-swap="beforeend"
-    ></div>
-    <div
-      hx-trigger="sse:deployment_concluded"
-      hx-target="#deployment-page-header"
-      hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
-    ></div>
+      hx-ext="sse"
+      sse-connect="{{ sse_connect_url }}"
+      sse-close="deployment_log_closed"
+    >
+      <div
+        sse-swap="deployment_log"
+        hx-target="#deployment-logs"
+        hx-swap="beforeend"
+      ></div>
+      <div
+        hx-trigger="sse:deployment_concluded"
+        hx-target="#deployment-page-header"
+        hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}"
+      ></div>
+    </div>
   </div>
-</div>
 {% endif %}

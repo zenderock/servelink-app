@@ -517,7 +517,7 @@ class Project(Base):
         environments = self.active_environments if active_only else self.environments
         return next((env for env in environments if env["slug"] == slug), None)
 
-    async def get_domain_by_id(self, db, domain_id: int) -> dict | None:
+    async def get_domain_by_id(self, db: AsyncSession, domain_id: int) -> dict | None:
         """Get domain by ID"""
         result = await db.execute(
             select(Domain).where(
@@ -527,7 +527,9 @@ class Project(Base):
         )
         return result.scalar_one_or_none()
 
-    async def get_domain_by_hostname(self, db, hostname: str) -> dict | None:
+    async def get_domain_by_hostname(
+        self, db: AsyncSession, hostname: str
+    ) -> dict | None:
         """Get domain by hostname"""
         result = await db.execute(
             select(Domain).where(
@@ -537,7 +539,7 @@ class Project(Base):
         )
         return result.scalar_one_or_none()
 
-    async def get_environment_aliases(self, db) -> dict[str, "Alias"]:
+    async def get_environment_aliases(self, db: AsyncSession) -> dict[str, "Alias"]:
         """Get environment aliases for this project"""
         result = await db.execute(
             select(Alias)
@@ -726,7 +728,8 @@ class Alias(Base):
         ForeignKey("deployment.id"), index=True, nullable=True
     )
     type: Mapped[str] = mapped_column(
-        SQLAEnum("branch", "environment", name="alias_type"), nullable=False
+        SQLAEnum("branch", "environment", "environment_id", name="alias_type"),
+        nullable=False,
     )
     value: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
@@ -802,13 +805,10 @@ class Domain(Base):
     project_id: Mapped[str] = mapped_column(ForeignKey("project.id"), index=True)
     hostname: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     type: Mapped[str] = mapped_column(
-        SQLAEnum("proxy", "301", "302", "307", "308", name="domain_type"),
+        SQLAEnum("route", "301", "302", "307", "308", name="domain_type"),
         nullable=False,
     )
     environment_id: Mapped[str | None] = mapped_column(String(8), nullable=True)
-    redirect_to_domain_id: Mapped[int | None] = mapped_column(
-        ForeignKey("domain.id"), nullable=True
-    )
     status: Mapped[str] = mapped_column(
         SQLAEnum("pending", "active", "disabled", "failed", name="domain_status"),
         nullable=False,
@@ -821,9 +821,6 @@ class Domain(Base):
 
     # Relationships
     project: Mapped[Project] = relationship(back_populates="domains")
-    redirect_to_domain: Mapped["Domain | None"] = relationship(
-        "Domain", foreign_keys=[redirect_to_domain_id], remote_side=[id]
-    )
 
     @override
     def __repr__(self):

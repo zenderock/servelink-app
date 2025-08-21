@@ -20,7 +20,7 @@
       <div class="flex-1 space-y-2">
         {{ env_var.key(
           id=False,
-          class="input w-full font-mono",
+          class="input w-full font-mono text-[13px]",
           placeholder="e.g. MY_VAR",
           pattern="[A-Za-z_][A-Za-z0-9_]*",
           **{
@@ -120,7 +120,7 @@
           type="text"
           :name="'env_vars-' + actualIndex + '-key'"
           :disabled="remove"
-          class="input w-full font-mono"
+          class="input w-full font-mono text-[13px]"
           placeholder="e.g. MY_VAR"
           pattern="[A-Za-z_][A-Za-z0-9_]*"
           :value="item.key"
@@ -130,7 +130,7 @@
         <textarea
           :name="'env_vars-' + actualIndex + '-value'"
           :disabled="remove"
-          class="textarea w-full font-mono min-h-9 py-[7px] break-all"
+          class="textarea w-full font-mono text-[13px] min-h-9 py-[7px] break-all"
           pattern="[A-Za-z_][A-Za-z0-9_]*"
           :value="item.value"
         ></textarea>
