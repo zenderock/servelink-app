@@ -6,20 +6,9 @@
     github_repo: "{{ github_repo }}"
 
   tasks:
-    - name: Test GitHub SSH connection
-      command: ssh -T git@github.com
-      register: github_test
-      failed_when: github_test.rc != 1
-      changed_when: false
-
-    - name: Display GitHub connection status
-      debug:
-        msg: "GitHub SSH connection successful"
-      when: github_test.rc == 1
-
     - name: Clone repository
       git:
-        repo: "{{ github_repo }}"
+        repo: "https://github.com/hunvreus/devpush.git"
         dest: "{{ app_dir }}"
         update: yes
         force: yes
@@ -41,7 +30,7 @@
         mode: "0644"
       ignore_errors: yes
 
-    - name: ensure writable dirs
+    - name: Ensure writable dirs
       file:
         path: "{{ item }}"
         state: directory

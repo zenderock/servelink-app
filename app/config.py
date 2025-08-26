@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     access_rules_path: str = "settings/access.json"
     access_denied_message: str = "Sign-in not allowed for this email."
     access_denied_webhook: str = ""
+    login_alert_title: str = ""
+    login_alert_description: str = ""
     server_ip: str = "127.0.0.1"
 
     model_config = SettingsConfigDict(extra="ignore")

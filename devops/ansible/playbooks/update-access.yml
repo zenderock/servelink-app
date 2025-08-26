@@ -1,0 +1,14 @@
+---
+- hosts: all
+  vars:
+    deploy_user: deploy
+
+  tasks:
+    - name: Copy access list
+      copy:
+        src: ../../../access.json
+        dest: /srv/devpush/access.json
+        owner: 1000
+        group: 1000
+        mode: "0644"
+      ignore_errors: yes

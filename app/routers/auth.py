@@ -205,6 +205,8 @@ async def auth_login(
             "has_google_login": bool(
                 settings.google_client_id and settings.google_client_secret
             ),
+            "alert_title": settings.login_alert_title,
+            "alert_description": settings.login_alert_description,
         },
     )
 

@@ -10,12 +10,7 @@ _cache: dict[str, dict[str, Any]] = {}
 
 
 def _load_rules(rules_path: str | Path) -> dict[str, Any]:
-    path = Path(rules_path).resolve()
-    if not path.is_file():
-        raise FileNotFoundError
-
-    key = str(path)
-    entry = _cache.get(key) or {
+    entry = {
         "mtime": 0,
         "emails": [],
         "domains": [],
@@ -24,6 +19,18 @@ def _load_rules(rules_path: str | Path) -> dict[str, Any]:
         "regex_compiled": [],
     }
     try:
+        path = Path(rules_path).resolve()
+
+        key = str(path)
+        entry = _cache.get(key) or {
+            "mtime": 0,
+            "emails": [],
+            "domains": [],
+            "globs": [],
+            "regex": [],
+            "regex_compiled": [],
+        }
+
         file_mtime = path.stat().st_mtime
         if file_mtime != entry["mtime"]:
             try:
@@ -40,13 +47,7 @@ def _load_rules(rules_path: str | Path) -> dict[str, Any]:
             ]
             entry["mtime"] = file_mtime
             _cache[key] = entry
-    except FileNotFoundError:
-        entry["mtime"] = 0
-        entry["emails"] = []
-        entry["domains"] = []
-        entry["globs"] = []
-        entry["regex"] = []
-        entry["regex_compiled"] = []
+    except Exception:
         _cache[key] = entry
     return entry
 
