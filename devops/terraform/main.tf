@@ -36,16 +36,18 @@ resource "hcloud_firewall" "web" {
 }
 
 resource "hcloud_server" "devpush" {
-  name         = "devpush-prod-us1"
-  server_type  = "cpx31"
+  name         = "devpush-prod-${var.region}"
+  server_type  = var.server_type
   image        = "ubuntu-22.04"
-  location     = "hil"
+  location     = var.region
   ssh_keys     = [hcloud_ssh_key.deploy.id]
   firewall_ids = [hcloud_firewall.web.id]
   backups      = true
 }
 
 variable "hcloud_token" { type = string }
+variable "region" { type = string }
+variable "server_type" { type = string }
 
 output "server_ip" {
   value = hcloud_server.devpush.ipv4_address

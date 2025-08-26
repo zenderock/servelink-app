@@ -2,6 +2,16 @@
 
 A modern deployment platform that automates container deployments with real-time logging, GitHub integration, and zero-downtime updates. Built for teams who want simple, fast deployments without the complexity of traditional CI/CD pipelines.
 
+## Key features
+
+- **Git-based deployments**: Push to deploy from GitHub with zero-downtime rollouts and instant rollback.
+- **Multi-language support**: Python, Node.js, PHP... basically anything that can run on Docker.
+- **Environment management**: Multiple environments with branch mapping and encrypted environment variables.
+- **Real-time monitoring**: Live and searchable build and runtime logs.
+- **Team collaboration**: Role-based access control with team invitations and permissions.
+- **Custom domains**: Support for custom domain and automatic Let's Encrypt SSL certificates.
+- **Self-hosted and open source**: Run on your own servers, MIT licensed.
+
 ## Stack
 
 - Docker & [Docker Compose](https://github.com/docker/compose)
@@ -70,41 +80,50 @@ You can also use:
 
 ### Production
 
+#### Create the server
+
+**If you use Hetzner**, simply do the following:
+
 1. **Add your [Hetzner](https://hetzner.com) API key**:
    ```bash
    cp .env.devops.example .env.devops
    ```
 
-2. **Create the server on Hetzner** (CPX31 in Hillsboro):
+2. **Create the server on Hetzner**. You will be prompted for size and location, CPX31 being the recommended default:
    ```bash
    ./scripts/prod/create.sh
    ```
 
 3. **Set up the IP address**. Just add the IP address you got from Hetzner to the `.env.devops` file (`SERVER_IP`).
 
-4. **Set up the server**:
-   ```bash
-   ./scripts/prod/setup.sh
-   ```
+**If you're not using Hetzner**:
 
-5. **(Optional) Set up the deploy key**. If you are using a private GitHub repository for the codebase, you should have gotten a key to add to your repo in the output of the previous step.
+1. **Create the server**,
+2. **Add your SSH keys** and make sure your account has sudo privileges,
+3. **Set up the IP address**. Add the IP address to `env.devops` as `SERVER_IP`.
 
-6. **Set up environment variables** (see [Environment variables](#environment-variables)). Do not forget to set the GitHub repository (`GITHUB_REPO`) and [Let's Encrypt](https://letsencrypt.org/) email (`LE_EMAIL`) for the SSL setup:
+#### Set up the server
+
+```bash
+./scripts/prod/setup.sh
+```
+
+#### Deploy /dev/push
+
+1. **Set up environment variables** (see [Environment variables](#environment-variables)). Do not forget to set the GitHub repository (`GITHUB_REPO`) and [Let's Encrypt](https://letsencrypt.org/) email (`LE_EMAIL`) for the SSL setup:
    ```bash
    cp .env.prod.example .env.prod
    ```
    
-7. **Deploy and start the app**:
+2. **Deploy and start the app**:
    ```bash
    ./scripts/prod/deploy.sh
    ```
 
-8. **Initialize your database** once the containers are up:
+3. **Initialize your database** once the containers are up:
    ```bash
    ./scripts/prod/db-migrate.sh
    ```
-
-You can use `./scripts/prod/ssh-tunnel.sh` to establish an SSH tunnel to access the PostgreSQL database locally (via `localhost:15432`).
 
 ## Update
 
@@ -120,7 +139,7 @@ Run `./scripts/prod/update.sh` and select whether you want to update the app or 
 
 This will run a blue-green update process with Ansible (no downtime). This may take a while for the worker as it waits for all active jobs to be finished before cleaning up the old container.
 
-### Environment variables
+## Environment variables
 
 Variable | Comments | Default
 --- | --- | ---
@@ -165,7 +184,7 @@ Variable | Comments | Default
 `ACCESS_EMAIL_DENIED_WEBHOOK_URL` | Optional webhook to receive denied events (read more about [Sign-in access control](#sign-in-access-control)). | `""`
 `NGROK_CUSTOM_DOMAIN` | **Local development only**. Used by `scripts/local/ngrok.sh` to start the [ngrok](https://ngrok.com/) http tunnel. | 
 
-### GitHub App
+## GitHub App
 
 You will need to configure a GitHub App with the following settings:
 

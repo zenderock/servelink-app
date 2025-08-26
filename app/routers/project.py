@@ -904,7 +904,7 @@ async def project_settings(
                         % {"name": project.name},
                         "success",
                     )
-                    return RedirectResponse("/", status_code=303)
+                    return RedirectResponseX("/", status_code=303)
                 except Exception as e:
                     await db.rollback()
                     logger.error(

@@ -5,8 +5,6 @@
 
 {% block app_content %}{% endblock %}
 
-{% include "partials/_footer.html" %}
-
 {% from "macros/toast.html" import toaster %}
 {{ toaster(toasts=get_flashed_messages()) }}
 {% endblock %}

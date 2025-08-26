@@ -90,6 +90,14 @@
 							{% include "partials/_menu-deployments.html" %}
 						{% endcall %}
 					</div>
+
+					<div
+						hx-ext="sse"
+						sse-connect="{{ url_for('project_event', team_id=team.id, project_id=project.id) }}"
+						sse-close="sse:stream_closed"
+					>
+						<div sse-swap="deployment_status_update"></div>
+					</div>
 				{% endif %}
 			{% endif %}
 		</nav>

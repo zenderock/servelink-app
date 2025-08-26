@@ -10,7 +10,7 @@ if [ -z "$SERVER_IP" ]; then
     exit 1
 fi
 
-echo "\033[31mSetting up the server ($SERVER_IP) with Ansible\033[0m"
+echo -e "\033[1mSetting up the server ($SERVER_IP) with Ansible\033[0m"
 echo ""
 
 cd "$(dirname "$0")/../../devops/ansible"
@@ -19,4 +19,3 @@ ansible-playbook -i inventories/setup.yml playbooks/setup.yml \
 
 echo ""
 echo -e "\033[1;32mServer setup complete!\033[0m"
-echo -e "\033[1mRemember to add the deploy key to your GitHub.\033[0m"

@@ -16,8 +16,8 @@
   <div class="flex flex-row-reverse gap-x-6">
     <nav class="sticky top-[122px] min-w-64 h-full flex flex-col gap-y-1 max-lg:hidden">
       <a href="#general" class="btn-sm-ghost justify-start">{{ _('General') }}</a>
-      <a href="#environment-variables" class="btn-sm-ghost justify-start">{{ _('Environment variables') }}</a>
       <a href="#environments" class="btn-sm-ghost justify-start">{{ _('Environments') }}</a>
+      <a href="#environment-variables" class="btn-sm-ghost justify-start">{{ _('Environment variables') }}</a>
       <a href="#domains" class="btn-sm-ghost justify-start">{{ _('Domains') }}</a>
       <a href="#build-and-deploy" class="btn-sm-ghost justify-start">{{ _('Build & Deploy') }}</a>
       <a href="#danger"
@@ -31,14 +31,14 @@
         {% include "project/partials/_settings-general.html" %}
       </section>
 
-      {# ENVIRONMENT VARIABLES #}
-      <section class="relative rounded-xl scroll-mt-[101px]" id="environment-variables">
-        {% include "project/partials/_settings-env-vars.html" %}
-      </section>
-
       {# ENVIRONMENTS #}
       <section class="relative rounded-xl scroll-mt-[101px]" id="environments">
         {% include "project/partials/_settings-environments.html" %}
+      </section>
+
+      {# ENVIRONMENT VARIABLES #}
+      <section class="relative rounded-xl scroll-mt-[101px]" id="environment-variables">
+        {% include "project/partials/_settings-env-vars.html" %}
       </section>
 
       {# DOMAINS #}

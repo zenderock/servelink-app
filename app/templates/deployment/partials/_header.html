@@ -82,18 +82,20 @@
                 </a>
               </li>
               {% for alias in deployment.aliases %}
-                <li class="space-y-1">
-                  <div class="text-muted-foreground text-xs">{{ alias_types[alias.type] }}</div>
-                  <a
-                    href="{{ alias.url }}"
-                    title="{{ alias.hostname }}"
-                    target="_blank"
-                    class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
-                  >
-                    <span class="truncate">{{ alias.hostname }}</span>
-                    {% include "icons/external-link.svg" %}
-                  </a>
-                </li>
+                {% if alias.type in ["branch", "environment"] %}
+                  <li class="space-y-1">
+                    <div class="text-muted-foreground text-xs">{{ alias_types[alias.type] }}</div>
+                    <a
+                      href="{{ alias.url }}"
+                      title="{{ alias.hostname }}"
+                      target="_blank"
+                      class="flex items-center gap-x-2 [&>svg]:size-3 [&>svg]:text-muted-foreground [&>svg]:shrink-0 hover:underline min-w-0"
+                    >
+                      <span class="truncate">{{ alias.hostname }}</span>
+                      {% include "icons/external-link.svg" %}
+                    </a>
+                  </li>
+                {% endif %}
               {% endfor %}
             </ul>
           {% endcall %}

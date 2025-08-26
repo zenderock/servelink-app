@@ -90,34 +90,6 @@
         group: "{{ deploy_user }}"
         mode: '0700'
 
-    - name: Generate GitHub deploy key
-      command: ssh-keygen -t ed25519 -f /home/{{ deploy_user }}/.ssh/github_deploy_key -N "" -C "{{ deploy_user }}@devpush-deploy"
-      args:
-        creates: /home/{{ deploy_user }}/.ssh/github_deploy_key
-      become_user: "{{ deploy_user }}"
-
-    - name: Configure SSH for GitHub
-      copy:
-        content: |
-          Host github.com
-            HostName github.com
-            User git
-            IdentityFile ~/.ssh/github_deploy_key
-            StrictHostKeyChecking no
-        dest: /home/{{ deploy_user }}/.ssh/config
-        owner: "{{ deploy_user }}"
-        group: "{{ deploy_user }}"
-        mode: '0600'
-
-    - name: Read GitHub deploy public key
-      slurp:
-        src: /home/{{ deploy_user }}/.ssh/github_deploy_key.pub
-      register: github_public_key
-
-    - name: Display GitHub deploy key
-      debug:
-        msg: "GitHub Deploy Key: {{ github_public_key.content | b64decode | trim }}"
-
     - name: Create data directories
       become: yes
       loop:
