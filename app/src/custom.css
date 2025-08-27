@@ -48,7 +48,7 @@ body {
   }
 
   &:not(.loading):after {
-    @apply w-full opacity-0 transition-[width|opacity] duration-300 ease-in-out;
+    @apply w-full opacity-0 transition-[width,opacity] duration-300 ease-in-out;
   }
 }
 

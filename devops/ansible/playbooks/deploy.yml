@@ -45,12 +45,19 @@
       command: docker builder prune -af
       when: docker_prune | default(false) | bool
 
-    - name: Build images
-      command: >
-        docker compose -p devpush --profile build-only build
-        {% if docker_no_cache | default(true) | bool %} --no-cache {% endif %}
+    - name: Find Dockerfiles
+      shell: find Docker/runner -name "Dockerfile.*" -exec basename {} \; | sed 's/Dockerfile\.//'
       args:
         chdir: "{{ app_dir }}"
+      register: dockerfiles
+      changed_when: false
+
+    - name: Build runner images
+      command: >
+        docker build -f Docker/runner/Dockerfile.{{ item }} -t runner-{{ item }} ./Docker/runner
+      args:
+        chdir: "{{ app_dir }}"
+      loop: "{{ dockerfiles.stdout_lines }}"
 
     - name: Start services
       command: docker compose -p devpush -f docker-compose.yml -f docker-compose.override.prod.yml up -d --pull always --remove-orphans

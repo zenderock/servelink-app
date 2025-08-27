@@ -31,13 +31,15 @@ if [ -z "$COMPONENT" ]; then
     echo "1) App containers"
     echo "2) Worker containers"
     echo "3) Access control rules (access.json)"
+    echo "4) Runner images"
     echo ""
-    read -p "Select option (1-3): " choice
+    read -p "Select option (1-4): " choice
     
     case $choice in
         1) COMPONENT="app" ;;
         2) COMPONENT="worker" ;;
         3) COMPONENT="access" ;;
+        4) COMPONENT="runners" ;;
         *) echo "Invalid choice"; exit 1 ;;
     esac
 fi
@@ -55,9 +57,13 @@ case $COMPONENT in
         echo "Updating access control rules on the server ($SERVER_IP) with Ansible"
         PLAYBOOK="update-access.yml"
         ;;
+    runners)
+        echo "Updating runner images on the server ($SERVER_IP) with Ansible"
+        PLAYBOOK="update-runners.yml"
+        ;;
     *)
         echo -e "\033[31mError: Invalid component '$COMPONENT'\033[0m"
-        echo "Usage: $0 [app|worker|access]"
+        echo "Usage: $0 [app|worker|access|runners]"
         exit 1
         ;;
 esac

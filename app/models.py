@@ -32,7 +32,7 @@ FORBIDDEN_TEAM_SLUGS = [
     "auth",
     "api",
     "health",
-    "static",
+    "assets",
     "upload",
     "user",
     "deployment-not-found",

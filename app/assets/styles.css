@@ -351,9 +351,6 @@
   .relative {
     position: relative;
   }
-  .static {
-    position: static;
-  }
   .sticky {
     position: sticky;
   }
@@ -977,12 +974,6 @@
   .border-yellow-500 {
     border-color: var(--color-yellow-500);
   }
-  .border-yellow-500\/20 {
-    border-color: color-mix(in srgb, oklch(79.5% 0.184 86.047) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--color-yellow-500) 20%, transparent);
-    }
-  }
   .bg-accent {
     background-color: var(--color-accent);
   }
@@ -1120,12 +1111,6 @@
   }
   .bg-yellow-500 {
     background-color: var(--color-yellow-500);
-  }
-  .bg-yellow-500\/10 {
-    background-color: color-mix(in srgb, oklch(79.5% 0.184 86.047) 10%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-yellow-500) 10%, transparent);
-    }
   }
   .bg-gradient-to-tl {
     --tw-gradient-position: to top left in oklab;
@@ -1475,12 +1460,6 @@
   }
   .line-through {
     text-decoration-line: line-through;
-  }
-  .decoration-foreground\/50 {
-    text-decoration-color: var(--color-foreground);
-    @supports (color: color-mix(in lab, red, red)) {
-      text-decoration-color: color-mix(in oklab, var(--color-foreground) 50%, transparent);
-    }
   }
   .opacity-50 {
     opacity: 50%;
@@ -4958,7 +4937,7 @@ body {
   &:not(.loading):after {
     width: 100%;
     opacity: 0%;
-    transition-property: width|opacity;
+    transition-property: width,opacity;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
     --tw-duration: 300ms;

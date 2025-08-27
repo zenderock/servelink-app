@@ -1,0 +1,19 @@
+---
+- hosts: all
+  vars:
+    app_dir: /home/deploy/devpush
+
+  tasks:
+    - name: Find Dockerfiles
+      shell: find Docker/runner -name "Dockerfile.*" -exec basename {} \; | sed 's/Dockerfile\.//'
+      args:
+        chdir: "{{ app_dir }}"
+      register: dockerfiles
+      changed_when: false
+
+    - name: Build runner images
+      command: >
+        docker build --no-cache -f Docker/runner/Dockerfile.{{ item }} -t runner-{{ item }} ./Docker/runner
+      args:
+        chdir: "{{ app_dir }}"
+      loop: "{{ dockerfiles.stdout_lines }}"

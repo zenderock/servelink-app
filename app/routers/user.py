@@ -222,7 +222,7 @@ async def user_settings(
                                 "email": new_email,
                                 "verify_link": verify_link,
                                 "email_logo": f"{settings.email_logo}"
-                                or request.url_for("static", path="logo-email.png"),
+                                or request.url_for("assets", path="logo-email.png"),
                                 "app_name": settings.app_name,
                                 "app_description": settings.app_description,
                                 "app_url": f"{settings.url_scheme}://{settings.hostname}",

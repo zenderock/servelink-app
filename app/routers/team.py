@@ -532,7 +532,7 @@ def _send_member_invite(
                         "inviter_name": current_user.name,
                         "team_name": team.name,
                         "email_logo": settings.email_logo
-                        or request.url_for("static", path="logo-email.png"),
+                        or request.url_for("assets", path="logo-email.png"),
                         "app_name": settings.app_name,
                         "app_description": settings.app_description,
                         "app_url": f"{settings.url_scheme}://{settings.hostname}",

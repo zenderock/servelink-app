@@ -135,9 +135,9 @@ The worker is also mounted but will usually require a restart: `docker-compose r
 
 ### Production
 
-Run `./scripts/prod/update.sh` and select whether you want to update the app or worker container.
+Run `./scripts/prod/update.sh` and select whether you want to update the app container, the worker containers, the [access list](#sign-in-access-control) or the runners (Docker images that match the runtimes).
 
-This will run a blue-green update process with Ansible (no downtime). This may take a while for the worker as it waits for all active jobs to be finished before cleaning up the old container.
+For containers, it will run a blue-green update process via Ansible (no downtime). For the worker containers specifically, this may take a while as it waits for all active jobs to be finished before cleaning up the old container.
 
 ## Environment variables
 

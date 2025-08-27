@@ -56,7 +56,7 @@ app = FastAPI(
         Middleware(CSRFProtectMiddleware, csrf_secret=settings.secret_key),
     ],
 )
-app.mount("/static", CachedStaticFiles(directory="static"), name="static")
+app.mount("/assets", CachedStaticFiles(directory="assets"), name="assets")
 app.mount("/upload", StaticFiles(directory="upload"), name="upload")
 
 
