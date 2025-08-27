@@ -6,8 +6,10 @@ docker-compose*.yml
 Docker/
 !Docker/entrypoint.app.sh
 !Docker/entrypoint.app.dev.sh
-!Docker/entrypoint.worker.sh
-!Docker/entrypoint.worker.dev.sh
+!Docker/entrypoint.worker-arq.sh
+!Docker/entrypoint.worker-arq.dev.sh
+!Docker/entrypoint.worker-monitor.sh
+!Docker/entrypoint.worker-monitor.dev.sh
 
 # Python
 __pycache__/

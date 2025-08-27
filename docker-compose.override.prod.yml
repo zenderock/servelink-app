@@ -9,7 +9,7 @@ services:
       - /srv/devpush/upload:/app/upload
       - /srv/devpush/access.json:/app/settings/access.json
 
-  worker:
+  worker-arq:
     volumes:
       - /srv/devpush/traefik:/data/traefik
 

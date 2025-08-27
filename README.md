@@ -38,7 +38,7 @@ A modern deployment platform that automates container deployments with real-time
 
 - **`app/`**: The main FastAPI application (see Readme file).
 - **`devops/`**: Ansible playbooks and Terraform for production setup.
-- **`Docker/`**: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker.dev.sh`).
+- **`Docker/`**: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker-arq.dev.sh`).
 - **`scripts/`**: Helper scripts for local (macOS) and production environments
 - **`docker-compose.yml`**: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`) and production (`docker-compose.override.prod.yml`).
 

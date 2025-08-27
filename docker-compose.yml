@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
-    command: ["/entrypoint.app.sh"]
+    entrypoint: /entrypoint.app.sh
     restart: always
     depends_on:
       - redis
@@ -32,11 +32,11 @@ services:
       retries: 3
       start_period: 20s
 
-  worker:
+  worker-arq:
     build:
       context: .
       dockerfile: Docker/Dockerfile.app
-    command: ["/entrypoint.worker.sh"]
+    entrypoint: /entrypoint.worker-arq.sh
     restart: always
     stop_grace_period: ${JOB_TIMEOUT:-320}s
     depends_on:
@@ -54,11 +54,34 @@ services:
       - TRAEFIK_CONFIG_DIR=/data/traefik
       - DOCKER_HOST=tcp://docker-proxy:2375
     healthcheck:
-      test: ["CMD", "uv", "run", "arq", "--check", "worker.WorkerSettings"]
+      test: ["CMD", "uv", "run", "arq", "--check", "workers.arq.WorkerSettings"]
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 20s
+
+  worker-monitor:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.app
+    entrypoint: /entrypoint.worker-monitor.sh
+    restart: always
+    volumes:
+      - ./app:/app
+    depends_on:
+      - redis
+      - pgsql
+    networks:
+      - default
+      - internal
+      - runner
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - UPLOAD_DIR=/app/upload
+      - TRAEFIK_CONFIG_DIR=/data/traefik
+      - DOCKER_HOST=tcp://docker-proxy:2375
 
   redis:
     image: redis:alpine

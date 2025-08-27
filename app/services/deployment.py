@@ -164,7 +164,7 @@ class DeploymentService:
         db.add(deployment)
         await db.commit()
 
-        job = await deployment_queue.enqueue_job("deploy", deployment.id)
+        job = await deployment_queue.enqueue_job("deploy_start", deployment.id)
         deployment.job_id = job.job_id
         await db.commit()
 

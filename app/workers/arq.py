@@ -1,7 +1,7 @@
 import logging
 from arq.connections import RedisSettings
-from tasks.deploy import deploy
-from tasks.cleanup import (
+from workers.tasks.deploy import deploy_start, deploy_finalize, deploy_fail
+from workers.tasks.cleanup import (
     cleanup_user,
     cleanup_team,
     cleanup_project,
@@ -17,13 +17,15 @@ settings = get_settings()
 
 class WorkerSettings:
     functions = [
-        deploy,
+        deploy_start,
+        deploy_finalize,
+        deploy_fail,
         cleanup_user,
         cleanup_team,
         cleanup_project,
         cleanup_inactive_deployments,
     ]
-    redis_settings = RedisSettings.from_dsn("redis://redis:6379")
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
     max_jobs = 8
     job_timeout = settings.job_timeout
     job_completion_wait = settings.job_completion_wait

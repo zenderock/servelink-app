@@ -21,4 +21,5 @@ USER appuser
 EXPOSE 8000
 
 COPY Docker/entrypoint.app.dev.sh /entrypoint.app.dev.sh
-COPY Docker/entrypoint.worker.dev.sh /entrypoint.worker.dev.sh
+COPY Docker/entrypoint.worker-arq.dev.sh /entrypoint.worker-arq.dev.sh
+COPY Docker/entrypoint.worker-monitor.dev.sh /entrypoint.worker-monitor.dev.sh
