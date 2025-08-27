@@ -15,7 +15,9 @@
     <footer class="flex justify-end gap-x-2">
       <button type="button" class="btn-ghost" onclick="document.getElementById('dialog-deploy').close()">{{ _('Cancel')
         }}</button>
-      <button type="button" class="btn" disabled>{{ _('Deploy') }}</button>
+      <button type="button" class="btn" disabled>
+        {{ _('Deploy') }}
+      </button>
     </footer>
   </div>
 {% else %}
@@ -24,6 +26,8 @@
     action="{{ url_for('project_deploy', team_slug=team.slug, project_name=project.name).include_query_params(fragment='commit') }}"
     hx-post="{{ url_for('project_deploy', team_slug=team.slug, project_name=project.name).include_query_params(fragment='commit') }}"
     class="space-y-4"
+    hx-disabled-elt="input, button"
+    hx-indicator="find .htmx-indicator"
   >
     {{ form.csrf_token }}
     {% if form.errors %}
@@ -74,7 +78,12 @@
     </section>
     <footer class="flex justify-end gap-x-2">
       <button type="button" class="btn-ghost" onclick="document.getElementById('dialog-deploy').close()">{{ _('Cancel') }}</button>
-      {{ form.submit(class_="btn-primary") }}
+      <button type="submit" class="btn-primary">
+        {{ _('Deploy') }}
+        <div class="htmx-indicator [&>svg]:size-4 [&>svg]:animate-spin">
+          {% include "icons/loader.svg" %}
+        </div>
+      </button>
     </footer>
   </form>
 {% endif %}

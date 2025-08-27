@@ -1,5 +1,12 @@
-<form action="" method="post" hx-post="" hx-swap=" outerHTML" hx-disabled-elt="input, select, button"
-  class="form flex flex-col gap-y-6" hx-indicator="find .htmx-indicator">
+<form
+  action=""
+  method="post"
+  hx-post=""
+  hx-swap="outerHTML"
+  hx-disabled-elt="input, select, button"
+  class="form flex flex-col gap-y-6"
+  hx-indicator="find .htmx-indicator"
+>
   {{ form.csrf_token(id=False) }}
   {{ form.repo_id(id=False, class_="hidden") }}
   <div class="space-y-6">

@@ -47,7 +47,7 @@
     - name: Install Loki Docker driver plugin
       command: docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
       args:
-        creates: /var/lib/docker/plugins/96c3dd7a77ab6e014b43f3d7b41505f772a514d7a86358c5f590924e2d3e34b1
+        creates: /var/lib/docker/plugins/loki
 
     - name: Create deploy user
       user:
