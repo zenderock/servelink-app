@@ -2,6 +2,12 @@
 
 A modern deployment platform that automates container deployments with real-time logging, GitHub integration, and zero-downtime updates. Built for teams who want simple, fast deployments without the complexity of traditional CI/CD pipelines.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://devpu.sh/assets/images/screenshot-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://devpu.sh/assets/images/screenshot-light.png">
+  <img alt="A screenshot of a deployment in /dev/push." src="https://devpu.sh/assets/images/screenshot-dark.png">
+</picture>
+
 ## Key features
 
 - **Git-based deployments**: Push to deploy from GitHub with zero-downtime rollouts and instant rollback.
