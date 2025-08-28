@@ -7,7 +7,7 @@ from pathlib import Path
 class Settings(BaseSettings):
     app_name: str = "/dev/push"
     app_description: str = (
-        "Open-source platform to build, preview, and ship your apps from GitHub."
+        "An open-source platform to build and deploy any app from GitHub."
     )
     url_scheme: str = "http"
     hostname: str = "localhost"
