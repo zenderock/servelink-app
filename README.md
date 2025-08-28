@@ -1,6 +1,6 @@
 # /dev/push
 
-A modern deployment platform that automates container deployments with real-time logging, GitHub integration, and zero-downtime updates. Built for teams who want simple, fast deployments without the complexity of traditional CI/CD pipelines.
+An open-source and self-hostable alternative to Vercel, Render, Netlify and the likes. It allows you to build and deploy any app (Python, Node.js, PHP, ...) with zero-downtime updates, real-time logs, team management, customizable environments and domains, etc.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://devpu.sh/assets/images/screenshot-dark.png">
