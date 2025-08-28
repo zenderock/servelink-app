@@ -18,6 +18,10 @@ An open-source and self-hostable alternative to Vercel, Render, Netlify and the 
 - **Custom domains**: Support for custom domain and automatic Let's Encrypt SSL certificates.
 - **Self-hosted and open source**: Run on your own servers, MIT licensed.
 
+## Documentation
+
+Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
+
 ## Stack
 
 - Docker & [Docker Compose](https://github.com/docker/compose)
@@ -35,14 +39,15 @@ An open-source and self-hostable alternative to Vercel, Render, Netlify and the 
 ## Overview
 
 - **App**: The app handles all of the user-facing logic (managing teams/projects, authenticating, searching logs...). It communicates with the workers via Redis/
-- **Job queue/Worker**: When we create a new deployment, we queue a deploy job using arq/Redis. The workers (in the worker container) execute them and report back in real-time to the app via Redis Streams. These workers are also used to run certain batch jobs (e.g. deleting a team, cleaning up inactive deployments and their containers).
-- **Logs**: build logs are streamed from the workers via Redis Streams, and served to the user via an SSE endpoint in the app. Runtime logs are all logged in Loki and made available per project through the app.
+- **Workers**: When we create a new deployment, we queue a deploy job using arq. It will start a container, then delegate monitoring to a separate backrgound worker (`app/workers/arq.py`), before wrapping things back with yet another job. These workers are also used to run certain batch jobs (e.g. deleting a team, cleaning up inactive deployments and their containers).
+- **Logs**: build and runtime logs are streamed from Loki and served to the user via an SSE endpoint in the app.
 - **Runners**: User apps are deployed on one of the runner containers (e.g. `Docker/runner/Dockerfile.python-3`). They are created in the deploy job (`app/tasks/deploy.py`) and then run a series of commands based on the user configuration.
 - **Reverse proxy**: We have Traefik sitting in front of both app and the deployed runner containers. All routing is done using Traefik labels, but we also maintain environment and branch aliases (e.g. `my-project-env-staging.devpush.app`) maintaining Traefik config files.
 
 ## File structure
 
 - **`app/`**: The main FastAPI application (see Readme file).
+- **`app/workers`**: The workers (`arq` and `monitor`)
 - **`devops/`**: Ansible playbooks and Terraform for production setup.
 - **`Docker/`**: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker-arq.dev.sh`).
 - **`scripts/`**: Helper scripts for local (macOS) and production environments
