@@ -159,6 +159,7 @@ Variable | Comments | Default
 `URL_SCHEME` | `http` (development) or `https` (production). | `http`
 `LE_EMAIL` | Email used to register the Let's Encrypt (ACME) account in Traefik; receives certificate issuance/renewal/expiry notifications. | `dev@devpu.sh`
 `HOSTNAME` | Hostname for the app (e.g. `app.devpu.sh`). | `localhost`
+`STATIC_HOSTNAME` | Hostname for serving the static assets (e.g. CSS, JS libraries, images). Useful for caching. No trailing slahe | `HOSTNAME`
 `DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `localhost`
 `SERVER_UP` | Public IP of the server | `127.0.0.1`
 `SECRET_KEY` | Secret key for JWT tokens, sessions, and CSRF protection. | `secret-key`

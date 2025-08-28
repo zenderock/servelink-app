@@ -23,7 +23,8 @@ async def get_latest_projects(db, team, current_project=None, limit=4):
 async def get_latest_deployments(db, project, current_deployment=None, limit=4):
     query = (
         select(Deployment)
-        .where(Deployment.project_id == project.id)
+        .join(Project)
+        .where(Deployment.project_id == project.id, Project.status != "deleted")
         .order_by(Deployment.created_at.desc())
     )
 

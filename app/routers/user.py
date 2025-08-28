@@ -274,6 +274,7 @@ async def user_settings(
                         TeamMember.team_id == leave_team_form.team_id.data,
                         TeamMember.user_id != current_user.id,
                         TeamMember.role == "owner",
+                        TeamMember.status != "deleted",
                     )
                 )
                 other_owners = result.scalars().all()

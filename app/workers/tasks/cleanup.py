@@ -8,6 +8,7 @@ import logging
 from models import (
     Project,
     Deployment,
+    Domain,
     Alias,
     Team,
     TeamMember,
@@ -263,7 +264,23 @@ async def cleanup_project(ctx, project_id: str, batch_size: int = 100):
                             f"[CleanupProject:{project_id}] Failed to remove Traefik config: {e}"
                         )
 
-                # 2. Delete the project
+                # 2. Delete domains associated with this project
+                try:
+                    domains_deleted_result = await db.execute(
+                        delete(Domain).where(Domain.project_id == project_id)
+                    )
+                    total_domains = domains_deleted_result.rowcount
+                    logger.info(
+                        f"[CleanupProject:{project_id}] Removed {total_domains} domains"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"[CleanupProject:{project_id}] Failed to delete domains: {e}"
+                    )
+                    await db.rollback()
+                    raise
+
+                # 3. Delete the project
                 try:
                     await db.execute(delete(Project).where(Project.id == project_id))
                     await db.commit()

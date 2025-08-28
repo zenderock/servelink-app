@@ -91,7 +91,7 @@ async def team_index(
         select(Deployment)
         .options(selectinload(Deployment.aliases))
         .join(Project)
-        .where(Project.team_id == team.id)
+        .where(Project.team_id == team.id, Project.status != "deleted")
         .order_by(Deployment.created_at.desc())
         .limit(10)
     )

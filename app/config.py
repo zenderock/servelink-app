@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     )
     url_scheme: str = "http"
     hostname: str = "localhost"
+    static_hostname: str = hostname
     deploy_domain: str = "localhost"
     github_app_id: str = ""
     github_app_name: str = ""
