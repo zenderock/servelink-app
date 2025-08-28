@@ -192,8 +192,8 @@ You will need to configure a GitHub App with the following settings:
 
 - **Identifying and authorizing users**:
   - **Callback URL**: add two callback URLs with your domain:
-   - https://example.com/api/github/authorize/callback
-   - https://example.com/auth/github/callback
+    - https://example.com/api/github/authorize/callback
+    - https://example.com/auth/github/callback
   - **Expire user authorization tokens**: No
 - **Post installation**:
   - **Setup URL**: https://example.com/api/github/install/callback
