@@ -1,27 +1,27 @@
-{% macro render_build_and_deploy(form, presets, runtimes) %}
+{% macro render_build_and_deploy(form, presets, images) %}
 <div
   class="space-y-6"
   x-data="{
     presets: {{ presets | tojson | replace('"', "'") | safe }},
-    runtimes: {{ runtimes | tojson | replace('"', "'") | safe }},
-    setPreset(value, onlyRuntime = false) {
+    images: {{ images | tojson | replace('"', "'") | safe }},
+    setPreset(value, onlyImage = false) {
       const preset = this.presets.find(p => p.slug === value);
       if (!preset) {
         console.error('Can not find framework preset.');
         return;
       }
       
-      const availableRuntimes = this.runtimes[preset.runtime];
-      if ($refs.runtimeInput) $refs.runtimeInput.value = availableRuntimes[0].slug;
-      $refs.runtimeInput.querySelectorAll('option').forEach(option => {
-          if (option.value && !availableRuntimes.find(r => r.slug === option.value)) {
+      const availableImages = this.images[preset.image];
+      if ($refs.imageInput) $refs.imageInput.value = availableImages[0].slug;
+      $refs.imageInput.querySelectorAll('option').forEach(option => {
+          if (option.value && !availableImages.find(i => i.slug === option.value)) {
               option.disabled = true;
           } else {
               option.disabled = false;
           }
       });
 
-      if (onlyRuntime) return;
+      if (onlyImage) return;
 
       if ($refs.rootDirectoryInput) $refs.rootDirectoryInput.value = preset.root_directory || '';
       if ($refs.buildCommandInput) $refs.buildCommandInput.value = preset.build_command || '';
@@ -54,15 +54,15 @@
     {% endfor %}
   </div>
 
-  {# RUNTIME #}
+  {# DOCKER IMAGE #}
   <div class="space-y-3">
-    {{ form.runtime.label() }}
-    {{ form.runtime(
+    {{ form.image.label() }}
+    {{ form.image(
       id=False,
       class="font-mono text-[13px]",
-      **{'x-ref': 'runtimeInput'}
+      **{'x-ref': 'imageInput'}
     ) }}
-    {% for error in form.runtime.errors %}
+    {% for error in form.image.errors %}
       <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>

@@ -1,3 +1,5 @@
+> **⚠️ Warning**: THIS IS STILL UNDER DEVELOPMENT. I'm very close to making the first beta release, working mostly on simplifying the deployment process (removing the dependency on Terraform and Ansible) and adding more documentation/tutorials for those who want to self-host. A few things may still change.
+
 # /dev/push
 
 An open-source and self-hostable alternative to Vercel, Render, Netlify and the likes. It allows you to build and deploy any app (Python, Node.js, PHP, ...) with zero-downtime updates, real-time logs, team management, customizable environments and domains, etc.
@@ -146,7 +148,7 @@ The worker is also mounted but will usually require a restart: `docker-compose r
 
 ### Production
 
-Run `./scripts/prod/update.sh` and select whether you want to update the app container, the worker containers, the [access list](#sign-in-access-control) or the runners (Docker images that match the runtimes).
+Run `./scripts/prod/update.sh` and select whether you want to update the app container, the worker containers, the [access list](#sign-in-access-control) or the runners (Docker images the deployments run on).
 
 For containers, it will run a blue-green update process via Ansible (no downtime). For the worker containers specifically, this may take a while as it waits for all active jobs to be finished before cleaning up the old container.
 

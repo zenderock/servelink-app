@@ -24,25 +24,25 @@ from models import Project, Team, Domain
 from utils.color import COLORS
 
 
-def validate_runtime(self, field):
-    preset_runtime = next(
+def validate_image(self, field):
+    preset_image = next(
         (
-            preset["runtime"]
+            preset["image"]
             for preset in self._presets
             if preset["slug"] == self.preset.data
         ),
         None,
     )
-    if not preset_runtime:
+    if not preset_image:
         return
-    runtime_group = self._runtimes.get(preset_runtime)
-    if not runtime_group:
+    image_group = self._images.get(preset_image)
+    if not image_group:
         return
-    if self.runtime.data and self.runtime.data not in {
-        runtime["slug"] for runtime in runtime_group
+    if self.image.data and self.image.data not in {
+        image["slug"] for image in image_group
     }:
         raise ValidationError(
-            _("Invalid runtime for this preset. Please select a runtime from the list.")
+            _("Invalid image for this preset. Please select an image from the list.")
         )
 
 
@@ -358,8 +358,8 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
         _l("Framework presets"),
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    runtime = SelectField(
-        _l("Runtime"),
+    image = SelectField(
+        _l("Image"),
         validators=[DataRequired(), Length(min=1, max=255)],
     )
     root_directory = StringField(
@@ -383,17 +383,17 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         settings = get_settings()
-        self._runtimes = settings.runtimes
+        self._images = settings.images
         self._presets = settings.presets
         self.preset.choices = [
             (preset["slug"], preset["name"]) for preset in self._presets
         ]
-        self.runtime.choices = {
-            group: [(runtime["slug"], runtime["name"]) for runtime in items]
-            for group, items in self._runtimes.items()
+        self.image.choices = {
+            group: [(image["slug"], image["name"]) for image in items]
+            for group, items in self._images.items()
         }
 
-    validate_runtime = validate_runtime
+    validate_image = validate_image
 
     validate_root_directory = validate_root_directory
 
@@ -480,8 +480,8 @@ class NewProjectForm(StarletteForm):
         choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
-    runtime = SelectField(
-        _l("Runtime"),
+    image = SelectField(
+        _l("Image"),
         choices=[],
         validators=[DataRequired(), Length(min=1, max=255)],
     )
@@ -512,14 +512,14 @@ class NewProjectForm(StarletteForm):
         self.db = db
         self.team = team
         settings = get_settings()
-        self._runtimes = settings.runtimes
+        self._images = settings.images
         self._presets = settings.presets
         self.preset.choices = [
             (preset["slug"], preset["name"]) for preset in self._presets
         ]
-        self.runtime.choices = {
-            group: [(runtime["slug"], runtime["name"]) for runtime in items]
-            for group, items in self._runtimes.items()
+        self.image.choices = {
+            group: [(image["slug"], image["name"]) for image in items]
+            for group, items in self._images.items()
         }
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):
@@ -542,7 +542,7 @@ class NewProjectForm(StarletteForm):
                     _("A project with this name already exists in this team.")
                 )
 
-    validate_runtime = validate_runtime
+    validate_image = validate_image
 
 
 class ProjectDeleteForm(StarletteForm):

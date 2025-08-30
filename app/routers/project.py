@@ -165,7 +165,7 @@ async def new_project_details(
             github_installation=github_installation,
             config={
                 "preset": form.preset.data,
-                "runtime": form.runtime.data,
+                "image": form.image.data,
                 "root_directory": form.root_directory.data,
                 "build_command": form.build_command.data,
                 "pre_deploy_command": form.pre_deploy_command.data,
@@ -210,7 +210,7 @@ async def new_project_details(
             "form": form,
             "repo_full_name": f"{repo_owner or ''}/{repo_name or ''}",
             "presets": settings.presets,
-            "runtimes": settings.runtimes,
+            "images": settings.images,
             "environments": [
                 {"color": "blue", "name": "Production", "slug": "production"}
             ],
@@ -1180,7 +1180,7 @@ async def project_settings(
         request,
         data={
             "preset": project.config.get("preset"),
-            "runtime": project.config.get("runtime"),
+            "image": project.config.get("image"),
             "root_directory": project.config.get("root_directory"),
             "build_command": project.config.get("build_command"),
             "pre_deploy_command": project.config.get("pre_deploy_command"),
@@ -1198,7 +1198,7 @@ async def project_settings(
         if await build_and_deploy_form.validate_on_submit():
             project.config = {
                 "preset": build_and_deploy_form.preset.data,
-                "runtime": build_and_deploy_form.runtime.data,
+                "image": build_and_deploy_form.image.data,
                 "root_directory": build_and_deploy_form.root_directory.data,
                 "build_command": build_and_deploy_form.build_command.data,
                 "pre_deploy_command": build_and_deploy_form.pre_deploy_command.data,
@@ -1217,7 +1217,7 @@ async def project_settings(
                     "project": project,
                     "build_and_deploy_form": build_and_deploy_form,
                     "presets": settings.presets,
-                    "runtimes": settings.runtimes,
+                    "images": settings.images,
                 },
             )
 
@@ -1422,7 +1422,7 @@ async def project_settings(
             "deploy_domain": settings.deploy_domain,
             "colors": COLORS,
             "presets": settings.presets,
-            "runtimes": settings.runtimes,
+            "images": settings.images,
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,
         },

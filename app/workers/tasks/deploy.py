@@ -161,13 +161,13 @@ async def deploy_start(ctx, deployment_id: str):
                         f"{log_prefix} Invalid CPU/memory values in config, using defaults."
                     )
 
-                runtime = deployment.config.get("runtime")
+                image = deployment.config.get("image")
 
                 # Create and start container
                 container = await docker_client.containers.create_or_replace(
                     name=container_name,
                     config={
-                        "Image": f"runner-{runtime}",
+                        "Image": f"runner-{image}",
                         "Cmd": ["/bin/sh", "-c", " && ".join(commands)],
                         "Env": [f"{k}={v}" for k, v in env_vars_dict.items()],
                         "WorkingDir": "/app",

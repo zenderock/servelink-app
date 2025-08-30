@@ -35,10 +35,10 @@ class Settings(BaseSettings):
     docker_host: str = "tcp://docker-proxy:2375"
     upload_dir: str = "/upload"
     traefik_config_dir: str = "/data/traefik"
-    default_cpu_quota: int = 100000
-    default_memory_mb: int = 4096
+    default_cpu_quota: int = 50000
+    default_memory_mb: int = 2048
     presets: list[dict] = []
-    runtimes: list[dict] = []
+    images: list[dict] = []
     job_timeout: int = 320
     job_completion_wait: int = 300
     deployment_timeout: int = 300
@@ -60,12 +60,12 @@ def get_settings():
     settings = Settings()
 
     presets_file = Path("settings/presets.json")
-    runtimes_file = Path("settings/runtimes.json")
+    images_file = Path("settings/images.json")
     try:
         settings.presets = json.loads(presets_file.read_text(encoding="utf-8"))
-        settings.runtimes = json.loads(runtimes_file.read_text(encoding="utf-8"))
+        settings.images = json.loads(images_file.read_text(encoding="utf-8"))
     except Exception:
         settings.presets = []
-        settings.runtimes = []
+        settings.images = []
 
     return settings
