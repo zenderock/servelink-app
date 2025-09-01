@@ -106,8 +106,6 @@ pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.
 info "Installing base packages..."
 info "Updating package lists..."
 apt-get update -y
-info "Upgrading system packages..."
-apt-get -y dist-upgrade
 info "Installing required packages..."
 apt_install ca-certificates git ufw fail2ban unattended-upgrades || { err "Base package install failed"; exit 1; }
 
