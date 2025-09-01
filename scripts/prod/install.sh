@@ -28,13 +28,13 @@ Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .e
   --harden-ssh           Enable SSH hardening (root login off, password auth off) [default]
   --no-harden-ssh        Disable SSH hardening
   --no-telemetry         Do not send telemetry
-  --yes, -y              Non-interactive (assume yes)
+
   -h, --help             Show this help
 USG
   exit 1
 }
 
-repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; copy_root=0; harden_ssh=1; telemetry=1; yes=0
+repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; copy_root=0; harden_ssh=1; telemetry=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
     --copy-root-auth) copy_root=1; shift ;;
     --harden-ssh) harden_ssh=1; shift ;;
     --no-harden-ssh) harden_ssh=0; shift ;;
-    --yes|-y) yes=1; shift ;;
+
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -74,17 +74,13 @@ if [[ -z "${app_dir:-}" ]]; then
   fi
 fi
 
-# Warnings
+# Info
 echo -e "${YEL}This will:${NC}
 - create user '${user}' (and set SSH keys)
 - install Docker/Compose and open ports 22/80/443
 - install required Docker Loki logging driver
 - apply basic hardening (UFW, fail2ban, unattended-upgrades) and SSH hardening (root login off, password auth off)
 - clone repo to ${app_dir} and seed .env (won't start services)"
-if [[ $yes -ne 1 ]]; then
-  read -p "Proceed? [y/N]: " ans
-  [[ "$ans" =~ ^[Yy]$ ]] || { info "Aborted."; exit 1; }
-fi
 
 # Port conflicts warning
 if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
