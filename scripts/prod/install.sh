@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+RED="$(printf '\033[31m')"; GRN="$(printf '\033[32m')"; YEL="$(printf '\033[33m')"; BLD="$(printf '\033[1m')"; NC="$(printf '\033[0m')"
+err(){ echo -e "${RED}ERR:${NC} $*" >&2; }
+ok(){ echo -e "${GRN}$*${NC}"; }
+info(){ echo -e "${BLD}$*${NC}"; }
+
+LOG=/var/log/devpush-install.log
+mkdir -p "$(dirname "$LOG")" || true
+exec > >(tee -a "$LOG") 2>&1
+trap 's=$?; err "Install failed (exit $s). See $LOG"; exit $s' ERR
+
+usage() {
+  cat <<USG
+Usage: install.sh [--repo <url>] [--ref <tag>] [--include-prerelease] [--user devpush] [--app-dir <path>] [--ssh-pub <key_or_path>] [--copy-root-auth] [--harden-ssh|--no-harden-ssh] [--no-telemetry] [--yes|-y]
+
+Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .env).
+
+  --repo URL             Git repo to clone (default: https://github.com/hunvreus/devpush.git)
+  --ref TAG              Git tag to install (default: latest stable tag)
+  --include-prerelease   Allow beta/rc tags when selecting latest
+  --user NAME            System user to own the app (default: devpush)
+  --app-dir PATH         App directory (default: /home/<user>/devpush if user exists/created, else /opt/devpush)
+  --ssh-pub KEY|PATH     Public key content or file to seed authorized_keys for the user
+  --copy-root-auth       Copy /root/.ssh/authorized_keys to the user
+  --harden-ssh           Enable SSH hardening (root login off, password auth off) [default]
+  --no-harden-ssh        Disable SSH hardening
+  --no-telemetry         Do not send telemetry
+  --yes, -y              Non-interactive (assume yes)
+  -h, --help             Show this help
+USG
+  exit 1
+}
+
+repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; copy_root=0; harden_ssh=1; telemetry=1; yes=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo) repo="$2"; shift 2 ;;
+    --user) user="$2"; shift 2 ;;
+    --ref) ref="$2"; shift 2 ;;
+    --include-prerelease) include_pre=1; shift ;;
+    --no-telemetry) telemetry=0; shift ;;
+    --app-dir) app_dir="$2"; shift 2 ;;
+    --ssh-pub) ssh_pub="$2"; shift 2 ;;
+    --copy-root-auth) copy_root=1; shift ;;
+    --harden-ssh) harden_ssh=1; shift ;;
+    --no-harden-ssh) harden_ssh=0; shift ;;
+    --yes|-y) yes=1; shift ;;
+    -h|--help) usage ;;
+    *) usage ;;
+  esac
+done
+
+[[ $EUID -eq 0 ]] || { err "Run as root (sudo)."; exit 1; }
+
+# OS check (Debian/Ubuntu only)
+. /etc/os-release || { err "Unsupported OS"; exit 1; }
+case "${ID_LIKE:-$ID}" in
+  *debian*|*ubuntu*) : ;;
+  *) err "Only Ubuntu/Debian supported"; exit 1 ;;
+esac
+command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
+command -v curl >/dev/null || (apt-get update && apt-get install -y curl >/dev/null)
+
+# Get app dir depending on user
+if [[ -z "${app_dir:-}" ]]; then
+  if id -u "$user" >/dev/null 2>&1; then
+    app_dir="/home/$user/devpush"
+  else
+    app_dir="/opt/devpush"
+  fi
+fi
+
+# Warnings
+echo -e "${YEL}This will:${NC}
+- create user '${user}' (and set SSH keys)
+- install Docker/Compose and open ports 22/80/443
+- install required Docker Loki logging driver
+- apply basic hardening (UFW, fail2ban, unattended-upgrades) and SSH hardening (root login off, password auth off)
+- clone repo to ${app_dir} and seed .env (won't start services)"
+if [[ $yes -ne 1 ]]; then
+  read -p "Proceed? [y/N]: " ans
+  [[ "$ans" =~ ^[Yy]$ ]] || { info "Aborted."; exit 1; }
+fi
+
+# Port conflicts warning
+if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
+  echo -e "${YEL}Warning:${NC} ports 80/443 are in use. Traefik may fail to start later."
+fi
+
+# Helpers
+apt_install() {
+  local pkgs=("$@"); local i
+  for i in {1..5}; do
+    if apt-get update -y >/dev/null && apt-get install -y "${pkgs[@]}" >/dev/null; then return 0; fi
+    sleep 3
+  done
+  return 1
+}
+gen_hex(){ openssl rand -hex 32; }
+gen_pw(){ openssl rand -base64 24 | tr -d '\n=' | cut -c1-32; }
+pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.com || hostname -I | awk '{print $1}'; }
+
+# Install base packages
+info "Installing base packages..."
+apt-get update -y >/dev/null
+apt-get -y dist-upgrade >/dev/null
+apt_install ca-certificates git ufw fail2ban unattended-upgrades || { err "Base package install failed"; exit 1; }
+
+# Enable security services
+systemctl enable --now fail2ban >/dev/null 2>&1 || true
+systemctl enable --now unattended-upgrades >/dev/null 2>&1 || true
+
+# Install Docker
+info "Installing Docker..."
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo $UBUNTU_CODENAME) stable" >/etc/apt/sources.list.d/docker.list
+apt-get update -y >/dev/null
+apt_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { err "Docker install failed"; exit 1; }
+ok "Docker installed."
+
+# Install Loki driver
+info "Installing Loki Docker driver..."
+docker plugin inspect loki >/dev/null 2>&1 || docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+docker plugin inspect loki >/dev/null 2>&1 || { err "Failed to install Loki driver"; exit 1; }
+ok "Loki driver ready."
+
+# Create user
+if ! id -u "$user" >/dev/null 2>&1; then
+  info "Creating user '${user}'..."
+  useradd -m -s /bin/bash -G sudo,docker "$user"
+  install -d -m 700 -o "$user" -g "$user" "/home/$user/.ssh"
+  ak="/home/$user/.ssh/authorized_keys"
+  if [[ -n "$ssh_pub" ]]; then
+    if [[ -f "$ssh_pub" ]]; then cat "$ssh_pub" >> "$ak"; else echo "$ssh_pub" >> "$ak"; fi
+  elif [[ $copy_root -eq 1 && -f /root/.ssh/authorized_keys ]]; then
+    cat /root/.ssh/authorized_keys >> "$ak"
+  else
+    err "No SSH key for ${user}. Use --ssh-pub or --copy-root-auth."
+    exit 1
+  fi
+  chown "$user:$user" "$ak"; chmod 600 "$ak"
+  echo "$user ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/$user; chmod 440 /etc/sudoers.d/$user
+  ok "User '${user}' created."
+fi
+
+# Harden SSH
+if [[ $harden_ssh -eq 1 ]]; then
+  info "Hardening SSH (disable root login, password auth)..."
+  sed -ri 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+  sed -ri 's/^#?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+  systemctl restart ssh || true
+  ok "SSH hardened. Test access as '${user}'."
+else
+  echo -e "${YEL}Skipping SSH hardening (--no-harden-ssh).${NC}"
+fi
+
+# Configure firewall
+info "Configuring UFW..."
+ufw allow 22 >/dev/null || true
+ufw allow 80 >/dev/null || true
+ufw allow 443 >/dev/null || true
+yes | ufw enable >/dev/null || true
+ok "Firewall configured."
+
+# Add data dirs
+info "Preparing data dirs..."
+install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload /srv/devpush/settings
+ok "Data dirs ready."
+
+# Create app dir
+info "Creating app directory..."
+install -d -m 0755 "$app_dir"
+chown -R "$user:$user" "$app_dir"
+
+# Resolve latest tag from GitHub
+if [[ -z "$ref" ]]; then
+  if ((include_pre==1)); then
+    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
+  else
+    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
+  fi
+fi
+[[ -n "$ref" ]] || { err "No tags found to install"; exit 1; }
+
+# Get code from GitHub
+if [[ -d "$app_dir/.git" ]]; then
+  runuser -u "$user" -- git -C "$app_dir" remote get-url origin >/dev/null 2>&1 || runuser -u "$user" -- git -C "$app_dir" remote add origin "$repo"
+  runuser -u "$user" -- git -C "$app_dir" fetch --depth 1 origin "refs/tags/$ref"
+else
+  runuser -u "$user" -- bash -lc "cd '$app_dir' && git init && git remote add origin '$repo' && git fetch --depth 1 origin 'refs/tags/$ref'"
+fi
+info "Checking out tag: $ref"
+runuser -u "$user" -- git -C "$app_dir" reset --hard "tags/$ref"
+ok "Repo ready at $app_dir (tag $ref)."
+
+# Create .env file
+cd "$app_dir"
+if [[ ! -f ".env" ]]; then
+  if [[ -f ".env.example" ]]; then
+    runuser -u "$user" -- cp ".env.example" ".env"
+  else
+    err ".env.example not found; cannot create .env"
+    exit 1
+  fi
+  # Fill generated/defaults if empty
+  fill(){ k="$1"; v="$2"; if grep -q "^$k=" .env; then sed -i "s|^$k=.*|$k=\"$v\"|" .env; else echo "$k=\"$v\"" >> .env; fi; }
+  fill_if_empty(){ k="$1"; v="$2"; cur="$(grep -E "^$k=" .env | head -n1 | cut -d= -f2- | tr -d '\"')"; [[ -z "$cur" ]] && fill "$k" "$v" || true; }
+
+  sk="$(gen_hex)"; ek="$(gen_hex)"; pgp="$(gen_pw)"; sip="$(pub_ip || echo 127.0.0.1)"
+  fill_if_empty SECRET_KEY "$sk"
+  fill_if_empty ENCRYPTION_KEY "$ek"
+  fill_if_empty POSTGRES_PASSWORD "$pgp"
+  fill_if_empty SERVER_IP "$sip"
+  chown "$user:$user" .env
+  ok ".env created from template (edit before start)."
+else
+  ok ".env exists; not modified."
+fi
+
+# Build runners images
+if [[ -d Docker/runner ]]; then
+  info "Building runner images..."
+  runuser -u "$user" -- bash -lc '
+    set -e
+    for df in $(find Docker/runner -name "Dockerfile.*"); do
+      n=$(basename "$df" | sed "s/^Dockerfile\.//")
+      docker build -f "$df" -t "runner-$n" ./Docker/runner
+    done
+  '
+  ok "Runner images built."
+fi
+
+# Save install metadata (version.json)
+commit=$(runuser -u "$user" -- git -C "$app_dir" rev-parse --verify HEAD)
+ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+install -d -m 0755 /var/lib/devpush
+if [[ ! -f /var/lib/devpush/version.json ]]; then
+  install_id=$(cat /proc/sys/kernel/random/uuid)
+  printf '{"install_id":"%s","git_tag":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+else
+  install_id=$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)
+  [[ -n "$install_id" && "$install_id" != "null" ]] || install_id=$(cat /proc/sys/kernel/random/uuid)
+  printf '{"install_id":"%s","git_tag":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+fi
+
+# Send telemetry
+if ((telemetry==1)); then
+  payload=$(jq -c --arg ev "install" '. + {event: $ev}' /var/lib/devpush/version.json 2>/dev/null || echo "")
+  if [[ -n "$payload" ]]; then
+    curl -fsSL -X POST -H 'Content-Type: application/json' -d "$payload" https://api.devpu.sh/v1/telemetry >/dev/null 2>&1 || true
+  fi
+fi
+
+ok "Install complete. Next: switch to '${user}' and run scripts/prod/start.sh"

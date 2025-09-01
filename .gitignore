@@ -3,8 +3,7 @@
 !.gitignore
 !.dockerignore
 !.env.example
-!.env.devops.example
-!.env.prod.example
+!.env.dev.example
 
 # Python
 __pycache__/

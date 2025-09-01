@@ -597,6 +597,9 @@
   .w-auto {
     width: auto;
   }
+  .w-fit {
+    width: fit-content;
+  }
   .w-full {
     width: 100%;
   }
@@ -617,6 +620,9 @@
   }
   .max-w-3xs {
     max-width: var(--container-3xs);
+  }
+  .max-w-24 {
+    max-width: calc(var(--spacing) * 24);
   }
   .max-w-md {
     max-width: var(--container-md);
@@ -1594,6 +1600,11 @@
       display: none;
     }
   }
+  .max-md\:hidden {
+    @media (width < 48rem) {
+      display: none;
+    }
+  }
   .max-sm\:flex {
     @media (width < 40rem) {
       display: flex;
@@ -1609,9 +1620,31 @@
       width: 100%;
     }
   }
+  .max-sm\:flex-col {
+    @media (width < 40rem) {
+      flex-direction: column;
+    }
+  }
+  .max-sm\:gap-y-6 {
+    @media (width < 40rem) {
+      row-gap: calc(var(--spacing) * 6);
+    }
+  }
+  .max-sm\:truncate {
+    @media (width < 40rem) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
   .max-sm\:overflow-x-auto {
     @media (width < 40rem) {
       overflow-x: auto;
+    }
+  }
+  .sm\:flex {
+    @media (width >= 40rem) {
+      display: flex;
     }
   }
   .sm\:grid {
@@ -1624,14 +1657,29 @@
       display: none;
     }
   }
+  .sm\:w-1\/3 {
+    @media (width >= 40rem) {
+      width: calc(1/3 * 100%);
+    }
+  }
   .sm\:grid-cols-2 {
     @media (width >= 40rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
+  .sm\:gap-x-2 {
+    @media (width >= 40rem) {
+      column-gap: calc(var(--spacing) * 2);
+    }
+  }
   .sm\:gap-x-2\.5 {
     @media (width >= 40rem) {
       column-gap: calc(var(--spacing) * 2.5);
+    }
+  }
+  .sm\:gap-y-0 {
+    @media (width >= 40rem) {
+      row-gap: calc(var(--spacing) * 0);
     }
   }
   .md\:grid-cols-3 {

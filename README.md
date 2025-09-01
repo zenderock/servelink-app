@@ -35,8 +35,6 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 - [HTMX](https://htmx.org)
 - [Alpine.js](https://alpinejs.dev/)
 - [Basecoat](https://basecoatui.com)
-- [Ansible](https://github.com/ansible/ansible)
-- [Terraform](https://github.com/hashicorp/terraform)
 
 ## Overview
 
@@ -48,109 +46,97 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 
 ## File structure
 
-- **`app/`**: The main FastAPI application (see Readme file).
-- **`app/workers`**: The workers (`arq` and `monitor`)
-- **`devops/`**: Ansible playbooks and Terraform for production setup.
-- **`Docker/`**: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker-arq.dev.sh`).
-- **`scripts/`**: Helper scripts for local (macOS) and production environments
-- **`docker-compose.yml`**: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`) and production (`docker-compose.override.prod.yml`).
+- `app/`: The main FastAPI application (see Readme file).
+- `app/workers`: The workers (`arq` and `monitor`)
+- `Docker/`: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker-arq.dev.sh`).
+- `scripts/`: Helper scripts for local (macOS) and production environments
+- `docker-compose.yml`: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`).
 
 ## Install & run
 
-### Local development (MacOS)
+### Local development (macOS)
 
-1. **Install Colima with the Loki driver** with [Homebrew](https://brew.sh):
+1. Install Colima and the Loki Docker plugin:
    ```bash
-   ./scripts/local/install.sh
+   scripts/dev/install.sh
    ```
 
-2. **Set up environment variables** (see [Environment variables](#environment-variables)):
+2. Set up environment variables (see [Environment variables](#environment-variables)):
    ```bash
    cp .env.example .env
    ```
 
-3. **Start your containers**:
+3. Start your containers (streams logs):
    ```bash
-   ./scripts/local/start.sh
+   scripts/dev/start.sh
+   ```
+   - Add `--prune` to prune dangling images before build
+   - Add `--cache` to use the build cache (default is no cache)
+
+4. Initialize your database once the containers are up:
+   ```bash
+   scripts/dev/db-migrate.sh
    ```
 
-4. **Initialize your database** once the containers are up:
-   ```bash
-   ./scripts/local/db-migrate.sh
-   ```
-
-5. **(Optional) Start ngrok**:
-   ```bash
-   ./scripts/local/ngrok.sh
-   ```
-
-Start the app with `./scripts/local/start.sh`. You can clean up your local dev environment (files, Docker images/networks, ...) with `./scripts/local/clean.sh`.
-
-You can also use:
-
-- `./scripts/local/db-reset.sh` to drop the database and start fresh.
-- `./scripts/local/db-generate.sh` to generate a new migration file if you've made changes to the models.
+Optional:
+- `scripts/dev/db-generate.sh` to create a migration (prompts for message)
+- `scripts/dev/db-reset.sh` to drop and recreate the `public` schema
+- `scripts/dev/clean.sh` to stop the stack and clean dev data (`--hard` for global cleanup)
 
 ### Production
 
-#### Create the server
-
-**If you use Hetzner**, simply do the following:
-
-1. **Add your [Hetzner](https://hetzner.com) API key**:
-   ```bash
-   cp .env.devops.example .env.devops
-   ```
-
-2. **Create the server on Hetzner**. You will be prompted for size and location, CPX31 being the recommended default:
-   ```bash
-   ./scripts/prod/create.sh
-   ```
-
-3. **Set up the IP address**. Just add the IP address you got from Hetzner to the `.env.devops` file (`SERVER_IP`).
-
-**If you're not using Hetzner**:
-
-1. **Create the server**,
-2. **Add your SSH keys** and make sure your account has sudo privileges,
-3. **Set up the IP address**. Add the IP address to `env.devops` as `SERVER_IP`.
-
-#### Set up the server
-
+Install from a tagged release (recommended):
 ```bash
-./scripts/prod/setup.sh
+curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
+```
+-or latest main (bleeding-edge):
+```bash
+curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
 ```
 
-#### Deploy /dev/push
+After install:
+1. Edit `.env` as needed (created from `.env.example`).
+2. Start services:
+   ```bash
+   scripts/prod/start.sh --migrate
+   ```
+3. Update later:
+   ```bash
+   scripts/prod/update.sh --all          # app + workers (zero-downtime)
+   scripts/prod/update.sh --full -y      # full stack restart (downtime)
+   scripts/prod/update.sh --components app,worker-arq
+   ```
 
-1. **Set up environment variables** (see [Environment variables](#environment-variables)). Do not forget to set the GitHub repository (`GITHUB_REPO`) and [Let's Encrypt](https://letsencrypt.org/) email (`LE_EMAIL`) for the SSL setup:
-   ```bash
-   cp .env.prod.example .env.prod
-   ```
-   
-2. **Deploy and start the app**:
-   ```bash
-   ./scripts/prod/deploy.sh
-   ```
+## Scripts
 
-3. **Initialize your database** once the containers are up:
-   ```bash
-   ./scripts/prod/db-migrate.sh
-   ```
+| Area | Script | What it does |
+|---|---|---|
+| Dev | `scripts/dev/install.sh` | Setup Colima and install Loki Docker plugin |
+| Dev | `scripts/dev/start.sh` | Start stack with logs (foreground); supports `--prune`, `--cache` |
+| Dev | `scripts/dev/build-runners.sh` | Build runner images (default no cache; `--cache` to enable) |
+| Dev | `scripts/dev/db-generate.sh` | Generate Alembic migration (prompts for message) |
+| Dev | `scripts/dev/db-migrate.sh` | Apply Alembic migrations |
+| Dev | `scripts/dev/db-reset.sh` | Drop and recreate `public` schema in DB |
+| Dev | `scripts/dev/clean.sh` | Stop stack and clean dev data (`--hard` for global) |
+| Prod | `scripts/prod/install.sh` | Server setup: Docker, Loki plugin, user, clone repo, create `.env` |
+| Prod | `scripts/prod/start.sh` | Start services; optional `--migrate` |
+| Prod | `scripts/prod/stop.sh` | Stop services (`--down` for hard stop) |
+| Prod | `scripts/prod/restart.sh` | Restart services; optional `--migrate` |
+| Prod | `scripts/prod/update.sh` | Update by tag; `--all` (app+workers), `--full` (downtime), or `--components` |
+| Prod | `scripts/prod/db-migrate.sh` | Apply DB migrations in production |
 
 ## Update
 
 ### Local development
 
-The app is mounted inside of its container, so any change will show up immediately. However, certain parts of the app are using SSE so changes may not appear until you closed the tabs with the app open (FastAPI won't reload until all active connections are closed).
-
-The worker is also mounted but will usually require a restart: `docker-compose restart worker`.
+The app is mounted inside of its container, so code changes reflect immediately. Some SSE endpoints may require closing browser tabs to trigger a reload.
 
 ### Production
 
-Run `./scripts/prod/update.sh` and select whether you want to update the app container, the worker containers, the [access list](#sign-in-access-control) or the runners (Docker images the deployments run on).
-
-For containers, it will run a blue-green update process via Ansible (no downtime). For the worker containers specifically, this may take a while as it waits for all active jobs to be finished before cleaning up the old container.
+Run `scripts/prod/update.sh` and choose:
+- `--all` for app + workers zero‑downtime updates
+- `--components app,worker-arq` to target components
+- `--full -y` for a full stack restart (downtime)
 
 ## Environment variables
 
@@ -158,14 +144,14 @@ Variable | Comments | Default
 --- | --- | ---
 `APP_NAME` | App name. | `/dev/push`
 `APP_DESCRIPTION` | App description. | `Deploy your Python app without touching a server.`
-`URL_SCHEME` | `http` (development) or `https` (production). | `http`
-`LE_EMAIL` | Email used to register the Let's Encrypt (ACME) account in Traefik; receives certificate issuance/renewal/expiry notifications. | `dev@devpu.sh`
-`HOSTNAME` | Hostname for the app (e.g. `app.devpu.sh`). | `localhost`
-`STATIC_HOSTNAME` | Hostname for serving the static assets (e.g. CSS, JS libraries, images). Useful for caching. No trailing slahe | `HOSTNAME`
-`DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `localhost`
-`SERVER_UP` | Public IP of the server | `127.0.0.1`
-`SECRET_KEY` | Secret key for JWT tokens, sessions, and CSRF protection. | `secret-key`
-`ENCRYPTION_KEY` | Encryption key for sensitive data (e.g. GitHub tokens). | `encryption-key`
+`URL_SCHEME` | `http` (development) or `https` (production). | `https`
+`LE_EMAIL` | Email used to register the Let's Encrypt (ACME) account in Traefik; receives certificate issuance/renewal/expiry notifications. | `""`
+`APP_HOSTNAME` | Domain for the app (e.g. `app.devpu.sh`). | `""`
+`STATIC_HOSTNAME` | Domain for serving the static assets (e.g. CSS, JS libraries, images). Useful for caching. No trailing slahe | `APP_HOSTNAME`
+`DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `APP_HOSTNAME`
+`SERVER_IP` | Public IP of the server | `""`
+`SECRET_KEY` | Secret key for JWT tokens, sessions, and CSRF protection. | `""`
+`ENCRYPTION_KEY` | Encryption key for sensitive data (e.g. GitHub tokens). | `""`
 `EMAIL_LOGO` | URL for email logo image. Only helpful for testing, as the app will use `app/logo-email.png` if left empty. | `""`
 `EMAIL_SENDER_NAME` | Name displayed as email sender for invites/login. | `""`
 `EMAIL_SENDER_ADDRESS` | Email sender used for invites/login. | `""`
@@ -184,7 +170,7 @@ Variable | Comments | Default
 `POSTGRES_PASSWORD` | PostgreSQL password. | `devpush`
 `REDIS_URL` | Redis connection URL. | `redis://redis:6379`
 `DOCKER_HOST` | Docker daemon host address. | `tcp://docker-proxy:2375`
-`UPLOAD_DIR` | Directory for file uploads. | `/upload`
+`UPLOAD_DIR` | Directory for file uploads. | `/app/upload`
 `TRAEFIK_CONFIG_DIR` | Traefik configuration directory. | `/data/traefik`
 `DEFAULT_CPU_QUOTA` | Default CPU quota for containers (microseconds). | `100000`
 `DEFAULT_MEMORY_MB` | Default memory limit for containers (MB). | `4096`
@@ -194,11 +180,10 @@ Variable | Comments | Default
 `LOG_LEVEL` | Logging level. | `WARNING`
 `DB_ECHO` | Enable SQL query logging. | `false`
 `ENV` | Environment (development/production). | `development`
-`ACCESS_EMAIL_DENIED_MESSAGE` | Message shown to users who are denied access based on  [sign-in access control](#sign-in-access-control). | `Sign-in not allowed for this email.`
-`ACCESS_EMAIL_DENIED_WEBHOOK_URL` | Optional webhook to receive denied events (read more about [Sign-in access control](#sign-in-access-control)). | `""`
+`ACCESS_DENIED_MESSAGE` | Message shown to users who are denied access based on  [sign-in access control](#sign-in-access-control). | `Sign-in not allowed for this email.`
+`ACCESS_DENIED_WEBHOOK` | Optional webhook to receive denied events (read more about [Sign-in access control](#sign-in-access-control)). | `""`
 `LOGIN_ALERT_TITLE` | Title for a callout banner displayed on the login screen. Will be displayed only if either `LOGIN_ALERT_TITLE` or `LOGIN_ALERT_DESCRIPTION` is not empty. | `""`
 `LOGIN_ALERT_DESCRIPTION` | Description for a callout banner displayed on the login screen. Will be displayed only if either `LOGIN_ALERT_TITLE` or `LOGIN_ALERT_DESCRIPTION` is not empty. | `""`
-`NGROK_CUSTOM_DOMAIN` | **Local development only**. Used by `scripts/local/ngrok.sh` to start the [ngrok](https://ngrok.com/) http tunnel. | 
 
 ## GitHub App
 

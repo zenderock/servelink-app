@@ -1,12 +1,17 @@
-{% macro environment_label(environment, attrs={}) -%}
+{% macro environment_label(environment, attrs={}, label_attrs={}) -%}
 {% from "deployment/macros/color.html" import color %}
 <span
-  class="flex items-center gap-x-2 min-w-0"
+  class="flex items-center gap-x-2 min-w-0 {{ attrs.get('class', '') }}"
   {% for key, value in attrs.items() %}
     {% if key != 'class' %}{{ key }}="{{ value }}"{% endif %}
   {% endfor %}
 >
   {{ color(environment.color) }}
-  <span class="truncate">{{ environment.name }}</span>
+  <span
+    class="truncate {{ label_attrs.get('class', '') }}"
+    {% for key, value in attrs.items() %}
+      {% if key != 'class' %}{{ key }}="{{ value }}"{% endif %}
+    {% endfor %}  
+  >{{ environment.name }}</span>
 </span>
 {%- endmacro %}

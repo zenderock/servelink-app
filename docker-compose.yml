@@ -13,14 +13,9 @@ services:
       - internal
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - UPLOAD_DIR=/app/upload
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - DOCKER_HOST=tcp://docker-proxy:2375
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${HOSTNAME:-localhost}`)"
+      - "traefik.http.routers.app.rule=Host(`${APP_HOSTNAME}`)"
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.routers.app.entrypoints=web"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
@@ -48,11 +43,6 @@ services:
       - runner
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - UPLOAD_DIR=/app/upload
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - DOCKER_HOST=tcp://docker-proxy:2375
     healthcheck:
       test: ["CMD", "uv", "run", "arq", "--check", "workers.arq.WorkerSettings"]
       interval: 60s
@@ -77,11 +67,6 @@ services:
       - runner
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - UPLOAD_DIR=/app/upload
-      - TRAEFIK_CONFIG_DIR=/data/traefik
-      - DOCKER_HOST=tcp://docker-proxy:2375
 
   redis:
     image: redis:alpine
@@ -121,13 +106,13 @@ services:
       - runner
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.deployment-not-found.rule=HostRegexp(`^(.+)\\.${DEPLOY_DOMAIN:-deploy.localhost}$`)"
+      - "traefik.http.routers.deployment-not-found.rule=HostRegexp(`^(.+)\\.${DEPLOY_DOMAIN}$`)"
       - "traefik.http.routers.deployment-not-found.entrypoints=web"
       - "traefik.http.routers.deployment-not-found.priority=1"
       - "traefik.http.routers.deployment-not-found.service=noop@internal"
       - "traefik.http.routers.deployment-not-found.middlewares=deployment-redirect"
       - "traefik.http.middlewares.deployment-redirect.redirectRegex.regex=^https?://([^/]+)"
-      - "traefik.http.middlewares.deployment-redirect.redirectRegex.replacement=${URL_SCHEME:-http}://${HOSTNAME:-localhost}/deployment-not-found/$$1"
+      - "traefik.http.middlewares.deployment-redirect.redirectRegex.replacement=${URL_SCHEME:-https}://${APP_HOSTNAME}/deployment-not-found/$$1"
       - "traefik.http.middlewares.deployment-redirect.redirectRegex.permanent=false"
 
   pgsql:
