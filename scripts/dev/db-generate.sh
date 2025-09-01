@@ -1,11 +1,25 @@
 #!/bin/bash
 set -e
 
+usage(){
+  cat <<USG
+Usage: db-generate.sh [-h|--help]
+
+Generate an Alembic migration from model changes.
+
+  -h, --help  Show this help
+USG
+  exit 0
+}
+[ "$1" = "-h" ] || [ "$1" = "--help" ] && usage
+
+command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
+
 echo "Creating database migrations..."
 
 # Check if containers are running
 if ! docker-compose ps app | grep -q "Up"; then
-    echo "Error: App container is not running. Start the environment first with ./scripts/local/start.sh"
+    echo "Error: App container is not running. Start the environment first with ./scripts/dev/start.sh"
     exit 1
 fi
 

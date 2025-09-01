@@ -42,27 +42,27 @@
             hx-boost="true"
           >
             {{ avatar(item=deployment.project, prefix="project", name=deployment.project.name, size="xs") }}
-            <span class="truncate">{{ deployment.project.name }}</span>
+            <span class="truncate max-sm:hidden">{{ deployment.project.name }}</span>
           </a>
         {% endif %}
 
         <a
           href="{{ url_for('project_deployments', team_slug=team.slug, project_name=deployment.project.name).include_query_params(environment=deployment.environment.slug) }}"
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground max-sm:truncate"
           data-tooltip="{{ _('Environment') }}"
           hx-boost="true"
         >
-          {{ environment_label(deployment.environment) }}
+          {{ environment_label(deployment.environment, { "class": "max-sm:truncate" }) }}
         </a>
 
-        <div class="flex items-center gap-x-2 text-muted-foreground whitespace-nowrap">
+        <div class="flex items-center gap-x-2 text-muted-foreground whitespace-nowrap max-sm:hidden">
           {{ deployment.created_at | time_ago }}
         </div>
 
         <a
           href="https://github.com/{{ deployment.repo_full_name }}/tree/{{ deployment.branch }}"
           target="_blank"
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0 min-w-0"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0 min-w-0 max-sm:hidden max-lg:hidden"
           data-tooltip="{{ _('Branch') }}"
         >
           {% include "icons/git-branch.svg" %}
@@ -70,7 +70,7 @@
         </a>
 
         <a
-          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0"
+          class="flex items-center gap-x-2 hover:text-foreground transition-colors text-muted-foreground min-w-0 [&>svg]:opacity-50 [&>svg]:dark:opacity-60 [&>svg]:size-4 [&>svg]:shrink-0 max-sm:hidden"
           href="https://github.com/{{ deployment.repo_full_name }}/commit/{{ deployment.commit_sha }}"
           target="_blank"
           data-tooltip="{{ _('Commit ({sha})', sha=deployment.commit_sha[:7]) }}"
@@ -84,12 +84,12 @@
         {% set is_previous = env_aliases and env_aliases.get(deployment.environment.id).previous_deployment_id == deployment.id %}
 
         {% if is_current %}
-          <span class="badge-secondary">
+          <span class="badge-secondary max-sm:hidden">
             {% include "icons/sparkle.svg" %}
             {{ _('Current') }}
           </span>
         {% elif is_previous %}
-          <span class="badge-secondary text-muted-foreground">
+          <span class="badge-secondary text-muted-foreground max-sm:hidden">
             {{ _('Previous') }}
           </span>
         {% endif %}

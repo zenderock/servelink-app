@@ -167,7 +167,7 @@ async def auth_login(
                             or request.url_for("assets", path="logo-email.png"),
                             "app_name": settings.app_name,
                             "app_description": settings.app_description,
-                            "app_url": f"{settings.url_scheme}://{settings.hostname}",
+                            "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
                         }
                     ),
                 }

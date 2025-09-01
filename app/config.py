@@ -10,9 +10,9 @@ class Settings(BaseSettings):
         "An open-source platform to build and deploy any app from GitHub."
     )
     url_scheme: str = "http"
-    hostname: str = "localhost"
-    static_hostname: str = hostname
-    deploy_domain: str = "localhost"
+    app_hostname: str = "localhost"
+    static_hostname: str = app_hostname
+    deploy_domain: str = app_hostname
     github_app_id: str = ""
     github_app_name: str = ""
     github_app_private_key: str = ""
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     postgres_db: str = "devpush"
     redis_url: str = "redis://redis:6379"
     docker_host: str = "tcp://docker-proxy:2375"
-    upload_dir: str = "/upload"
+    upload_dir: str = "/app/upload"
     traefik_config_dir: str = "/data/traefik"
     default_cpu_quota: int = 50000
     default_memory_mb: int = 2048
@@ -44,13 +44,13 @@ class Settings(BaseSettings):
     deployment_timeout: int = 300
     db_echo: bool = False
     log_level: str = "WARNING"
-    env: str = "development"
+    env: str = "production"
     access_rules_path: str = "settings/access.json"
     access_denied_message: str = "Sign-in not allowed for this email."
     access_denied_webhook: str = ""
     login_alert_title: str = ""
     login_alert_description: str = ""
-    server_ip: str = "127.0.0.1"
+    server_ip: str = ""
 
     model_config = SettingsConfigDict(extra="ignore")
 
