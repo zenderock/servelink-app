@@ -91,7 +91,7 @@ fi
 apt_install() {
   local pkgs=("$@"); local i
   for i in {1..5}; do
-    if apt-get update -y >/dev/null && apt-get install -y "${pkgs[@]}" >/dev/null; then return 0; fi
+    if apt-get update -y && apt-get install -y "${pkgs[@]}"; then return 0; fi
     sleep 3
   done
   return 1
@@ -102,20 +102,28 @@ pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.
 
 # Install base packages
 info "Installing base packages..."
-apt-get update -y >/dev/null
-apt-get -y dist-upgrade >/dev/null
+info "Updating package lists..."
+apt-get update -y
+info "Upgrading system packages..."
+apt-get -y dist-upgrade
+info "Installing required packages..."
 apt_install ca-certificates git ufw fail2ban unattended-upgrades || { err "Base package install failed"; exit 1; }
 
 # Enable security services
-systemctl enable --now fail2ban >/dev/null 2>&1 || true
-systemctl enable --now unattended-upgrades >/dev/null 2>&1 || true
+info "Enabling fail2ban..."
+systemctl enable --now fail2ban || true
+info "Enabling unattended-upgrades..."
+systemctl enable --now unattended-upgrades || true
 
 # Install Docker
 info "Installing Docker..."
+info "Setting up Docker repository..."
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo $UBUNTU_CODENAME) stable" >/etc/apt/sources.list.d/docker.list
-apt-get update -y >/dev/null
+info "Updating package lists for Docker..."
+apt-get update -y
+info "Installing Docker packages..."
 apt_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { err "Docker install failed"; exit 1; }
 ok "Docker installed."
 
