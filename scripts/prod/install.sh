@@ -75,12 +75,14 @@ if [[ -z "${app_dir:-}" ]]; then
 fi
 
 # Info
-echo -e "${YEL}This will:${NC}
+echo -e "
+${BLD}This will:${NC}
 - create user '${user}' (and set SSH keys)
 - install Docker/Compose and open ports 22/80/443
 - install required Docker Loki logging driver
 - apply basic hardening (UFW, fail2ban, unattended-upgrades) and SSH hardening (root login off, password auth off)
-- clone repo to ${app_dir} and seed .env (won't start services)"
+- clone repo to ${app_dir} and seed .env (won't start services)
+"
 
 # Port conflicts warning
 if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
