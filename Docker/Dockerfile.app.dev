@@ -11,8 +11,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Set UV cache directory to writable location
-ENV UV_CACHE_DIR=/app/.cache/uv
+# Set UV cache directory and home
+ENV UV_CACHE_DIR=/tmp/uv
 ENV HOME=/app
 
 # Switch to non-root user

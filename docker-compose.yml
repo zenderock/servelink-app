@@ -56,8 +56,6 @@ services:
       dockerfile: Docker/Dockerfile.app
     entrypoint: /entrypoint.worker-monitor.sh
     restart: always
-    volumes:
-      - ./app:/app
     depends_on:
       - redis
       - pgsql

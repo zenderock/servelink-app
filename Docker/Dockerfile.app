@@ -18,9 +18,8 @@ COPY ./app/ .
 # Set permissions
 RUN chown -R appuser:appgroup /app
 
-# Set UV cache directory to writable location
-RUN mkdir -p /app/.cache && chown -R appuser:appgroup /app/.cache
-ENV UV_CACHE_DIR=/app/.cache/uv
+# Set UV cache directory and home
+ENV UV_CACHE_DIR=/tmp/uv
 ENV HOME=/app
 
 # Switch to non-root user

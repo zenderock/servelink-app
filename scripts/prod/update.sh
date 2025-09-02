@@ -55,10 +55,10 @@ scripts/prod/check-env.sh --env-file .env --quiet
 info "Resolving latest tag..."
 if [[ -z "$ref" ]]; then
   if ((include_pre==1)); then
-    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
+    ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
   else
-    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
-    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
+    ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
   fi
   if [[ -z "$ref" ]]; then
     info "No tags found; falling back to 'main'"
