@@ -61,6 +61,12 @@ case "${ID_LIKE:-$ID}" in
   *) err "Only Ubuntu/Debian supported"; exit 1 ;;
 esac
 command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
+
+# Configure unattended-upgrades non-interactively before any apt operations
+if [[ -f /etc/apt/apt.conf.d/50unattended-upgrades ]]; then
+  echo 'Unattended-Upgrade::Automatic-Reboot "false";' | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades >/dev/null 2>&1 || true
+fi
+
 command -v curl >/dev/null || (apt-get update && apt-get install -y curl >/dev/null)
 
 
