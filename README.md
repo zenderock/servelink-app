@@ -22,7 +22,7 @@ An open-source and self-hostable alternative to Vercel, Render, Netlify and the 
 
 ## Support the project 
 
-- Contribute code: read the [contributing guidelines](/CONTRIBUTING.md)
+- [Contribute code](/CONTRIBUTING.md)
 - [Report issues](https://github.com/hunvreus/devpush/issues)
 - [Sponsor me](https://github.com/sponsors/hunvreus)
 - [Star the project on GitHub](https://github.com/hunvreus/devpush)
@@ -82,12 +82,12 @@ You can use the provisioning script to get a server up and running:
 
 1. **Sign in or sign up for a Hetzner account**: [Hetzner Cloud Console](https://console.hetzner.cloud/)
 2. **Generate an API token**: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
-3. **Provision a server (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
+3. **Provision a server** (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
    ```bash
    curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key> [--user <login_user>] [--name <hostname>] [--region <fsn1|nbg1|hel1|ash|hil|sin>] [--type <cpx11|cpx21|cpx31|cpx41|cpx51>]
    ```
    Tip: run `curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --help` to list regions and types (with specs). Defaults: region `hil`, type `cpx31`.
-4. **Configure DNS Records**: Go to your DNS provider and create two A records pointing at the server IP for `APP_HOSTNAME` (e.g. `app.devpu.sh`) and a wildcard on subdomains of `DEPLOY_DOMAIN` (e.g. `*.devpush.app`). (If you're using Cloudflare, set SSL/TLS to "Full (strict)" and keep the records proxied.)
+4. **Configure DNS Records**: Go to your DNS provider and create two A records pointing at the server IP for `APP_HOSTNAME` (e.g. `app.devpu.sh`) and a wildcard on subdomains of `DEPLOY_DOMAIN` (e.g. `*.devpush.app`). If you're using Cloudflare, set SSL/TLS to "Full (strict)" and keep the records proxied.
 5. **SSH into your new server**: The provision script will have created a user for you.
    ```bash
    ssh <login_user>@<server_ip>
@@ -290,13 +290,12 @@ You will need to configure a GitHub App with the following settings:
 
 ## Sign-in access control
 
-You can restrict who can sign up/sign in by adding an access rules file:
+Provide an access rules file to restrict who can sign up/sign in.
 
-```bash
-cp access.example.json access.json
-```
+- **Development**: edit `./access.json`. If missing, running `scripts/dev/start.sh` will sed an allow‑all file.
+- **Production**: edit `/srv/devpush/access.json` on the server.
 
-The file can contain a list of emails, a list of allowed email domains, globs and regexes:
+Rules format (any/all may be used):
 
 ```json
 {
@@ -307,7 +306,7 @@ The file can contain a list of emails, a list of allowed email domains, globs an
 }
 ```
 
-Globs use shell-style wildcards, regex are Python patterns. If the rules file is missing or empty, all valid emails are allowed.
+Globs use shell-style wildcards; regex are Python patterns. If the file is missing or empty, all valid emails are allowed.
 
 Additionally, if you set the `ACCESS_EMAIL_DENIED_WEBHOOK_URL` [environment variable](#environment-variables), denied sign-in attempts will be posted to the provided URL with the following payload:
 

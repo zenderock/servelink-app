@@ -119,7 +119,7 @@ if ((with_ssh==1)); then
   sed -ri 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || true
   sed -ri 's/^#?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config || true
   systemctl restart ssh || true
-  ok "SSH hardened. Test access as '${user}'."
+  ok "SSH hardened. Access as '${user}'."
 else
   info "Skipping SSH hardening (not requested)."
 fi
