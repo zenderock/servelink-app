@@ -256,4 +256,8 @@ if ((run_harden_ssh==1)); then
   fi
 fi
 
-ok "Install complete. Next: switch to '${user}' and run scripts/prod/start.sh"
+ok "Install complete."
+echo ""
+info "Next steps:"
+echo "1. Switch to the app user: ${BLD}su - ${user}${NC}"
+echo "2. Start the application: ${BLD}bash scripts/prod/start.sh${NC}"
