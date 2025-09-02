@@ -51,11 +51,3 @@ if ((do_migrate==1)); then
   info "Applying migrations..."
   scripts/prod/db-migrate.sh --app-dir "$app_dir" --env-file "$envf"
 fi
-
-# Friendly URL hint (after start/migrations)
-scheme="$(awk -F= '$1=="URL_SCHEME"{sub(/^[^=]*=/,"");print}' "$envf" | sed 's/^"//;s/"$//')"
-host="$(awk -F= '$1=="APP_HOSTNAME"{sub(/^[^=]*=/,"");print}' "$envf" | sed 's/^"//;s/"$//')"
-[[ -n "$scheme" ]] || scheme="https"
-if [[ -n "${host:-}" ]]; then
-  echo "Visit: ${scheme}://${host}"
-fi

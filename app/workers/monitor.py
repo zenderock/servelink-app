@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import aiodocker
-from sqlalchemy import select, exc
+from sqlalchemy import select, exc, inspect
 from arq.connections import ArqRedis, RedisSettings, create_pool
 import httpx
 from config import get_settings
@@ -107,8 +107,23 @@ async def monitor():
 
     async with AsyncSessionLocal() as db:
         async with aiodocker.Docker(url=settings.docker_host) as docker_client:
+            schema_ready = False
             while True:
                 try:
+                    # Ensure schema exists to avoid logging spam before migrations
+                    if not schema_ready:
+                        schema_ready = await db.run_sync(
+                            lambda sync_conn: inspect(sync_conn).has_table(
+                                "alembic_version"
+                            )
+                        )
+                        if not schema_ready:
+                            logger.warning(
+                                "Database schema not ready (no alembic_version); waiting for migrations..."
+                            )
+                            await asyncio.sleep(5)
+                            continue
+
                     result = await db.execute(
                         select(Deployment).where(
                             Deployment.status == "in_progress",

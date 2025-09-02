@@ -67,7 +67,7 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 Log in your server, run the following command and follow instructions:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/harden.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
 ```
 
 You user must have sudo privileges.

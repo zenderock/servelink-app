@@ -131,15 +131,6 @@ if [[ -z "${app_dir:-}" ]]; then
   fi
 fi
 
-# Info
-echo -e "
-${BLD}This will:${NC}
-- create user '${user}' (if not exists)
-- install Docker/Compose & Loki driver
-- clone repo to ${app_dir} and seed .env
-- optionally run system hardening (--harden)
-"
-
 # Port conflicts warning
 if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
   echo -e "${YEL}Warning:${NC} ports 80/443 are in use. Traefik may fail to start later."
