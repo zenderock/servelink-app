@@ -187,6 +187,9 @@ if [[ "$(stat -c '%U' "$app_dir")" != "$user" ]]; then
 fi
 ok "App directory is ready."
 
+info "DEBUG: Resolving git tag..."
+set -x # Start verbose debug output
+
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
   if ((include_pre==1)); then
@@ -197,6 +200,8 @@ if [[ -z "$ref" ]]; then
   fi
 fi
 [[ -n "$ref" ]] || { err "No tags found to install"; exit 1; }
+
+set +x # Stop verbose debug output
 
 # Get code from GitHub
 if [[ -d "$app_dir/.git" ]]; then
