@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     app_description: str = (
         "An open-source platform to build and deploy any app from GitHub."
     )
-    url_scheme: str = "http"
-    app_hostname: str = "localhost"
-    static_hostname: str = app_hostname
-    deploy_domain: str = app_hostname
+    url_scheme: str = "https"
+    app_hostname: str = ""
+    static_hostname: str = ""
+    deploy_domain: str = ""
     github_app_id: str = ""
     github_app_name: str = ""
     github_app_private_key: str = ""
@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     email_logo: str = ""
     email_sender_name: str = ""
     email_sender_address: str = ""
-    secret_key: str = "secret-key"
-    encryption_key: str = "encryption-key"
+    secret_key: str = ""
+    encryption_key: str = ""
     postgres_db: str = "devpush"
     postgres_user: str = "devpush-app"
-    postgres_password: str = "devpush"
+    postgres_password: str = ""
     redis_url: str = "redis://redis:6379"
     docker_host: str = "tcp://docker-proxy:2375"
     upload_dir: str = "/app/upload"

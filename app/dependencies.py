@@ -395,7 +395,7 @@ templates = Jinja2Templates(
     directory="templates", auto_reload=settings.env == "development"
 )
 templates.env.globals["static_base_url"] = (
-    f"{settings.url_scheme}://{settings.static_hostname}"
+    f"{settings.url_scheme}://{settings.static_hostname or settings.app_hostname}"
 )
 templates.env.globals["_"] = get_translation
 templates.env.globals["app_name"] = settings.app_name
