@@ -60,13 +60,17 @@ if [[ -z "$ref" ]]; then
     ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
     [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
   fi
-  [[ -n "$ref" ]] || { err "No tags found"; exit 1; }
+  if [[ -z "$ref" ]]; then
+    info "No tags found; falling back to 'main'"
+    ref="main"
+  fi
 fi
 
 # Get code from GitHub
-info "Fetching and checking out tag: $ref"
-git fetch --depth 1 origin "refs/tags/$ref"
-git reset --hard "tags/$ref"
+info "Fetching and checking out: $ref"
+# Try branch first, then tag; reset to FETCH_HEAD either way
+git fetch --depth 1 origin "$ref" || git fetch --depth 1 origin "refs/tags/$ref"
+git reset --hard FETCH_HEAD
 
 # Update Docker images
 args=(-p devpush)
