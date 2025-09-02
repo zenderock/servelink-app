@@ -55,10 +55,10 @@ scripts/prod/check-env.sh --env-file .env --quiet
 info "Resolving latest tag..."
 if [[ -z "$ref" ]]; then
   if ((include_pre==1)); then
-    ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
+    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
   else
-    ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
-    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
+    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
   fi
   if [[ -z "$ref" ]]; then
     info "No tags found; falling back to 'main'"
@@ -71,6 +71,15 @@ info "Fetching and checking out: $ref"
 # Try branch first, then tag; reset to FETCH_HEAD either way
 git fetch --depth 1 origin "$ref" || git fetch --depth 1 origin "refs/tags/$ref"
 git reset --hard FETCH_HEAD
+
+# Skip work if commit unchanged (use system state file)
+version_file="/var/lib/devpush/version.json"
+prev_commit="$(jq -r '.git_commit' "$version_file" 2>/dev/null || echo "")"
+current_commit="$(git rev-parse --verify HEAD)"
+if [[ -n "$prev_commit" && "$prev_commit" == "$current_commit" ]]; then
+  ok "Already up-to-date ($current_commit). Skipping component updates."
+  exit 0
+fi
 
 # Update Docker images
 args=(-p devpush)

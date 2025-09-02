@@ -113,9 +113,9 @@ async def monitor():
                     # Ensure schema exists to avoid logging spam before migrations
                     if not schema_ready:
                         schema_ready = await db.run_sync(
-                            lambda sync_conn: inspect(sync_conn).has_table(
-                                "alembic_version"
-                            )
+                            lambda sync_session: inspect(
+                                sync_session.get_bind()
+                            ).has_table("alembic_version")
                         )
                         if not schema_ready:
                             logger.warning(

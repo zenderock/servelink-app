@@ -131,6 +131,18 @@ if [[ -z "${app_dir:-}" ]]; then
   fi
 fi
 
+# Resolve ref (latest tag, fallback to main)
+info "Resolving ref to install..."
+if [[ -z "$ref" ]]; then
+  if ((include_pre==1)); then
+    ref="$(git ls-remote --tags --refs "$repo" 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
+  else
+    ref="$(git ls-remote --tags --refs "$repo" 2>/dev/null | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs "$repo" 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1 || true)"
+  fi
+  [[ -n "$ref" ]] || ref="main"
+fi
+
 # Port conflicts warning
 if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
   echo -e "${YEL}Warning:${NC} ports 80/443 are in use. Traefik may fail to start later."
@@ -236,6 +248,8 @@ else
   [[ -n "$install_id" && "$install_id" != "null" ]] || install_id=$(cat /proc/sys/kernel/random/uuid)
   printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
 fi
+chown "$user:$user" /var/lib/devpush/version.json || true
+chmod 0644 /var/lib/devpush/version.json || true
 
 # Send telemetry
 if ((telemetry==1)); then

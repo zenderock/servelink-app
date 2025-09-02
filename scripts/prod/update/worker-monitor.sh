@@ -32,8 +32,8 @@ done
 cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 scripts/prod/check-env.sh --env-file .env --quiet
 
-info "Rebuilding worker-monitor..."
-docker compose -p devpush build --no-cache worker-monitor | cat
+info "Rebuilding worker-monitor (cached)..."
+docker compose -p devpush build worker-monitor | cat
 info "Recreating worker-monitor..."
 docker compose -p devpush up -d --no-deps --force-recreate worker-monitor
 ok "worker-monitor restarted"
