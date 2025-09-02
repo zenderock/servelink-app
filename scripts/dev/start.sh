@@ -21,6 +21,15 @@ echo "Starting local environment..."
 
 mkdir -p ./data/{traefik,upload}
 
+# Seed access.json if missing
+if [ ! -f ./access.json ]; then
+  echo "Seeding ./access.json (allow-all)..."
+  cat > ./access.json <<'JSON'
+{ "emails": [], "domains": [], "globs": [], "regex": [] }
+JSON
+  chmod 0644 ./access.json || true
+fi
+
 no_cache=0
 prune=0
 for a in "$@"; do
