@@ -165,8 +165,13 @@ ok "Data dirs ready."
 
 # Create app dir
 info "Creating app directory..."
-install -d -m 0755 "$app_dir"
-chown -R "$user:$(id -gn "$user")" "$app_dir"
+install -d -m 0755 "$app_dir" || { err "Could not create $app_dir"; exit 1; }
+# Be resilient to differing chown semantics; try owner:group, then owner only, else warn
+if ! chown -R "$user:$(id -gn "$user")" "$app_dir" 2>/dev/null; then
+  if ! chown -R "$user" "$app_dir" 2>/dev/null; then
+    echo -e "${YEL}Warning:${NC} failed to chown $app_dir to $user. Continuing."
+  fi
+fi
 
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
