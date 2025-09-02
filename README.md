@@ -67,7 +67,7 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 Log in your server, run the following command and follow instructions:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/harden.sh | sudo bash
 ```
 
 You user must have sudo privileges.
@@ -84,9 +84,9 @@ You can use the provisioning script to get a server up and running:
 2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
 3. Provision a server (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key> [--user <login_user>] [--name <hostname>] [--region <fsn1|nbg1|hel1|ash|hil|sin>] [--type <cpx11|cpx21|cpx31|cpx41|cpx51>]
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key> [--user <login_user>] [--name <hostname>] [--region <fsn1|nbg1|hel1|ash|hil|sin>] [--type <cpx11|cpx21|cpx31|cpx41|cpx51>]
    ```
-   Tip: run `curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --help` to list regions and types (with specs). Defaults: region `hil`, type `cpx31`.
+   Tip: run `curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --help` to list regions and types (with specs). Defaults: region `hil`, type `cpx31`.
 
 Once your server has been provisioned, you should harden security:
 
@@ -96,7 +96,7 @@ Once your server has been provisioned, you should harden security:
   ```
 2. Run hardening for system and SSH:
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh
+  curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/harden.sh | sudo bash -s -- --ssh
   ```
 
 Even if you already have a server, we recommend you harden security (ufw, fail2ban, disabled root SSH, etc). You can do that using `scripts/prod/harden.sh`.
@@ -109,7 +109,7 @@ Even if you already have a server, we recommend you harden security (ufw, fail2b
    ```
 2. **Install /dev/push**:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
    ```
 3. **Switch to `devpush` user**:
   ```bash
