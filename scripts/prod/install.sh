@@ -165,6 +165,8 @@ ok "Data dirs ready."
 
 # Create app dir
 info "Creating app directory..."
+# Show resolved app dir for diagnostics
+info "App dir: $app_dir (user: $user)"
 # Ensure parent exists, then create target; fall back to /opt/devpush if needed
 parent_dir="$(dirname "$app_dir")"
 install -d -m 0755 "$parent_dir" >/dev/null 2>&1 || true
@@ -176,7 +178,8 @@ if ! install -d -m 0755 "$app_dir" >/dev/null 2>&1; then
   fi
 fi
 # Be resilient to differing chown semantics; try owner:group, then owner only, else warn
-if ! chown -R "$user:$(id -gn "$user")" "$app_dir" 2>/dev/null; then
+grp="$(id -gn "$user" 2>/dev/null || echo "$user")"
+if ! chown -R "$user:$grp" "$app_dir" 2>/dev/null; then
   if ! chown -R "$user" "$app_dir" 2>/dev/null; then
     echo -e "${YEL}Warning:${NC} failed to chown $app_dir to $user. Continuing."
   fi
