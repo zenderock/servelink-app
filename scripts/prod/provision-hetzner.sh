@@ -9,7 +9,7 @@ info(){ echo -e "${BLD}$*${NC}"; }
 
 usage(){
   cat <<USG
-Usage: provision-hetzner.sh --token <token> [--user <login_user>] [--name <hostname>] [--region <loc>] [--type <name>]
+Usage: provision-hetzner.sh --token <token> [--user <login_user>] [--name <hostname>] [--region <reg>] [--type <name>]
 
 Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
 
@@ -69,15 +69,11 @@ if ! api_get ssh_keys >/dev/null 2>&1; then
     exit 1
 fi
 
-info "Select server configuration:"
-echo ""
-
 # Defaults (can be overridden via flags)
 region="${region_flag:-hil}"
 server_type="${type_flag:-cpx31}"
 
-echo ""
-info "Selected: $server_type in $region"
+info "Provisioning: $server_type in $region"
 echo ""
 
 # Determine server name (flag overrides default; no prompt)
