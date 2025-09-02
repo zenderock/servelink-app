@@ -20,6 +20,14 @@ An open-source and self-hostable alternative to Vercel, Render, Netlify and the 
 - **Custom domains**: Support for custom domain and automatic Let's Encrypt SSL certificates.
 - **Self-hosted and open source**: Run on your own servers, MIT licensed.
 
+## Support the project 
+
+- Contribute code: read the [contributing guidelines](/CONTRIBUTING.md)
+- [Report issues](https://github.com/hunvreus/devpush/issues)
+- [Sponsor me](https://github.com/sponsors/hunvreus)
+- [Star the project on GitHub](https://github.com/hunvreus/devpush)
+- [Join the Discord chat](https://devpu.sh/chat)
+
 ## Documentation
 
 Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
@@ -52,60 +60,106 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 - `scripts/`: Helper scripts for local (macOS) and production environments
 - `docker-compose.yml`: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`).
 
-## Install & run
+## Install & Update
 
-### Local development (macOS)
+### Prerequisites
+
+You will need a fresh Ubuntu/Debian server you can SSH into with sudo privileges. We recommend a CPX31 from [Hetzner](https://www.hetzner.com).
+
+You can use the provisioning script to get a server up and running:
+
+1. Sign in or sign up for a Hetzner account: [Hetzner Cloud Console](https://console.hetzner.cloud/)
+2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
+3. Provision a server:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <TOKEN> [--user <login_user>]
+   ```
+4. Harden security:
+   - Log in the server:
+      ```bash
+      ssh <user>@<server_ip>
+      ```
+   - Run hardening for system and SSH:
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh --user <login_user>
+     ```
+
+Even if you already have a server, we recommend you harden security (ufw, fail2ban, disabled root SSH, etc). You can do that using the `scripts/prod/harden.sh` script.
+
+### Install
+
+1. SSH into the server:
+   ```bash
+   ssh <login_user>@<server_ip>
+   ```
+2. Install /dev/push (choose one):
+   - Tagged release (recommended):
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
+     ```
+   - Latest main (bleeding edge):
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
+     ```
+3. Switch to `devpush` user:
+  ```bash
+  su - devpush
+  ```
+4. Edit `.env` as needed (created from `.env.example`). You will need to fill in at least the following: `LE_EMAIL`, `APP_HOSTNAME`, `EMAIL_SENDER_ADDRESS`, `RESEND_API_KEY` and your [GitHub app](#github-app) settings (see [environment-variables] for details). `SERVER_IP`, `SECRET_KEY`, `ENCRYPTION_KEY`, `POSTGRES_PASSWORD` should be pre-filled.
+5. Start services:
+   ```bash
+   scripts/prod/start.sh --migrate
+   ```
+6. Visit your URL: `https://<APP_HOSTNAME>`
+
+### Update
+
+These must be run as `devpush` user:
+
+```bash
+scripts/prod/update.sh --all          # app + workers (zero‑downtime)
+scripts/prod/update.sh --full -y      # full stack restart (downtime)
+scripts/prod/update.sh --components app,worker-arq
+```
+
+## Development
+
+> ⚠️ Development scripts target macOS for now.
+
+### Install
 
 1. Install Colima and the Loki Docker plugin:
    ```bash
    scripts/dev/install.sh
    ```
-
-2. Set up environment variables (see [Environment variables](#environment-variables)):
+2. Set up environment variables:
    ```bash
-   cp .env.example .env
+   cp .env.dev.example .env
    ```
-
-3. Start your containers (streams logs):
+3. Start the stack (streams logs):
    ```bash
    scripts/dev/start.sh
    ```
    - Add `--prune` to prune dangling images before build
    - Add `--cache` to use the build cache (default is no cache)
-
-4. Initialize your database once the containers are up:
+4. Initialize your database once containers are up:
    ```bash
    scripts/dev/db-migrate.sh
    ```
 
-Optional:
-- `scripts/dev/db-generate.sh` to create a migration (prompts for message)
-- `scripts/dev/db-reset.sh` to drop and recreate the `public` schema
-- `scripts/dev/clean.sh` to stop the stack and clean dev data (`--hard` for global cleanup)
+See the [scripts](#scripts) section for more dev utilities.
 
-### Production
+### Update
 
-Install from a tagged release (recommended):
-```bash
-curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
-```
--or latest main (bleeding-edge):
-```bash
-curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
-```
-
-After install:
-1. Edit `.env` as needed (created from `.env.example`).
-2. Start services:
-   ```bash
-   scripts/prod/start.sh --migrate
-   ```
-3. Update later:
-   ```bash
-   scripts/prod/update.sh --all          # app + workers (zero-downtime)
-   scripts/prod/update.sh --full -y      # full stack restart (downtime)
-   scripts/prod/update.sh --components app,worker-arq
-   ```
+- The app is mounted inside containers, so code changes reflect immediately. Some SSE endpoints may require closing browser tabs to trigger a reload.
+- The workers require a restart:
+  ```bash
+  docker-compose restart worker-arq
+  ```
+- To apply migrations:
+  ```bash
+  scripts/dev/db-migrate.sh
+  ```
 
 ## Scripts
 
@@ -118,25 +172,18 @@ After install:
 | Dev | `scripts/dev/db-migrate.sh` | Apply Alembic migrations |
 | Dev | `scripts/dev/db-reset.sh` | Drop and recreate `public` schema in DB |
 | Dev | `scripts/dev/clean.sh` | Stop stack and clean dev data (`--hard` for global) |
+| Prod | `scripts/prod/provision-hetzner.sh` | Provision a Hetzner server (API token, regions from API, fixed sizes) |
 | Prod | `scripts/prod/install.sh` | Server setup: Docker, Loki plugin, user, clone repo, create `.env` |
+| Prod | `scripts/prod/harden.sh` | System hardening (UFW, fail2ban, unattended-upgrades); add `--ssh` to harden SSH |
 | Prod | `scripts/prod/start.sh` | Start services; optional `--migrate` |
 | Prod | `scripts/prod/stop.sh` | Stop services (`--down` for hard stop) |
 | Prod | `scripts/prod/restart.sh` | Restart services; optional `--migrate` |
 | Prod | `scripts/prod/update.sh` | Update by tag; `--all` (app+workers), `--full` (downtime), or `--components` |
 | Prod | `scripts/prod/db-migrate.sh` | Apply DB migrations in production |
-
-## Update
-
-### Local development
-
-The app is mounted inside of its container, so code changes reflect immediately. Some SSE endpoints may require closing browser tabs to trigger a reload.
-
-### Production
-
-Run `scripts/prod/update.sh` and choose:
-- `--all` for app + workers zero‑downtime updates
-- `--components app,worker-arq` to target components
-- `--full -y` for a full stack restart (downtime)
+| Prod | `scripts/prod/check-env.sh` | Validate required keys exist in `.env` |
+| Prod | `scripts/prod/update/app.sh` | Blue‑green update for app |
+| Prod | `scripts/prod/update/worker-arq.sh` | Drain‑aware blue‑green update for `worker-arq` |
+| Prod | `scripts/prod/update/worker-monitor.sh` | Blue‑green update for `worker-monitor` |
 
 ## Environment variables
 
@@ -164,7 +211,6 @@ Variable | Comments | Default
 `GITHUB_APP_CLIENT_SECRET` | GitHub OAuth app client secret. | `""`
 `GOOGLE_CLIENT_ID` | Google OAuth client ID. | `""`
 `GOOGLE_CLIENT_SECRET` | Google OAuth client secret. | `""`
-`POSTGRES_HOST` | PostgreSQL host address. | `pgsql`
 `POSTGRES_DB` | PostgreSQL database name. | `devpush`
 `POSTGRES_USER` | PostgreSQL username. | `devpush-app`
 `POSTGRES_PASSWORD` | PostgreSQL password. | `devpush`

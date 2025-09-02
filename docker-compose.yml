@@ -125,6 +125,9 @@ services:
       - LC_ALL=en_US.UTF-8
     env_file:
       - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-devpush}
+      POSTGRES_USER: ${POSTGRES_USER:-devpush-app}
     volumes:
       - devpush-db:/var/lib/postgresql/data
 

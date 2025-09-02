@@ -14,7 +14,7 @@ trap 's=$?; err "Install failed (exit $s). See $LOG"; exit $s' ERR
 
 usage() {
   cat <<USG
-Usage: install.sh [--repo <url>] [--ref <tag>] [--include-prerelease] [--user devpush] [--app-dir <path>] [--ssh-pub <key_or_path>] [--copy-root-auth] [--harden-ssh|--no-harden-ssh] [--no-telemetry] [--yes|-y]
+Usage: install.sh [--repo <url>] [--ref <tag>] [--include-prerelease] [--user devpush] [--app-dir <path>] [--ssh-pub <key_or_path>] [--harden] [--harden-ssh] [--no-telemetry]
 
 Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .env).
 
@@ -24,9 +24,8 @@ Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .e
   --user NAME            System user to own the app (default: devpush)
   --app-dir PATH         App directory (default: /home/<user>/devpush if user exists/created, else /opt/devpush)
   --ssh-pub KEY|PATH     Public key content or file to seed authorized_keys for the user
-  --copy-root-auth       Copy /root/.ssh/authorized_keys to the user
-  --harden-ssh           Enable SSH hardening (root login off, password auth off) [default]
-  --no-harden-ssh        Disable SSH hardening
+  --harden               Run system hardening at the end (non-fatal)
+  --harden-ssh           Run SSH hardening at the end (non-fatal)
   --no-telemetry         Do not send telemetry
 
   -h, --help             Show this help
@@ -34,7 +33,7 @@ USG
   exit 1
 }
 
-repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; copy_root=0; harden_ssh=1; telemetry=1
+repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; run_harden=0; run_harden_ssh=0; telemetry=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -45,9 +44,8 @@ while [[ $# -gt 0 ]]; do
     --no-telemetry) telemetry=0; shift ;;
     --app-dir) app_dir="$2"; shift 2 ;;
     --ssh-pub) ssh_pub="$2"; shift 2 ;;
-    --copy-root-auth) copy_root=1; shift ;;
-    --harden-ssh) harden_ssh=1; shift ;;
-    --no-harden-ssh) harden_ssh=0; shift ;;
+    --harden) run_harden=1; shift ;;
+    --harden-ssh) run_harden_ssh=1; shift ;;
 
     -h|--help) usage ;;
     *) usage ;;
@@ -65,6 +63,7 @@ esac
 command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
 command -v curl >/dev/null || (apt-get update && apt-get install -y curl >/dev/null)
 
+
 # Get app dir depending on user
 if [[ -z "${app_dir:-}" ]]; then
   if id -u "$user" >/dev/null 2>&1; then
@@ -77,11 +76,11 @@ fi
 # Info
 echo -e "
 ${BLD}This will:${NC}
-- create user '${user}' (and set SSH keys)
-- install Docker/Compose and open ports 22/80/443
+- create user '${user}' (and optionally set SSH keys)
+- install Docker/Compose
 - install required Docker Loki logging driver
-- apply basic hardening (UFW, fail2ban, unattended-upgrades) and SSH hardening (root login off, password auth off)
 - clone repo to ${app_dir} and seed .env (won't start services)
+- optionally run system hardening (--harden)
 "
 
 # Port conflicts warning
@@ -107,13 +106,7 @@ info "Installing base packages..."
 info "Updating package lists..."
 apt-get update -y
 info "Installing required packages..."
-apt_install ca-certificates git ufw fail2ban unattended-upgrades || { err "Base package install failed"; exit 1; }
-
-# Enable security services
-info "Enabling fail2ban..."
-systemctl enable --now fail2ban || true
-info "Enabling unattended-upgrades..."
-systemctl enable --now unattended-upgrades || true
+apt_install ca-certificates git jq || { err "Base package install failed"; exit 1; }
 
 # Install Docker
 info "Installing Docker..."
@@ -141,35 +134,15 @@ if ! id -u "$user" >/dev/null 2>&1; then
   ak="/home/$user/.ssh/authorized_keys"
   if [[ -n "$ssh_pub" ]]; then
     if [[ -f "$ssh_pub" ]]; then cat "$ssh_pub" >> "$ak"; else echo "$ssh_pub" >> "$ak"; fi
-  elif [[ $copy_root -eq 1 && -f /root/.ssh/authorized_keys ]]; then
+  elif [[ -f /root/.ssh/authorized_keys ]]; then
     cat /root/.ssh/authorized_keys >> "$ak"
-  else
-    err "No SSH key for ${user}. Use --ssh-pub or --copy-root-auth."
-    exit 1
   fi
-  chown "$user:$user" "$ak"; chmod 600 "$ak"
+  if [[ -f "$ak" ]]; then chown "$user:$user" "$ak"; chmod 600 "$ak"; fi
   echo "$user ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/$user; chmod 440 /etc/sudoers.d/$user
   ok "User '${user}' created."
 fi
 
-# Harden SSH
-if [[ $harden_ssh -eq 1 ]]; then
-  info "Hardening SSH (disable root login, password auth)..."
-  sed -ri 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-  sed -ri 's/^#?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-  systemctl restart ssh || true
-  ok "SSH hardened. Test access as '${user}'."
-else
-  echo -e "${YEL}Skipping SSH hardening (--no-harden-ssh).${NC}"
-fi
 
-# Configure firewall
-info "Configuring UFW..."
-ufw allow 22 >/dev/null || true
-ufw allow 80 >/dev/null || true
-ufw allow 443 >/dev/null || true
-yes | ufw enable >/dev/null || true
-ok "Firewall configured."
 
 # Add data dirs
 info "Preparing data dirs..."
@@ -258,6 +231,29 @@ if ((telemetry==1)); then
   payload=$(jq -c --arg ev "install" '. + {event: $ev}' /var/lib/devpush/version.json 2>/dev/null || echo "")
   if [[ -n "$payload" ]]; then
     curl -fsSL -X POST -H 'Content-Type: application/json' -d "$payload" https://api.devpu.sh/v1/telemetry >/dev/null 2>&1 || true
+  fi
+fi
+
+# Optional hardening (non-fatal)
+if ((run_harden==1)); then
+  info "Running server hardening..."
+  set +e
+  bash scripts/prod/harden.sh --user "$user" ${ssh_pub:+--ssh-pub "$ssh_pub"}
+  hr=$?
+  set -e
+  if [[ $hr -ne 0 ]]; then
+    echo -e "${YEL}Hardening skipped/failed. Install succeeded.${NC}"
+  fi
+fi
+
+if ((run_harden_ssh==1)); then
+  info "Running SSH hardening..."
+  set +e
+  bash scripts/prod/harden.sh --ssh --user "$user" ${ssh_pub:+--ssh-pub "$ssh_pub"}
+  hr2=$?
+  set -e
+  if [[ $hr2 -ne 0 ]]; then
+    echo -e "${YEL}SSH hardening skipped/failed. Install succeeded.${NC}"
   fi
 fi
 

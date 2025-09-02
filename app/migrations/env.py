@@ -20,7 +20,7 @@ target_metadata = Base.metadata
 
 # Construct database URL for sync operations
 settings = get_settings()
-database_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:5432/{settings.postgres_db}"
+database_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@pgsql:5432/{settings.postgres_db}"
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -61,9 +61,7 @@ def run_migrations_online() -> None:
     connectable = create_engine(database_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
