@@ -118,7 +118,7 @@ fi
 
 # Add data dirs
 info "Preparing data dirs..."
-install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload /srv/devpush/settings
+install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload
 ok "Data dirs ready."
 
 # Resolve app_dir now that user state is known
@@ -201,6 +201,24 @@ else
   ok ".env exists; not modified."
 fi
 
+# Seed access.json for per-file mount
+info "Seeding access.json..."
+install -d -m 0755 /srv/devpush || true
+if [[ ! -f "/srv/devpush/access.json" ]]; then
+  if [[ -f "$app_dir/access.example.json" ]]; then
+    cp "$app_dir/access.example.json" "/srv/devpush/access.json"
+  else
+    cat > /srv/devpush/access.json <<'JSON'
+{ "emails": [], "domains": [], "globs": [], "regex": [] }
+JSON
+  fi
+  chown 1000:1000 /srv/devpush/access.json || true
+  chmod 0644 /srv/devpush/access.json || true
+  ok "Seeded /srv/devpush/access.json"
+else
+  ok "/srv/devpush/access.json exists; not modified."
+fi
+
 # Build runners images
 if [[ -d Docker/runner ]]; then
   info "Building runner images..."
@@ -263,5 +281,5 @@ echo ""
 info "Next steps:"
 echo "1. Switch to the app user: ${BLD}sudo -iu ${user}${NC}"
 echo "2. Change dir and edit .env: ${BLD}cd devpush && vi .env${NC}"
-echo "   Set LE_EMAIL, APP_HOSTNAME, EMAIL_SENDER_ADDRESS, RESEND_API_KEY, GitHub App settings."
-echo "3. Start the application: ${BLD}bash scripts/prod/start.sh --migrate${NC}"
+echo "   Set LE_EMAIL, APP_HOSTNAME, DEPLOY_DOMAIN, EMAIL_SENDER_ADDRESS, RESEND_API_KEY, GitHub App settings."
+echo "3. Start the application: ${BLD}./scripts/prod/start.sh --migrate${NC}"

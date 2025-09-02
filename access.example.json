@@ -1,15 +1,6 @@
 {
-  "emails": [
-    "alice@example.com"
-  ],
-  "domains": [
-    "example.com"
-  ],
-  "globs": [
-    "*@corp.local",
-    "*.dept.example.com"
-  ],
-  "regex": [
-    "^[^@]+@(eng|research)\\.example\\.com$"
-  ]
+  "emails": [],
+  "domains": [],
+  "globs": [],
+  "regex": []
 }
