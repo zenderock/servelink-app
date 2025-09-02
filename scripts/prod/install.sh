@@ -166,25 +166,26 @@ if [[ -z "${app_dir:-}" ]]; then
   fi
 fi
 info "Creating app directory..."
-# Show resolved app dir for diagnostics
 info "App dir: $app_dir (user: $user)"
-# Ensure parent exists, then create target; fall back to /opt/devpush if needed
-parent_dir="$(dirname "$app_dir")"
-install -d -m 0755 "$parent_dir" >/dev/null 2>&1 || true
-if ! install -d -m 0755 "$app_dir" >/dev/null 2>&1; then
-  echo -e "${YEL}Warning:${NC} could not create $app_dir; falling back to /opt/devpush"
-  app_dir="/opt/devpush"
-  if ! install -d -m 0755 "$app_dir"; then
-    err "Could not create fallback app dir at $app_dir"; exit 1;
-  fi
+
+info "DEBUG: Creating directory..."
+install -d -m 0755 "$app_dir" || { err "Failed to create directory '$app_dir' with install command. Aborting."; exit 1; }
+ok "DEBUG: Directory created."
+
+info "DEBUG: Changing ownership..."
+chown -R "$user:$(id -gn "$user" 2>/dev/null || echo "$user")" "$app_dir" || { err "Failed to change ownership of '$app_dir' to '$user'. Aborting."; exit 1; }
+ok "DEBUG: Ownership changed."
+
+info "DEBUG: Final checks..."
+if [[ ! -d "$app_dir" ]]; then
+    err "DEBUG CHECK FAILED: Directory '$app_dir' does not exist after creation."
+    exit 1
 fi
-# Be resilient to differing chown semantics; try owner:group, then owner only, else warn
-grp="$(id -gn "$user" 2>/dev/null || echo "$user")"
-if ! chown -R "$user:$grp" "$app_dir" 2>/dev/null; then
-  if ! chown -R "$user" "$app_dir" 2>/dev/null; then
-    echo -e "${YEL}Warning:${NC} failed to chown $app_dir to $user. Continuing."
-  fi
+if [[ "$(stat -c '%U' "$app_dir")" != "$user" ]]; then
+    err "DEBUG CHECK FAILED: Directory '$app_dir' is not owned by '$user'."
+    exit 1
 fi
+ok "App directory is ready."
 
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
