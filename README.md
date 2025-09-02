@@ -60,6 +60,16 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 - `scripts/`: Helper scripts for local (macOS) and production environments
 - `docker-compose.yml`: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`).
 
+## Quickstart
+
+Log in your server, run the following command and follow instructions:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash
+```
+
+You user must have sudo privileges.
+
 ## Install & Update
 
 ### Prerequisites
@@ -72,7 +82,7 @@ You can use the provisioning script to get a server up and running:
 2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
 3. Provision a server:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <TOKEN> [--user <login_user>]
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash
    ```
 4. Harden security:
    - Log in the server:
@@ -81,31 +91,26 @@ You can use the provisioning script to get a server up and running:
       ```
    - Run hardening for system and SSH:
      ```bash
-     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh --user <login_user>
+     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh
      ```
 
-Even if you already have a server, we recommend you harden security (ufw, fail2ban, disabled root SSH, etc). You can do that using the `scripts/prod/harden.sh` script.
+Even if you already have a server, we recommend you harden security (ufw, fail2ban, disabled root SSH, etc). You can do that using `scripts/prod/harden.sh`.
 
 ### Install
 
-1. SSH into the server:
+1. **SSH into the server**:
    ```bash
    ssh <login_user>@<server_ip>
    ```
-2. Install /dev/push (choose one):
-   - Tagged release (recommended):
-     ```bash
-     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
-     ```
-   - Latest main (bleeding edge):
-     ```bash
-     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash
-     ```
-3. Switch to `devpush` user:
+2. **Install /dev/push**:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/install.sh | sudo bash
+   ```
+3. **Switch to `devpush` user**:
   ```bash
   su - devpush
   ```
-4. Edit `.env` as needed (created from `.env.example`). You will need to fill in at least the following: `LE_EMAIL`, `APP_HOSTNAME`, `EMAIL_SENDER_ADDRESS`, `RESEND_API_KEY` and your [GitHub app](#github-app) settings (see [environment-variables] for details). `SERVER_IP`, `SECRET_KEY`, `ENCRYPTION_KEY`, `POSTGRES_PASSWORD` should be pre-filled.
+4. **Edit `.env`**: You will need to fill in at least the following: `LE_EMAIL`, `APP_HOSTNAME`, `EMAIL_SENDER_ADDRESS`, `RESEND_API_KEY` and your [GitHub app](#github-app) settings (see [environment-variables] for details). `SERVER_IP`, `SECRET_KEY`, `ENCRYPTION_KEY`, `POSTGRES_PASSWORD` should be pre-filled.
 5. Start services:
    ```bash
    scripts/prod/start.sh --migrate
@@ -114,12 +119,24 @@ Even if you already have a server, we recommend you harden security (ufw, fail2b
 
 ### Update
 
-These must be run as `devpush` user:
+The follwing commands must be run as `devpush` user (`su - devpush`).
+
+In most cases, you can run an update with:
 
 ```bash
-scripts/prod/update.sh --all          # app + workers (zero‑downtime)
-scripts/prod/update.sh --full -y      # full stack restart (downtime)
-scripts/prod/update.sh --components app,worker-arq
+scripts/prod/update.sh --all
+```
+
+Alternatively, you can force a full upgrade (**with downtime**) using:
+
+```bash
+scripts/prod/update.sh --full -y
+```
+
+You can update specific components:
+
+```bash
+scripts/prod/update.sh --components <component_name>
 ```
 
 ## Development
