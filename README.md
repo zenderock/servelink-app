@@ -80,21 +80,19 @@ You will need a fresh Ubuntu/Debian server you can SSH into with sudo privileges
 
 You can use the provisioning script to get a server up and running:
 
-1. Sign in or sign up for a Hetzner account: [Hetzner Cloud Console](https://console.hetzner.cloud/)
-2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
-3. Provision a server (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
+1. **Sign in or sign up for a Hetzner account**: [Hetzner Cloud Console](https://console.hetzner.cloud/)
+2. **Generate an API token**: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
+3. **Provision a server (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
    ```bash
    curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key> [--user <login_user>] [--name <hostname>] [--region <fsn1|nbg1|hel1|ash|hil|sin>] [--type <cpx11|cpx21|cpx31|cpx41|cpx51>]
    ```
    Tip: run `curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/provision-hetzner.sh | bash -s -- --help` to list regions and types (with specs). Defaults: region `hil`, type `cpx31`.
-
-Once your server has been provisioned, you should harden security:
-
-1. Log in the server:
-  ```bash
-  ssh <login_user>@<server_ip>
-  ```
-2. Run hardening for system and SSH:
+4. **Configure DNS Records**: Go to your DNS provider and create two A records pointing at the server IP for `APP_HOSTNAME` (e.g. `app.devpu.sh`) and a wildcard on subdomains of `DEPLOY_DOMAIN` (e.g. `*.devpush.app`).
+5. **SSH into your new server**: The provision script will have created a user for you.
+   ```bash
+   ssh <login_user>@<server_ip>
+   ```
+6. **Run hardening for system and SSH**:
   ```bash
   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/harden.sh | sudo bash -s -- --ssh
   ```
