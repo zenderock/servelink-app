@@ -64,10 +64,17 @@ command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
 
 # Configure unattended-upgrades non-interactively before any apt operations
 if [[ -f /etc/apt/apt.conf.d/50unattended-upgrades ]]; then
-  echo 'Unattended-Upgrade::Automatic-Reboot "false";' | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades >/dev/null 2>&1 || true
+  grep -q 'Automatic-Reboot' /etc/apt/apt.conf.d/50unattended-upgrades || \
+    echo 'Unattended-Upgrade::Automatic-Reboot "false";' >> /etc/apt/apt.conf.d/50unattended-upgrades
 fi
 
-command -v curl >/dev/null || (apt-get update && apt-get install -y curl >/dev/null)
+# Ensure apt is fully non-interactive and avoid needrestart prompts
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+export APT_LISTCHANGES_FRONTEND=none
+export UCF_FORCE_CONFOLD=1
+
+command -v curl >/dev/null || (apt-get update -yq && apt-get install -yq curl >/dev/null)
 
 
 # Get app dir depending on user
@@ -98,7 +105,7 @@ fi
 apt_install() {
   local pkgs=("$@"); local i
   for i in {1..5}; do
-    if apt-get update -y && apt-get install -y "${pkgs[@]}"; then return 0; fi
+    if apt-get update -yq && apt-get install -yq -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "${pkgs[@]}"; then return 0; fi
     sleep 3
   done
   return 1
@@ -110,7 +117,7 @@ pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.
 # Install base packages
 info "Installing base packages..."
 info "Updating package lists..."
-apt-get update -y
+apt-get update -yq
 info "Installing required packages..."
 apt_install ca-certificates git jq || { err "Base package install failed"; exit 1; }
 
@@ -121,7 +128,7 @@ install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo $UBUNTU_CODENAME) stable" >/etc/apt/sources.list.d/docker.list
 info "Updating package lists for Docker..."
-apt-get update -y
+apt-get update -yq
 info "Installing Docker packages..."
 apt_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { err "Docker install failed"; exit 1; }
 ok "Docker installed."
