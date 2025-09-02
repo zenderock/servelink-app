@@ -221,8 +221,8 @@ Variable | Comments | Default
 `STATIC_HOSTNAME` | Domain for serving the static assets (e.g. CSS, JS libraries, images). Useful for caching. No trailing slahe | `APP_HOSTNAME`
 `DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `APP_HOSTNAME`
 `SERVER_IP` | Public IP of the server | `""`
-`SECRET_KEY` | Secret key for JWT tokens, sessions, and CSRF protection. | `""`
-`ENCRYPTION_KEY` | Encryption key for sensitive data (e.g. GitHub tokens). | `""`
+`SECRET_KEY` | App secret for sessions/CSRF. Generate: `openssl rand -hex 32` | `""`
+`ENCRYPTION_KEY` | Fernet key (urlsafe base64, 32 bytes). Generate: `openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n'` | `""`
 `EMAIL_LOGO` | URL for email logo image. Only helpful for testing, as the app will use `app/logo-email.png` if left empty. | `""`
 `EMAIL_SENDER_NAME` | Name displayed as email sender for invites/login. | `""`
 `EMAIL_SENDER_ADDRESS` | Email sender used for invites/login. | `""`
@@ -237,7 +237,7 @@ Variable | Comments | Default
 `GOOGLE_CLIENT_SECRET` | Google OAuth client secret. | `""`
 `POSTGRES_DB` | PostgreSQL database name. | `devpush`
 `POSTGRES_USER` | PostgreSQL username. | `devpush-app`
-`POSTGRES_PASSWORD` | PostgreSQL password. | `devpush`
+`POSTGRES_PASSWORD` | PostgreSQL password. Generate: `openssl rand -base64 24 | tr -d '\n'` | `""`
 `REDIS_URL` | Redis connection URL. | `redis://redis:6379`
 `DOCKER_HOST` | Docker daemon host address. | `tcp://docker-proxy:2375`
 `UPLOAD_DIR` | Directory for file uploads. | `/app/upload`

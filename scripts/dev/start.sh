@@ -21,17 +21,22 @@ echo "Starting local environment..."
 
 mkdir -p ./data/{traefik,upload}
 
-no_cache=1
+no_cache=0
 prune=0
 for a in "$@"; do
   [ "$a" = "--cache" ] && no_cache=0
+  [ "$a" = "--no-cache" ] && no_cache=1
   [ "$a" = "--prune" ] && prune=1
 done
 
 ((prune==1)) && { echo "Pruning dangling images..."; docker image prune -f; }
 
 # Build runner images
-./scripts/dev/build-runners.sh
+if ((no_cache==1)); then
+  ./scripts/dev/build-runners.sh
+else
+  ./scripts/dev/build-runners.sh --cache
+fi
 
 # Optional no-cache build for services
 args=(-p devpush -f docker-compose.yml -f docker-compose.override.dev.yml)

@@ -81,6 +81,7 @@ apt_install() {
 gen_hex(){ openssl rand -hex 32; }
 gen_pw(){ openssl rand -base64 24 | tr -d '\n=' | cut -c1-32; }
 pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.com || hostname -I | awk '{print $1}'; }
+gen_fernet(){ openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n'; }
 
 # Install base packages
 info "Installing base packages..."
@@ -190,7 +191,7 @@ if [[ ! -f ".env" ]]; then
   fill(){ k="$1"; v="$2"; if grep -q "^$k=" .env; then sed -i "s|^$k=.*|$k=\"$v\"|" .env; else echo "$k=\"$v\"" >> .env; fi; }
   fill_if_empty(){ k="$1"; v="$2"; cur="$(grep -E "^$k=" .env | head -n1 | cut -d= -f2- | tr -d '\"')"; [[ -z "$cur" ]] && fill "$k" "$v" || true; }
 
-  sk="$(gen_hex)"; ek="$(gen_hex)"; pgp="$(gen_pw)"; sip="$(pub_ip || echo 127.0.0.1)"
+  sk="$(gen_hex)"; ek="$(gen_fernet)"; pgp="$(gen_pw)"; sip="$(pub_ip || echo 127.0.0.1)"
   fill_if_empty SECRET_KEY "$sk"
   fill_if_empty ENCRYPTION_KEY "$ek"
   fill_if_empty POSTGRES_PASSWORD "$pgp"
