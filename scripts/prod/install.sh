@@ -62,7 +62,8 @@ case "${ID_LIKE:-$ID}" in
 esac
 command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
 
-# Configure unattended-upgrades non-interactively before any apt operations
+# Optional: set unattended-upgrades to never auto-reboot. This is not required
+# to keep apt non-interactive; it only controls reboot behavior after updates.
 if [[ -f /etc/apt/apt.conf.d/50unattended-upgrades ]]; then
   grep -q 'Automatic-Reboot' /etc/apt/apt.conf.d/50unattended-upgrades || \
     echo 'Unattended-Upgrade::Automatic-Reboot "false";' >> /etc/apt/apt.conf.d/50unattended-upgrades
@@ -142,7 +143,7 @@ ok "Loki driver ready."
 # Create user
 if ! id -u "$user" >/dev/null 2>&1; then
   info "Creating user '${user}'..."
-  useradd -m -s /bin/bash -G sudo,docker "$user"
+  useradd -m -U -s /bin/bash -G sudo,docker "$user"
   install -d -m 700 -o "$user" -g "$user" "/home/$user/.ssh"
   ak="/home/$user/.ssh/authorized_keys"
   if [[ -n "$ssh_pub" ]]; then
@@ -165,7 +166,7 @@ ok "Data dirs ready."
 # Create app dir
 info "Creating app directory..."
 install -d -m 0755 "$app_dir"
-chown -R "$user:$user" "$app_dir"
+chown -R "$user:$(id -gn "$user")" "$app_dir"
 
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
