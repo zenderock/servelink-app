@@ -152,12 +152,14 @@ ok "App directory is ready."
 
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
+  set +e
   if ((include_pre==1)); then
     ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
   else
     ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
     [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
   fi
+  set -e
 fi
 if [[ -z "$ref" ]]; then
     echo -e "${YEL}Warning:${NC} No tags found. Installing from the latest 'main' branch commit."
