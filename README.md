@@ -62,6 +62,8 @@ Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
 
 ## Quickstart
 
+> ⚠️ Supported on Ubuntu/Debian. Other distros may work but aren't officially supported (yet).
+
 Log in your server, run the following command and follow instructions:
 
 ```bash
@@ -80,11 +82,12 @@ You can use the provisioning script to get a server up and running:
 
 1. Sign in or sign up for a Hetzner account: [Hetzner Cloud Console](https://console.hetzner.cloud/)
 2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
-3. Provision a server:
+3. Provision a server (you can use `--user` to specify a user login, defaults to the current user):
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key>
    ```
-Once your server has been provisioned, we strongly recommend you harden security:
+
+Once your server has been provisioned, you should harden security:
 
 1. Log in the server:
   ```bash
