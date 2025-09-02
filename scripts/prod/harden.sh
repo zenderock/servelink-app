@@ -18,7 +18,7 @@ Applies basic server hardening:
 - configures UFW to allow 22,80,443 and enables it
 
   --ssh                  Also apply SSH hardening (see below)
-  --user NAME            Target user for SSH key check/seed (default: devpush)
+  --user NAME            Target user for SSH key check/seed (default: current user)
   --ssh-pub KEY|PATH     Public key content or file to seed authorized_keys if missing
 
   -h, --help             Show this help
@@ -26,7 +26,7 @@ USG
   exit 1
 }
 
-user="devpush"; ssh_pub=""; with_ssh=0
+user=""; ssh_pub=""; with_ssh=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ssh) with_ssh=1; shift ;;
@@ -39,12 +39,18 @@ done
 
 [[ $EUID -eq 0 ]] || { err "Run as root (sudo)."; exit 2; }
 
-. /etc/os-release || { err "Unsupported OS"; exit 3; }
+# Ensure user is specified for SSH hardening
+if ((with_ssh==1)) && [[ -z "$user" ]]; then
+  err "SSH hardening requires --user <name> or \$USER environment variable"
+  exit 3
+fi
+
+. /etc/os-release || { err "Unsupported OS"; exit 4; }
 case "${ID_LIKE:-$ID}" in
   *debian*|*ubuntu*) : ;;
-  *) err "Only Ubuntu/Debian supported"; exit 3 ;;
+  *) err "Only Ubuntu/Debian supported"; exit 4 ;;
 esac
-command -v apt-get >/dev/null || { err "apt-get not found"; exit 3; }
+command -v apt-get >/dev/null || { err "apt-get not found"; exit 4; }
 
 apt_install() {
   local pkgs=("$@"); local i
@@ -59,7 +65,7 @@ if ((with_ssh==1)); then
   # Ensure user exists if specified
   if ! id -u "$user" >/dev/null 2>&1; then
     err "User '$user' does not exist."
-    exit 4
+    exit 5
   fi
 fi
 
@@ -86,7 +92,7 @@ if ((with_ssh==1)); then
   if [[ ! -s "$ak" ]]; then
     echo -e "${YEL}SSH hardening requires a public key.${NC}"
     echo "Provide --ssh-pub <key|path> or ensure $ak exists and is non-empty."
-    exit 5
+    exit 6
   fi
 fi
 
@@ -94,7 +100,7 @@ fi
 info "Installing security packages (ufw, fail2ban, unattended-upgrades)..."
 if ! apt_install ufw fail2ban unattended-upgrades; then
   err "Security package install failed"
-  exit 6
+  exit 7
 fi
 
 # Enable services
