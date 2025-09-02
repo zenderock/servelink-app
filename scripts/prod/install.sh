@@ -150,29 +150,29 @@ install -d -m 0755 "$app_dir" || { err "Failed to create directory '$app_dir'. A
 chown -R "$user:$(id -gn "$user")" "$app_dir" || { err "Failed to change ownership of '$app_dir' to '$user'. Aborting."; exit 1; }
 ok "App directory is ready."
 
-# Resolve latest tag from GitHub
-if [[ -z "$ref" ]]; then
-  set +e
-  if ((include_pre==1)); then
-    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
-  else
-    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
-    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
-  fi
-  set -e
-fi
-if [[ -z "$ref" ]]; then
-    echo -e "${YEL}Warning:${NC} No tags found. Installing from the latest 'main' branch commit."
-    ref="main"
+# Get code from GitHub
+info "Cloning repository as user '${user}'..."
+if [[ -d "$app_dir/.git" ]]; then
+  # Repo exists, just fetch
+  cmd_block="
+    set -ex
+    cd '$app_dir'
+    git remote get-url origin >/dev/null 2>&1 || git remote add origin '$repo'
+    git fetch --depth 1 origin '$ref'
+  "
+  runuser -u "$user" -- bash -c "$cmd_block" || { err "Git fetch failed for existing repo."; exit 1; }
+else
+  # New clone
+  cmd_block="
+    set -ex
+    cd '$app_dir'
+    git init
+    git remote add origin '$repo'
+    git fetch --depth 1 origin '$ref'
+  "
+  runuser -u "$user" -- bash -c "$cmd_block" || { err "Git clone failed."; exit 1; }
 fi
 
-# Get code from GitHub
-if [[ -d "$app_dir/.git" ]]; then
-  runuser -u "$user" -- git -C "$app_dir" remote get-url origin >/dev/null 2>&1 || runuser -u "$user" -- git -C "$app_dir" remote add origin "$repo"
-  runuser -u "$user" -- git -C "$app_dir" fetch --depth 1 origin "$ref"
-else
-  runuser -u "$user" -- bash -lc "cd '$app_dir' && git init && git remote add origin '$repo' && git fetch --depth 1 origin '$ref'"
-fi
 info "Checking out ref: $ref"
 runuser -u "$user" -- git -C "$app_dir" reset --hard FETCH_HEAD
 ok "Repo ready at $app_dir (ref $ref)."
