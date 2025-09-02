@@ -84,15 +84,16 @@ You can use the provisioning script to get a server up and running:
    ```bash
    curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash
    ```
-4. Harden security:
-   - Log in the server:
-      ```bash
-      ssh <user>@<server_ip>
-      ```
-   - Run hardening for system and SSH:
-     ```bash
-     curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh
-     ```
+Once your server has been provisioned, we strongly recommend you harden security:
+
+1. Log in the server:
+  ```bash
+  ssh <user>@<server_ip>
+  ```
+2. Run hardening for system and SSH:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/harden.sh | sudo bash -s -- --ssh
+  ```
 
 Even if you already have a server, we recommend you harden security (ufw, fail2ban, disabled root SSH, etc). You can do that using `scripts/prod/harden.sh`.
 
