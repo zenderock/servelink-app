@@ -8,9 +8,9 @@ trap 's=$?; err "Update for worker-monitor failed (exit $s)"; exit $s' ERR
 
 usage(){
   cat <<USG
-Usage: worker-monitor.sh [--app-dir <path>] [--timeout-seconds <n>]
+Usage: worker-monitor.sh [--app-dir <path>]
 
-Blue-green update for the monitor worker (waits for running if no healthcheck).
+In-place restart for the monitor worker (single-instance service).
 
   --app-dir PATH       App directory (default: $PWD)
   --timeout-seconds N  Health wait timeout seconds (default: 60)
@@ -19,11 +19,11 @@ USG
   exit 0
 }
 
-app_dir="${APP_DIR:-$(pwd)}"; timeout_s=60
+app_dir="${APP_DIR:-$(pwd)}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --app-dir) app_dir="$2"; shift 2 ;;
-    --timeout-seconds) timeout_s="$2"; shift 2 ;;
+    --timeout-seconds) shift 2 ;; # deprecated
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -32,4 +32,8 @@ done
 cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 scripts/prod/check-env.sh --env-file .env --quiet
 
-blue_green_update "worker-monitor" "$timeout_s"
+info "Rebuilding worker-monitor..."
+docker compose -p devpush build --no-cache worker-monitor | cat
+info "Recreating worker-monitor..."
+docker compose -p devpush up -d --no-deps --force-recreate worker-monitor
+ok "worker-monitor restarted"
