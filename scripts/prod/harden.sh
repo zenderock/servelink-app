@@ -41,8 +41,13 @@ done
 
 # Ensure user is specified for SSH hardening
 if ((with_ssh==1)) && [[ -z "$user" ]]; then
-  err "SSH hardening requires --user <name> or \$USER environment variable"
-  exit 3
+  # Try to get the original user who invoked sudo
+  original_user="${SUDO_USER:-$USER}"
+  if [[ -z "$original_user" || "$original_user" == "root" ]]; then
+    err "SSH hardening requires --user <name> (cannot determine original user)"
+    exit 3
+  fi
+  user="$original_user"
 fi
 
 . /etc/os-release || { err "Unsupported OS"; exit 4; }
