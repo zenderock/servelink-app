@@ -17,8 +17,12 @@ Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
   --user NAME     Login username to create (optional; defaults to current shell user; must not be 'root')
   --name HOST     Server name/hostname (optional; defaults to devpush-<region>)
   --region LOC    Region (optional; defaults to 'hil'). Available:
-                  fsn1 (Falkenstein, DE), nbg1 (Nuremberg, DE), hel1 (Helsinki, FI),
-                  ash (Ashburn, VA, US), hil (Hillsboro, OR, US), sin (Singapore, SG)
+                  fsn1 (Falkenstein, DE)
+                  nbg1 (Nuremberg, DE)
+                  hel1 (Helsinki, FI)
+                  ash (Ashburn, VA, US)
+                  hil (Hillsboro, OR, US)
+                  sin (Singapore, SG)
   --type NAME     Server type (optional; defaults to 'cpx31'). Available:
                   cpx11 (2 vCPU, 2GB RAM, 20GB SSD)
                   cpx21 (3 vCPU, 4GB RAM, 40GB SSD)
