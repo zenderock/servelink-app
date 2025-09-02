@@ -9,12 +9,13 @@ info(){ echo -e "${BLD}$*${NC}"; }
 
 usage(){
   cat <<USG
-Usage: provision-hetzner.sh --token <token> [--user <login_user>]
+Usage: provision-hetzner.sh --token <token> [--user <login_user>] [--name <hostname>]
 
 Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
 
   --token TOKEN   Hetzner API token (required)
   --user NAME     Login username to create (optional; defaults to current shell user; must not be 'root')
+  --name HOST     Server name/hostname (optional; defaults to devpush-<region>)
 
   -h, --help      Show this help
 USG
@@ -22,11 +23,12 @@ USG
 }
 
 # Parse arguments (require explicit token)
-token=""; login_user_flag=""
+token=""; login_user_flag=""; name_flag=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --token) token="$2"; shift 2 ;;
     --user) login_user_flag="$2"; shift 2 ;;
+    --name) name_flag="$2"; shift 2 ;;
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -111,9 +113,8 @@ echo ""
 info "Selected: $server_type in $region"
 echo ""
 
-default_name="devpush-$region"
-read -p "Server name (default: $default_name): " server_name
-server_name=${server_name:-$default_name}
+# Determine server name (flag overrides default; no prompt)
+server_name="${name_flag:-devpush-$region}"
 
 # Determine login user (flag overrides default)
 login_user="${login_user_flag:-${USER:-admin}}"
