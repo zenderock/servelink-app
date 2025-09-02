@@ -19,10 +19,10 @@ Usage: install.sh [--repo <url>] [--ref <tag>] [--include-prerelease] [--user de
 Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .env).
 
   --repo URL             Git repo to clone (default: https://github.com/hunvreus/devpush.git)
-  --ref TAG              Git tag to install (default: latest stable tag)
+  --ref TAG              Git tag/branch to install (default: latest stable tag, fallback to main)
   --include-prerelease   Allow beta/rc tags when selecting latest
   --user NAME            System user to own the app (default: devpush)
-  --app-dir PATH         App directory (default: /home/<user>/devpush if user exists/created, else /opt/devpush)
+  --app-dir PATH         App directory (default: /home/<user>/devpush)
   --ssh-pub KEY|PATH     Public key content or file to seed authorized_keys for the user
   --harden               Run system hardening at the end (non-fatal)
   --harden-ssh           Run SSH hardening at the end (non-fatal)
@@ -62,38 +62,12 @@ case "${ID_LIKE:-$ID}" in
 esac
 command -v apt-get >/dev/null || { err "apt-get not found"; exit 1; }
 
-# Optional: set unattended-upgrades to never auto-reboot. This is not required
-# to keep apt non-interactive; it only controls reboot behavior after updates.
-if [[ -f /etc/apt/apt.conf.d/50unattended-upgrades ]]; then
-  grep -q 'Automatic-Reboot' /etc/apt/apt.conf.d/50unattended-upgrades || \
-    echo 'Unattended-Upgrade::Automatic-Reboot "false";' >> /etc/apt/apt.conf.d/50unattended-upgrades
-fi
-
 # Ensure apt is fully non-interactive and avoid needrestart prompts
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
-export APT_LISTCHANGES_FRONTEND=none
-export UCF_FORCE_CONFOLD=1
-
 command -v curl >/dev/null || (apt-get update -yq && apt-get install -yq curl >/dev/null)
 
-
 # Defer resolving app_dir until after user creation
-
-# Info
-echo -e "
-${BLD}This will:${NC}
-- create user '${user}' (and optionally set SSH keys)
-- install Docker/Compose
-- install required Docker Loki logging driver
-- clone repo to ${app_dir} and seed .env (won't start services)
-- optionally run system hardening (--harden)
-"
-
-# Port conflicts warning
-if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
-  echo -e "${YEL}Warning:${NC} ports 80/443 are in use. Traefik may fail to start later."
-fi
 
 # Helpers
 apt_install() {
@@ -110,20 +84,13 @@ pub_ip(){ curl -fsS https://api.ipify.org || curl -fsS http://checkip.amazonaws.
 
 # Install base packages
 info "Installing base packages..."
-info "Updating package lists..."
-apt-get update -yq
-info "Installing required packages..."
-apt_install ca-certificates git jq || { err "Base package install failed"; exit 1; }
+apt_install ca-certificates git jq curl || { err "Base package install failed"; exit 1; }
 
 # Install Docker
 info "Installing Docker..."
-info "Setting up Docker repository..."
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo $UBUNTU_CODENAME) stable" >/etc/apt/sources.list.d/docker.list
-info "Updating package lists for Docker..."
-apt-get update -yq
-info "Installing Docker packages..."
 apt_install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { err "Docker install failed"; exit 1; }
 ok "Docker installed."
 
@@ -149,15 +116,12 @@ if ! id -u "$user" >/dev/null 2>&1; then
   ok "User '${user}' created."
 fi
 
-
-
 # Add data dirs
 info "Preparing data dirs..."
 install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload /srv/devpush/settings
 ok "Data dirs ready."
 
-# Create app dir
-# Resolve app_dir now that user state is known (default to /home/<user>/devpush)
+# Resolve app_dir now that user state is known
 if [[ -z "${app_dir:-}" ]]; then
   if id -u "$user" >/dev/null 2>&1 && [[ -d "/home/$user" ]]; then
     app_dir="/home/$user/devpush"
@@ -165,54 +129,51 @@ if [[ -z "${app_dir:-}" ]]; then
     app_dir="/opt/devpush"
   fi
 fi
+
+# Info
+echo -e "
+${BLD}This will:${NC}
+- create user '${user}' (if not exists)
+- install Docker/Compose & Loki driver
+- clone repo to ${app_dir} and seed .env
+- optionally run system hardening (--harden)
+"
+
+# Port conflicts warning
+if conflicts=$(ss -ltnp 2>/dev/null | awk '$4 ~ /:80$|:443$/'); [[ -n "${conflicts:-}" ]]; then
+  echo -e "${YEL}Warning:${NC} ports 80/443 are in use. Traefik may fail to start later."
+fi
+
+# Create app dir
 info "Creating app directory..."
-info "App dir: $app_dir (user: $user)"
-
-info "DEBUG: Creating directory..."
-install -d -m 0755 "$app_dir" || { err "Failed to create directory '$app_dir' with install command. Aborting."; exit 1; }
-ok "DEBUG: Directory created."
-
-info "DEBUG: Changing ownership..."
-chown -R "$user:$(id -gn "$user" 2>/dev/null || echo "$user")" "$app_dir" || { err "Failed to change ownership of '$app_dir' to '$user'. Aborting."; exit 1; }
-ok "DEBUG: Ownership changed."
-
-info "DEBUG: Final checks..."
-if [[ ! -d "$app_dir" ]]; then
-    err "DEBUG CHECK FAILED: Directory '$app_dir' does not exist after creation."
-    exit 1
-fi
-if [[ "$(stat -c '%U' "$app_dir")" != "$user" ]]; then
-    err "DEBUG CHECK FAILED: Directory '$app_dir' is not owned by '$user'."
-    exit 1
-fi
+install -d -m 0755 "$app_dir" || { err "Failed to create directory '$app_dir'. Aborting."; exit 1; }
+chown -R "$user:$(id -gn "$user")" "$app_dir" || { err "Failed to change ownership of '$app_dir' to '$user'. Aborting."; exit 1; }
 ok "App directory is ready."
-
-info "DEBUG: Resolving git tag..."
-set -x # Start verbose debug output
 
 # Resolve latest tag from GitHub
 if [[ -z "$ref" ]]; then
   if ((include_pre==1)); then
     ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
   else
-    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+    ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
     [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs "$repo" | awk -F/ '{print $3}' | sort -V | tail -1)"
   fi
 fi
-[[ -n "$ref" ]] || { err "No tags found to install"; exit 1; }
-
-set +x # Stop verbose debug output
+if [[ -z "$ref" ]]; then
+    echo -e "${YEL}Warning:${NC} No tags found. Installing from the latest 'main' branch commit."
+    ref="main"
+fi
 
 # Get code from GitHub
 if [[ -d "$app_dir/.git" ]]; then
   runuser -u "$user" -- git -C "$app_dir" remote get-url origin >/dev/null 2>&1 || runuser -u "$user" -- git -C "$app_dir" remote add origin "$repo"
-  runuser -u "$user" -- git -C "$app_dir" fetch --depth 1 origin "refs/tags/$ref"
+  runuser -u "$user" -- git -C "$app_dir" fetch --depth 1 origin "$ref"
 else
-  runuser -u "$user" -- bash -lc "cd '$app_dir' && git init && git remote add origin '$repo' && git fetch --depth 1 origin 'refs/tags/$ref'"
+  runuser -u "$user" -- bash -lc "cd '$app_dir' && git init && git remote add origin '$repo' && git fetch --depth 1 origin '$ref'"
 fi
-info "Checking out tag: $ref"
-runuser -u "$user" -- git -C "$app_dir" reset --hard "tags/$ref"
-ok "Repo ready at $app_dir (tag $ref)."
+info "Checking out ref: $ref"
+runuser -u "$user" -- git -C "$app_dir" reset --hard FETCH_HEAD
+ok "Repo ready at $app_dir (ref $ref)."
 
 # Create .env file
 cd "$app_dir"
@@ -257,11 +218,11 @@ ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 install -d -m 0755 /var/lib/devpush
 if [[ ! -f /var/lib/devpush/version.json ]]; then
   install_id=$(cat /proc/sys/kernel/random/uuid)
-  printf '{"install_id":"%s","git_tag":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
 else
   install_id=$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)
   [[ -n "$install_id" && "$install_id" != "null" ]] || install_id=$(cat /proc/sys/kernel/random/uuid)
-  printf '{"install_id":"%s","git_tag":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
 fi
 
 # Send telemetry
