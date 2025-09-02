@@ -120,12 +120,11 @@ services:
     restart: always
     networks:
       - internal
-    environment:
-      - LANG=en_US.UTF-8
-      - LC_ALL=en_US.UTF-8
     env_file:
       - .env
     environment:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
       POSTGRES_DB: ${POSTGRES_DB:-devpush}
       POSTGRES_USER: ${POSTGRES_USER:-devpush-app}
     volumes:
