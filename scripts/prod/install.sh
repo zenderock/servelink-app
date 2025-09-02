@@ -78,14 +78,7 @@ export UCF_FORCE_CONFOLD=1
 command -v curl >/dev/null || (apt-get update -yq && apt-get install -yq curl >/dev/null)
 
 
-# Get app dir depending on user
-if [[ -z "${app_dir:-}" ]]; then
-  if id -u "$user" >/dev/null 2>&1; then
-    app_dir="/home/$user/devpush"
-  else
-    app_dir="/opt/devpush"
-  fi
-fi
+# Defer resolving app_dir until after user creation
 
 # Info
 echo -e "
@@ -164,6 +157,14 @@ install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload /srv
 ok "Data dirs ready."
 
 # Create app dir
+# Resolve app_dir now that user state is known (default to /home/<user>/devpush)
+if [[ -z "${app_dir:-}" ]]; then
+  if id -u "$user" >/dev/null 2>&1 && [[ -d "/home/$user" ]]; then
+    app_dir="/home/$user/devpush"
+  else
+    app_dir="/opt/devpush"
+  fi
+fi
 info "Creating app directory..."
 # Show resolved app dir for diagnostics
 info "App dir: $app_dir (user: $user)"
