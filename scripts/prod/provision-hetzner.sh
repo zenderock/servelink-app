@@ -9,12 +9,12 @@ info(){ echo -e "${BLD}$*${NC}"; }
 
 usage(){
   cat <<USG
-Usage: provision-hetzner.sh --token <token> --user <login_user>
+Usage: provision-hetzner.sh --token <token> [--user <login_user>]
 
 Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
 
   --token TOKEN   Hetzner API token (required)
-  --user NAME     Login username to create (required; must not be 'root')
+  --user NAME     Login username to create (optional; defaults to current shell user; must not be 'root')
 
   -h, --help      Show this help
 USG
@@ -33,7 +33,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$token" ]] || { err "Missing --token"; usage; }
-[[ -n "$login_user_flag" ]] || { err "Missing --user"; usage; }
 
 command -v curl >/dev/null 2>&1 || { err "curl is required."; exit 1; }
 command -v jq >/dev/null 2>&1 || { err "jq is required. Install with: brew install jq"; exit 1; }
@@ -116,8 +115,8 @@ default_name="devpush-$region"
 read -p "Server name (default: $default_name): " server_name
 server_name=${server_name:-$default_name}
 
-# Use provided login user
-login_user="$login_user_flag"
+# Determine login user (flag overrides default)
+login_user="${login_user_flag:-${USER:-admin}}"
 if [[ "$login_user" == "root" ]]; then
     err "Refusing to create 'root'. Choose a non-root username."
     exit 1
