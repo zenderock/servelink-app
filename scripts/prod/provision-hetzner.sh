@@ -9,13 +9,22 @@ info(){ echo -e "${BLD}$*${NC}"; }
 
 usage(){
   cat <<USG
-Usage: provision-hetzner.sh --token <token> [--user <login_user>] [--name <hostname>]
+Usage: provision-hetzner.sh --token <token> [--user <login_user>] [--name <hostname>] [--region <loc>] [--type <name>]
 
 Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
 
   --token TOKEN   Hetzner API token (required)
   --user NAME     Login username to create (optional; defaults to current shell user; must not be 'root')
   --name HOST     Server name/hostname (optional; defaults to devpush-<region>)
+  --region LOC    Region (optional; defaults to 'hil'). Available:
+                  fsn1 (Falkenstein, DE), nbg1 (Nuremberg, DE), hel1 (Helsinki, FI),
+                  ash (Ashburn, VA, US), hil (Hillsboro, OR, US), sin (Singapore, SG)
+  --type NAME     Server type (optional; defaults to 'cpx31'). Available:
+                  cpx11 (2 vCPU, 2GB RAM, 20GB SSD)
+                  cpx21 (3 vCPU, 4GB RAM, 40GB SSD)
+                  cpx31 (2 vCPU, 4GB RAM, 80GB SSD)
+                  cpx41 (4 vCPU, 8GB RAM, 160GB SSD)
+                  cpx51 (8 vCPU, 16GB RAM, 240GB SSD)
 
   -h, --help      Show this help
 USG
@@ -23,12 +32,14 @@ USG
 }
 
 # Parse arguments (require explicit token)
-token=""; login_user_flag=""; name_flag=""
+token=""; login_user_flag=""; name_flag=""; region_flag=""; type_flag=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --token) token="$2"; shift 2 ;;
     --user) login_user_flag="$2"; shift 2 ;;
     --name) name_flag="$2"; shift 2 ;;
+    --region) region_flag="$2"; shift 2 ;;
+    --type) type_flag="$2"; shift 2 ;;
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -57,57 +68,9 @@ fi
 info "Select server configuration:"
 echo ""
 
-info "Fetching locations..."
-locations_json=$(api_get locations)
-loc_count=$(echo "$locations_json" | jq '.locations | length')
-if [ "$loc_count" -eq 0 ]; then
-    err "No locations returned by API."
-    exit 1
-fi
-
-echo "Available regions:"
-echo "$locations_json" | jq -r '.locations | to_entries[] | "  \(.key+1)) \(.value.name) - \(.value.description) (\(.value.city), \(.value.country))"'
-echo ""
-
-while true; do
-    read -p "Select region (1-$loc_count, default: 1): " region_choice
-    region_choice=${region_choice:-1}
-    if [ "$region_choice" -ge 1 ] && [ "$region_choice" -le "$loc_count" ]; then
-        idx=$((region_choice-1))
-        region=$(echo "$locations_json" | jq -r ".locations[$idx].name")
-        break
-    else
-        echo "Invalid selection. Please choose 1-$loc_count."
-    fi
-done
-
-echo ""
-types=("cpx11" "cpx21" "cpx31" "cpx41" "cpx51")
-types_desc=(
-  "2 vCPU, 2GB RAM, 20GB SSD"
-  "3 vCPU, 4GB RAM, 40GB SSD"
-  "2 vCPU, 4GB RAM, 80GB SSD"
-  "4 vCPU, 8GB RAM, 160GB SSD"
-  "8 vCPU, 16GB RAM, 240GB SSD"
-)
-
-echo "Available server types:"
-for i in "${!types[@]}"; do
-  printf "  %d) %s - %s\n" "$((i+1))" "${types[$i]}" "${types_desc[$i]}"
-done
-echo ""
-
-while true; do
-  read -p "Select server type (1-${#types[@]}, default: 3): " type_choice
-  type_choice=${type_choice:-3}
-  if [ "$type_choice" -ge 1 ] && [ "$type_choice" -le "${#types[@]}" ]; then
-    idx=$((type_choice-1))
-    server_type="${types[$idx]}"
-    break
-  else
-    echo "Invalid selection. Please choose 1-${#types[@]}."
-  fi
-done
+# Defaults (can be overridden via flags)
+region="${region_flag:-hil}"
+server_type="${type_flag:-cpx31}"
 
 echo ""
 info "Selected: $server_type in $region"

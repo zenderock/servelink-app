@@ -82,10 +82,11 @@ You can use the provisioning script to get a server up and running:
 
 1. Sign in or sign up for a Hetzner account: [Hetzner Cloud Console](https://console.hetzner.cloud/)
 2. Generate an API token: [Creating an API token](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/)
-3. Provision a server:
+3. Provision a server (requires `--token`; optional: `--user`, `--name`, `--region`, `--type`):
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key>
+   curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --token <hetzner_api_key> [--user <login_user>] [--name <hostname>] [--region <fsn1|nbg1|hel1|ash|hil|sin>] [--type <cpx11|cpx21|cpx31|cpx41|cpx51>]
    ```
+   Tip: run `curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/0.1.0-beta.1/scripts/prod/provision-hetzner.sh | bash -s -- --help` to list regions and types (with specs). Defaults: region `hil`, type `cpx31`.
 
 Once your server has been provisioned, you should harden security:
 
