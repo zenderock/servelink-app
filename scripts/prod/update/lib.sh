@@ -15,7 +15,7 @@ blue_green_update() {
   
   info "Executing blue-green update for '$service'..."
   
-  local args=(-p devpush -f docker-compose.yml -f docker-compose.override.prod.yml)
+  local args=(-p devpush)
 
   # Build new image if Dockerfile has changed
   docker compose build "$service" || true

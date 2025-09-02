@@ -33,7 +33,7 @@ done
 cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 
 info "Stopping services..."
-args=(-p devpush -f docker-compose.yml -f docker-compose.override.prod.yml)
+args=(-p devpush)
 if ((hard==1)); then
   docker compose "${args[@]}" down --remove-orphans
 else

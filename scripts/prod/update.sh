@@ -69,7 +69,7 @@ git fetch --depth 1 origin "refs/tags/$ref"
 git reset --hard "tags/$ref"
 
 # Update Docker images
-args=(-p devpush -f docker-compose.yml -f docker-compose.override.prod.yml)
+args=(-p devpush)
 if ((pull==1)); then
   info "Pulling images..."
   docker compose "${args[@]}" pull || true

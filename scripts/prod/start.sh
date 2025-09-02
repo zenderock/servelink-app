@@ -41,7 +41,7 @@ scripts/prod/check-env.sh --env-file "$envf"
 
 # Start services
 info "Starting services..."
-args=(-p devpush -f docker-compose.yml -f docker-compose.override.prod.yml)
+args=(-p devpush)
 ((pull_always==1)) && pullflag=(--pull always) || pullflag=()
 docker compose "${args[@]}" up -d "${pullflag[@]}" --remove-orphans
 ok "Started."
