@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     )
     url_scheme: str = "https"
     app_hostname: str = ""
-    static_hostname: str = ""
     deploy_domain: str = ""
     github_app_id: str = ""
     github_app_name: str = ""
