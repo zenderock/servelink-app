@@ -45,6 +45,9 @@
           <span class="flex items-center gap-x-2">
             {{ preset.logo | safe }}
             {{ preset.name | safe }}
+            {% if preset.beta %}
+              <span class="badge-outline">Beta</span>
+            {% endif %}
           </span>
         </div>
       {% endfor %}
