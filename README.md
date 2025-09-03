@@ -1,5 +1,3 @@
-> **⚠️ Warning**: THIS IS STILL UNDER DEVELOPMENT. I'm very close to making the first beta release, working mostly on simplifying the deployment process (removing the dependency on Terraform and Ansible) and adding more documentation/tutorials for those who want to self-host. A few things may still change.
-
 # /dev/push
 
 An open-source and self-hostable alternative to Vercel, Render, Netlify and the likes. It allows you to build and deploy any app (Python, Node.js, PHP, ...) with zero-downtime updates, real-time logs, team management, customizable environments and domains, etc.
