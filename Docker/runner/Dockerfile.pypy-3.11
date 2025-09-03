@@ -1,0 +1,28 @@
+FROM pypy:3.11-slim
+
+# Create non-root user
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Set permissions
+RUN chown -R appuser:appgroup /app && \
+    mkdir -p /home/appuser/.local && \
+    chown -R appuser:appgroup /home/appuser
+
+# Switch to non-root user
+USER appuser
+
+# Set pip to install packages in user's home
+ENV PIP_USER=1
+ENV PATH=/home/appuser/.local/bin:$PATH
+ENV HOME=/home/appuser

@@ -176,7 +176,6 @@ async def deploy_start(ctx, deployment_id: str):
                         "HostConfig": {
                             "CpuQuota": cpu_quota,
                             "Memory": memory_mb * 1024 * 1024,
-                            "CapDrop": ["ALL"],
                             "SecurityOpt": ["no-new-privileges:true"],
                             "LogConfig": {
                                 "Type": "loki",

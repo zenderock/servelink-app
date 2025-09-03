@@ -42,9 +42,9 @@ done
 
 # Build runner images
 if ((no_cache==1)); then
-  ./scripts/dev/build-runners.sh
+  ./scripts/dev/build-runners.sh --no-cache
 else
-  ./scripts/dev/build-runners.sh --cache
+  ./scripts/dev/build-runners.sh
 fi
 
 # Optional no-cache build for services

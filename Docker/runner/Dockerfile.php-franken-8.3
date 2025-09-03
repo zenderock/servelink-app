@@ -1,0 +1,58 @@
+FROM dunglas/frankenphp:php8.3-bookworm
+
+# Remove placeholder files
+RUN rm -rf /app/*
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --group appuser
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        ca-certificates \
+        libicu-dev \
+        libzip-dev \
+        libpq-dev \
+        libsqlite3-dev \
+        pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install common PHP extensions
+RUN docker-php-ext-install \
+    intl \
+    zip \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    pdo_sqlite \
+    bcmath \
+    opcache
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Default Caddyfile at conventional path
+RUN mkdir -p /etc/caddy && cat > /etc/caddy/Caddyfile <<'CADDY'
+:8000 {
+  root * public
+  try_files {path} {path}/ /index.php?{query}
+  php_server
+  file_server
+}
+CADDY
+
+WORKDIR /app
+
+# Set permissions
+RUN chown -R appuser:appgroup /app && \
+    mkdir -p /home/appuser/.composer && \
+    chown -R appuser:appgroup /home/appuser
+
+# Switch to non-root user
+USER appuser
+
+# Set Composer to install in user's home
+ENV COMPOSER_HOME=/home/appuser/.composer
+ENV PATH=/home/appuser/.composer/vendor/bin:/usr/local/bin:$PATH
+ENV HOME=/home/appuser

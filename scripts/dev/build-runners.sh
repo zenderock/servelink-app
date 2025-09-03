@@ -3,11 +3,12 @@ set -e
 
 usage(){
   cat <<USG
-Usage: build-runners.sh [--cache] [-h|--help]
+Usage: build-runners.sh [--no-cache] [--image IMAGE] [-h|--help]
 
 Build local runner images from Docker/runner/* Dockerfiles.
 
-  --cache    Use build cache (default: no cache)
+  --no-cache Force rebuild without cache (default: use cache)
+  --image    Build specific image only (e.g., php-franken-8.3)
   -h, --help Show this help
 USG
   exit 0
@@ -16,16 +17,22 @@ USG
 
 echo "Building runner images..."
 
-no_cache=1
+no_cache=0
+target_image=""
 for a in "$@"; do
-  [ "$a" = "--cache" ] && no_cache=0
+  [ "$a" = "--no-cache" ] && no_cache=1
+  [[ "$a" =~ ^--image=(.+)$ ]] && target_image="${BASH_REMATCH[1]}"
 done
 
 found=0
 for dockerfile in Docker/runner/Dockerfile.*; do
   [ -f "$dockerfile" ] || continue
-  found=1
   name=$(basename "$dockerfile" | sed 's/Dockerfile\.//')
+  
+  # Skip if specific image requested and this isn't it
+  [ -n "$target_image" ] && [ "$name" != "$target_image" ] && continue
+  
+  found=1
   echo "Building runner-$name from $dockerfile..."
   if ((no_cache==1)); then
     docker build --no-cache -f "$dockerfile" -t "runner-$name" ./Docker/runner

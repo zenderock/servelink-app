@@ -11,7 +11,6 @@ from models import Deployment
 
 logger = logging.getLogger(__name__)
 
-# Replace both sets with a single dict
 deployment_status = {}  # deployment_id -> {"container": container_obj, "probe_active": bool}
 
 
@@ -39,7 +38,6 @@ async def _check_status(
 
     log_prefix = f"[DeployMonitor:{deployment.id}]"
 
-    # Initialize or get cached container
     if deployment.id not in deployment_status:
         try:
             container = await docker_client.containers.get(deployment.container_id)
@@ -114,7 +112,7 @@ async def monitor():
                     if not schema_ready:
                         schema_ready = await db.run_sync(
                             lambda sync_session: inspect(
-                                sync_session.get_bind()
+                                sync_session.connection()
                             ).has_table("alembic_version")
                         )
                         if not schema_ready:

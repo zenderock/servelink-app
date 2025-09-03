@@ -1,14 +1,24 @@
 {
   "Python": [
     {
-      "slug": "python-3",
-      "name": "Python 3"
+      "slug": "python-3.12",
+      "name": "Python 3.12"
+    },
+    {
+      "slug": "pypy-3.11",
+      "name": "PyPy (Python 3.11)"
     }
   ],
   "JavaScript": [
     {
       "slug": "node-20",
       "name": "Node.js 20"
+    }
+  ],
+  "PHP": [
+    {
+      "slug": "php-franken-8.3",
+      "name": "FrankenPHP (PHP 8.3)"
     }
   ]
 }
