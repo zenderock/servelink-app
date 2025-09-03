@@ -14,11 +14,5 @@
       "slug": "node-20",
       "name": "Node.js 20"
     }
-  ],
-  "PHP": [
-    {
-      "slug": "php-franken-8.3",
-      "name": "FrankenPHP (PHP 8.3)"
-    }
   ]
 }
