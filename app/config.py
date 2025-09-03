@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     resend_api_key: str = ""
     email_logo: str = ""
-    email_sender_name: str = ""
+    email_sender_name: str = "/dev/push"
     email_sender_address: str = ""
     secret_key: str = ""
     encryption_key: str = ""
