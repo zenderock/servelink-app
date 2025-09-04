@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     )
     url_scheme: str = "https"
     app_hostname: str = ""
-    static_hostname: str = ""
     deploy_domain: str = ""
     github_app_id: str = ""
     github_app_name: str = ""
@@ -23,7 +22,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     resend_api_key: str = ""
     email_logo: str = ""
-    email_sender_name: str = ""
+    email_sender_name: str = "/dev/push"
     email_sender_address: str = ""
     secret_key: str = ""
     encryption_key: str = ""

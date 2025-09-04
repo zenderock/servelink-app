@@ -1,5 +1,3 @@
-> **⚠️ Warning**: THIS IS STILL UNDER DEVELOPMENT. I'm very close to making the first beta release, working mostly on simplifying the deployment process (removing the dependency on Terraform and Ansible) and adding more documentation/tutorials for those who want to self-host. A few things may still change.
-
 # /dev/push
 
 An open-source and self-hostable alternative to Vercel, Render, Netlify and the likes. It allows you to build and deploy any app (Python, Node.js, PHP, ...) with zero-downtime updates, real-time logs, team management, customizable environments and domains, etc.
@@ -218,7 +216,6 @@ Variable | Comments | Default
 `URL_SCHEME` | `http` (development) or `https` (production). | `https`
 `LE_EMAIL` | Email used to register the Let's Encrypt (ACME) account in Traefik; receives certificate issuance/renewal/expiry notifications. | `""`
 `APP_HOSTNAME` | Domain for the app (e.g. `app.devpu.sh`). | `""`
-`STATIC_HOSTNAME` | Domain for serving the static assets (e.g. CSS, JS libraries, images). Useful for caching. No trailing slahe | `APP_HOSTNAME`
 `DEPLOY_DOMAIN` | Domain used for deployments (e.g. `devpush.app` if you want your deployments available at `*.devpush.app`). | `APP_HOSTNAME`
 `SERVER_IP` | Public IP of the server | `""`
 `SECRET_KEY` | App secret for sessions/CSRF. Generate: `openssl rand -hex 32` | `""`
