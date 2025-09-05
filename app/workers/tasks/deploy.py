@@ -246,9 +246,25 @@ async def deploy_finalize(ctx, deployment_id: str):
                 )
             ).scalar_one()
 
+            # Update the deployment status
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            deployment.status = "completed"
+            deployment.conclusion = "succeeded"
+            deployment.project.updated_at = now
+            deployment.concluded_at = now
+            await db.commit()
+
+            # Log a success message
+            async with aiodocker.Docker(url=settings.docker_host) as docker_client:
+                container = await docker_client.containers.get(deployment.container_id)
+                await _log_to_container(
+                    container,
+                    f"Success: Deployment is available at {deployment.url}",
+                )
+
             # Setup branch domains
             # (won't prevent collisions, but good enough)
-            sanitized_branch = re.sub(r"[^a-zA-Z0-9-]", "-", deployment.branch)
+            sanitized_branch = re.sub(r"[^a-zA-Z0-9-]", "-", deployment.branch).lower()
             branch_subdomain = f"{deployment.project.slug}-branch-{sanitized_branch}"
 
             try:
@@ -300,9 +316,12 @@ async def deploy_finalize(ctx, deployment_id: str):
             await db.commit()
 
             # Update Traefik dynamic config
-            await DeploymentService().update_traefik_config(
-                deployment.project, db, settings
-            )
+            try:
+                await DeploymentService().update_traefik_config(
+                    deployment.project, db, settings
+                )
+            except Exception as e:
+                logger.error(f"{log_prefix} Failed to update Traefik config: {e}")
 
             # Cleanup inactive deployments
             deployment_queue: ArqRedis = ctx["redis"]
@@ -313,26 +332,7 @@ async def deploy_finalize(ctx, deployment_id: str):
                 f"{log_prefix} Inactive deployments cleanup job queued for project {deployment.project_id}."
             )
 
-        except Exception:
-            logger.error(f"{log_prefix} Error finalizing deployment.", exc_info=True)
-
-        finally:
-            # Conclude deployment
-            deployment.status = "completed"
-            deployment.conclusion = "succeeded"
-            deployment.project.updated_at = datetime.now(timezone.utc).replace(
-                tzinfo=None
-            )
-            deployment.concluded_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            await db.commit()
-
-            async with aiodocker.Docker(url=settings.docker_host) as docker_client:
-                container = await docker_client.containers.get(deployment.container_id)
-                await _log_to_container(
-                    container,
-                    f"Success: Deployment is available at {deployment.url}",
-                )
-
+            # Send messags to Redis streams
             fields = {
                 "event_type": "deployment_status_update",
                 "project_id": deployment.project_id,
@@ -348,6 +348,9 @@ async def deploy_finalize(ctx, deployment_id: str):
             await redis_client.xadd(
                 f"stream:project:{deployment.project_id}:updates", fields
             )
+
+        except Exception:
+            logger.error(f"{log_prefix} Error finalizing deployment.", exc_info=True)
 
 
 async def deploy_fail(ctx, deployment_id: str, reason: str = None):
