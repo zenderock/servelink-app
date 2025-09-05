@@ -54,12 +54,18 @@ scripts/prod/check-env.sh --env-file .env --quiet
 # Resolve latest tag from GitHub
 info "Resolving latest tag..."
 if [[ -z "$ref" ]]; then
+  # Try to refresh local tags cache, but don't fail the update if offline
+  git fetch --tags --quiet origin || true
+
   if ((include_pre==1)); then
-    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
+    # Allow pre-releases: pick the highest version tag available
+    ref="$(git tag -l --sort=version:refname | tail -1 || true)"
   else
-    ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
-    [[ -n "$ref" ]] || ref="$(git ls-remote --tags --refs origin | awk -F/ '{print $3}' | sort -V | tail -1)"
+    # Stable only (no pre-release suffix); fall back to any tag if none
+    ref="$(git tag -l --sort=version:refname '[0-9]*.[0-9]*.[0-9]*' | tail -1 || true)"
+    [[ -n "$ref" ]] || ref="$(git tag -l --sort=version:refname | tail -1 || true)"
   fi
+
   if [[ -z "$ref" ]]; then
     info "No tags found; falling back to 'main'"
     ref="main"
@@ -68,8 +74,8 @@ fi
 
 # Get code from GitHub
 info "Fetching and checking out: $ref"
-# Try branch first, then tag; reset to FETCH_HEAD either way
-git fetch --depth 1 origin "$ref" || git fetch --depth 1 origin "refs/tags/$ref"
+# Prefer tag first, then branch; reset to FETCH_HEAD either way
+git fetch --depth 1 origin "refs/tags/$ref" || git fetch --depth 1 origin "$ref"
 git reset --hard FETCH_HEAD
 
 # Skip work if commit unchanged (use system state file)
