@@ -168,7 +168,7 @@ ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 install -d -m 0755 /var/lib/devpush
 old_id="$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)"
 [[ -n "$old_id" && "$old_id" != "null" ]] || old_id=$(cat /proc/sys/kernel/random/uuid)
-printf '{"install_id":"%s","git_tag":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts" > /var/lib/devpush/version.json
+printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts" > /var/lib/devpush/version.json
 
 ok "Update complete to $ref"
 

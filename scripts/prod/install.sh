@@ -119,7 +119,7 @@ fi
 
 # Add data dirs
 info "Preparing data dirs..."
-install -o "$user" -g "$user" -m 0775 -d /srv/devpush/traefik /srv/devpush/upload
+install -o 1000 -g 1000 -m 0755 -d /srv/devpush/traefik /srv/devpush/upload
 ok "Data dirs ready."
 
 # Resolve app_dir now that user state is known
@@ -216,8 +216,8 @@ if [[ ! -f "/srv/devpush/access.json" ]]; then
 { "emails": [], "domains": [], "globs": [], "regex": [] }
 JSON
   fi
-  chown "$user:$user" /srv/devpush/access.json || true
-  chmod 0664 /srv/devpush/access.json || true
+  chown 1000:1000 /srv/devpush/access.json || true
+  chmod 0644 /srv/devpush/access.json || true
   ok "Seeded /srv/devpush/access.json"
 else
   ok "/srv/devpush/access.json exists; not modified."
@@ -288,4 +288,4 @@ info "Next steps:"
 echo "1. Switch to the app user: ${BLD}sudo -iu ${user}${NC}"
 echo "2. Change dir and edit .env: ${BLD}cd devpush && vi .env${NC}"
 echo "   Set LE_EMAIL, APP_HOSTNAME, DEPLOY_DOMAIN, EMAIL_SENDER_ADDRESS, RESEND_API_KEY, GitHub App settings."
-echo "3. Start the application: ${BLD}scripts/prod/start.sh --migrate${NC}"
+echo "3. Start the application: ${BLD}./scripts/prod/start.sh --migrate${NC}"

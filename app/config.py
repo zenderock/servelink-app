@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     docker_host: str = "tcp://docker-proxy:2375"
     upload_dir: str = "/app/upload"
     traefik_config_dir: str = "/data/traefik"
-    default_cpu_quota: int = 50000
+    default_cpus: float = 0.5
     default_memory_mb: int = 2048
     presets: list[dict] = []
     images: list[dict] = []

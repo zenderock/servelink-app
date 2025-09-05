@@ -229,6 +229,7 @@ async def project_index(
     settings: Settings = Depends(get_settings),
     role: str = Depends(get_role),
 ):
+    print(f"XXXXXXXX {settings.default_memory_mb} XXXX {settings.default_cpus} XXXXXX")
     team, membership = team_and_membership
     fragment = request.query_params.get("fragment")
 

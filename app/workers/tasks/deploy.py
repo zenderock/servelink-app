@@ -148,14 +148,12 @@ async def deploy_start(ctx, deployment_id: str):
 
                 # Get resource limits from config
                 try:
-                    cpu_quota = int(
-                        deployment.config.get("cpu") or settings.default_cpu_quota
-                    )
+                    cpus = float(deployment.config.get("cpus") or settings.default_cpus)
                     memory_mb = int(
                         deployment.config.get("memory") or settings.default_memory_mb
                     )
                 except (ValueError, TypeError):
-                    cpu_quota = settings.default_cpu_quota
+                    cpus = settings.default_cpus
                     memory_mb = settings.default_memory_mb
                     logger.warning(
                         f"{log_prefix} Invalid CPU/memory values in config, using defaults."
@@ -174,8 +172,12 @@ async def deploy_start(ctx, deployment_id: str):
                         "Labels": labels,
                         "NetworkingConfig": {"EndpointsConfig": {"devpush_runner": {}}},
                         "HostConfig": {
-                            "CpuQuota": cpu_quota,
-                            "Memory": memory_mb * 1024 * 1024,
+                            **({"Cpus": cpus} if cpus > 0 else {}),
+                            **(
+                                {"Memory": memory_mb * 1024 * 1024}
+                                if memory_mb > 0
+                                else {}
+                            ),
                             "SecurityOpt": ["no-new-privileges:true"],
                             "LogConfig": {
                                 "Type": "loki",
