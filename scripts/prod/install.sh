@@ -7,10 +7,13 @@ err(){ echo -e "${RED}ERR:${NC} $*" >&2; }
 ok(){ echo -e "${GRN}$*${NC}"; }
 info(){ echo -e "${BLD}$*${NC}"; }
 
+# Capture stderr for error reporting
+exec 2> >(tee /tmp/install_error.log >&2)
+
 LOG=/var/log/devpush-install.log
 mkdir -p "$(dirname "$LOG")" || true
 exec > >(tee -a "$LOG") 2>&1
-trap 's=$?; err "Install failed (exit $s). See $LOG"; exit $s' ERR
+trap 's=$?; err "Install failed (exit $s). See $LOG"; echo -e "${RED}Last command: $BASH_COMMAND${NC}"; echo -e "${RED}Error output:${NC}"; cat /tmp/install_error.log 2>/dev/null || echo "No error details captured"; exit $s' ERR
 
 usage() {
   cat <<USG

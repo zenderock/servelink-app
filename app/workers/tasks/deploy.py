@@ -369,7 +369,10 @@ async def deploy_fail(ctx, deployment_id: str, reason: str = None):
             )
         ).scalar_one()
 
-        if deployment.container_id:
+        if deployment.container_id and deployment.container_status not in (
+            "removed",
+            "stopped",
+        ):
             try:
                 async with aiodocker.Docker(url=settings.docker_host) as docker_client:
                     container = await docker_client.containers.get(

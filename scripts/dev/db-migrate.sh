@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Capture stderr for error reporting
+exec 2> >(tee /tmp/db-migrate_error.log >&2)
+
 usage(){
   cat <<USG
 Usage: db-migrate.sh [-h|--help]
@@ -13,7 +16,7 @@ USG
 }
 [ "$1" = "-h" ] || [ "$1" = "--help" ] && usage
 
-command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
+command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; echo "Error details:"; cat /tmp/db-migrate_error.log 2>/dev/null || echo "No error details captured"; exit 1; }
 args=(-p devpush -f docker-compose.yml -f docker-compose.override.dev.yml)
 
 echo "Running database migrations..."

@@ -2,12 +2,15 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# Capture stderr for error reporting
+exec 2> >(tee /tmp/update_error.log >&2)
+
 RED="$(printf '\033[31m')"; GRN="$(printf '\033[32m')"; YEL="$(printf '\033[33m')"; BLD="$(printf '\033[1m')"; NC="$(printf '\033[0m')"
 err(){ echo -e "${RED}ERR:${NC} $*" >&2; }
 ok(){ echo -e "${GRN}$*${NC}"; }
 info(){ echo -e "${BLD}$*${NC}"; }
 
-trap 's=$?; echo -e "${RED}Update failed (exit $s)${NC}"; exit $s' ERR
+trap 's=$?; echo -e "${RED}Update failed (exit $s)${NC}"; echo -e "${RED}Last command: $BASH_COMMAND${NC}"; echo -e "${RED}Error output:${NC}"; cat /tmp/update_error.log 2>/dev/null || echo "No error details captured"; exit $s' ERR
 
 usage(){
   cat <<USG
@@ -171,10 +174,10 @@ fi
 # Update install metadata (version.json)
 commit=$(git rev-parse --verify HEAD)
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-install -d -m 0755 /var/lib/devpush
+[[ -d /var/lib/devpush ]] || install -d -m 0755 /var/lib/devpush || true
 old_id="$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)"
 [[ -n "$old_id" && "$old_id" != "null" ]] || old_id=$(cat /proc/sys/kernel/random/uuid)
-printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts" > /var/lib/devpush/version.json
+{ printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts"; } > /var/lib/devpush/version.json
 
 ok "Update complete to $ref"
 
