@@ -1189,6 +1189,8 @@ async def project_settings(
         },
     )
 
+    print(build_and_deploy_form.data)
+
     preset_choices = []
     for preset in settings.presets:
         preset_choices.append((preset["slug"], preset["name"]))

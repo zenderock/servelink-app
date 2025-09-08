@@ -4,6 +4,7 @@
   x-data="{
     presets: {{ presets | tojson | replace('"', "'") | safe }},
     images: {{ images | tojson | replace('"', "'") | safe }},
+    selectedImage: '{{ form.image.data or '' }}',
     setPreset(value, onlyImage = false) {
       const preset = this.presets.find(p => p.slug === value);
       if (!preset) {
@@ -12,7 +13,8 @@
       }
       
       const availableImages = this.images[preset.image];
-      if ($refs.imageInput) $refs.imageInput.value = availableImages[0].slug;
+      
+      if ($refs.imageInput && !this.selectedImage) $refs.imageInput.value = availableImages[0].slug;
       $refs.imageInput.querySelectorAll('option').forEach(option => {
           if (option.value && !availableImages.find(i => i.slug === option.value)) {
               option.disabled = true;
