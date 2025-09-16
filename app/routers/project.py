@@ -50,6 +50,7 @@ from forms.project import (
     ProjectDomainForm,
     ProjectRemoveDomainForm,
     ProjectVerifyDomainForm,
+    ProjectResourcesForm,
 )
 from config import get_settings, Settings
 from db import get_db
@@ -229,7 +230,6 @@ async def project_index(
     settings: Settings = Depends(get_settings),
     role: str = Depends(get_role),
 ):
-    print(f"XXXXXXXX {settings.default_memory_mb} XXXX {settings.default_cpus} XXXXXX")
     team, membership = team_and_membership
     fragment = request.query_params.get("fragment")
 
@@ -1189,8 +1189,6 @@ async def project_settings(
         },
     )
 
-    print(build_and_deploy_form.data)
-
     preset_choices = []
     for preset in settings.presets:
         preset_choices.append((preset["slug"], preset["name"]))
@@ -1200,6 +1198,7 @@ async def project_settings(
     if fragment == "build_and_deploy":
         if await build_and_deploy_form.validate_on_submit():
             project.config = {
+                **project.config,
                 "preset": build_and_deploy_form.preset.data,
                 "image": build_and_deploy_form.image.data,
                 "root_directory": build_and_deploy_form.root_directory.data,
@@ -1221,6 +1220,42 @@ async def project_settings(
                     "build_and_deploy_form": build_and_deploy_form,
                     "presets": settings.presets,
                     "images": settings.images,
+                },
+            )
+
+    # Resources
+    resources_form: Any = await ProjectResourcesForm.from_formdata(
+        request=request,
+        project=project,
+        data={
+            "cpus": project.config.get("cpus") or None,
+            "memory": project.config.get("memory") or None,
+        },
+    )
+
+    if fragment == "resources":
+        if await resources_form.validate_on_submit():
+            project.config = {
+                **project.config,
+                "cpus": float(resources_form.cpus.data)
+                if resources_form.cpus.data is not None
+                else None,
+                "memory": resources_form.memory.data,
+            }
+            await db.commit()
+            flash(request, _("Resources updated."), "success")
+
+        if request.headers.get("HX-Request"):
+            return TemplateResponse(
+                request=request,
+                name="project/partials/_settings-resources.html",
+                context={
+                    "current_user": current_user,
+                    "team": team,
+                    "project": project,
+                    "resources_form": resources_form,
+                    "default_cpus": settings.default_cpus,
+                    "default_memory": settings.default_memory_mb,
                 },
             )
 
@@ -1415,6 +1450,9 @@ async def project_settings(
             "environment_form": environment_form,
             "delete_environment_form": delete_environment_form,
             "build_and_deploy_form": build_and_deploy_form,
+            "resources_form": resources_form,
+            "default_cpus": settings.default_cpus,
+            "default_memory": settings.default_memory_mb,
             "env_vars_form": env_vars_form,
             "delete_project_form": delete_project_form,
             "domain_form": domain_form,

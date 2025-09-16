@@ -14,5 +14,11 @@
       "slug": "node-20",
       "name": "Node.js 20"
     }
+  ],
+  "Go": [
+    {
+      "slug": "go-1.25",
+      "name": "Go 1.25"
+    }
   ]
 }

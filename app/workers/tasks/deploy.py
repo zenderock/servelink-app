@@ -6,6 +6,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from typing import Any
+import shlex
 
 from models import Deployment, Alias
 from db import AsyncSessionLocal
@@ -84,7 +85,6 @@ async def deploy_start(ctx, deployment_id: str):
                 env_vars_dict = {
                     var["key"]: var["value"] for var in (deployment.env_vars or [])
                 }
-                # env_vars_dict["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
 
                 # Prepare commands
                 commands = []
@@ -104,21 +104,38 @@ async def deploy_start(ctx, deployment_id: str):
                     f"git checkout -q FETCH_HEAD"
                 )
 
-                # Step 2: Install dependencies
+                # Step 2: Change root directory
+                normalized_root_directory = (
+                    deployment.config.get("root_directory", "")
+                    .strip()
+                    .lstrip("./")
+                    .strip("/")
+                )
+                if normalized_root_directory not in ("", ".", "./"):
+                    quoted_root_directory = shlex.quote(normalized_root_directory)
+                    commands.append(
+                        f"echo 'Changing root directory to {normalized_root_directory}'"
+                    )
+                    commands.append(
+                        f"test -d {quoted_root_directory} || {{ printf '\\033[31mError: root directory %s not found\\033[0m\\n' {quoted_root_directory} 1>&2; exit 1; }}"
+                    )
+                    commands.append(f"cd {quoted_root_directory}")
+
+                # Step 3: Install dependencies
                 if deployment.config.get("build_command"):
                     commands.append("echo 'Installing dependencies...'")
                     commands.append(deployment.config.get("build_command"))
 
-                # Step 3: Run pre-deploy command
+                # Step 4: Run pre-deploy command
                 if deployment.config.get("pre_deploy_command"):
                     commands.append("echo 'Running pre-deploy command...'")
                     commands.append(deployment.config.get("pre_deploy_command"))
 
-                # Step 4: Start the application
+                # Step 5: Start the application
                 commands.append("echo 'Starting application...'")
                 commands.append(deployment.config.get("start_command"))
 
-                # Setup container configuration
+                # Step 6: Setup container configuration
                 container_name = f"runner-{deployment.id[:7]}"
                 router = f"deployment-{deployment.id}"
 
@@ -146,7 +163,6 @@ async def deploy_start(ctx, deployment_id: str):
                 else:
                     labels[f"traefik.http.routers.{router}.entrypoints"] = "web"
 
-                # Get resource limits from config
                 try:
                     cpus = float(deployment.config.get("cpus") or settings.default_cpus)
                     memory_mb = int(
@@ -161,7 +177,7 @@ async def deploy_start(ctx, deployment_id: str):
 
                 image = deployment.config.get("image")
 
-                # Create and start container
+                # Step 7: Create and start container
                 container = await docker_client.containers.create_or_replace(
                     name=container_name,
                     config={
@@ -172,7 +188,11 @@ async def deploy_start(ctx, deployment_id: str):
                         "Labels": labels,
                         "NetworkingConfig": {"EndpointsConfig": {"devpush_runner": {}}},
                         "HostConfig": {
-                            **({"Cpus": cpus} if cpus > 0 else {}),
+                            **(
+                                {"CpuQuota": int(cpus * 100000), "CpuPeriod": 100000}
+                                if cpus > 0
+                                else {}
+                            ),
                             **(
                                 {"Memory": memory_mb * 1024 * 1024}
                                 if memory_mb > 0

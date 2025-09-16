@@ -398,6 +398,7 @@ templates.env.globals["_"] = get_translation
 templates.env.globals["app_name"] = settings.app_name
 templates.env.globals["app_description"] = settings.app_description
 templates.env.globals["get_flashed_messages"] = get_flashed_messages
+templates.env.globals["toaster_header"] = settings.toaster_header
 templates.env.filters["time_ago"] = time_ago_filter
 templates.env.globals["get_access"] = get_access
 

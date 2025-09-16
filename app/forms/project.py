@@ -2,6 +2,7 @@ from starlette_wtf import StarletteForm
 from wtforms import (
     StringField,
     IntegerField,
+    DecimalField,
     SelectField,
     SubmitField,
     FieldList,
@@ -12,7 +13,14 @@ from wtforms import (
     HiddenField,
     TextAreaField,
 )
-from wtforms.validators import ValidationError, DataRequired, Length, Regexp, Optional
+from wtforms.validators import (
+    ValidationError,
+    DataRequired,
+    Length,
+    Regexp,
+    Optional,
+    NumberRange,
+)
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import re
@@ -234,6 +242,25 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
             raise ValidationError(
                 _("Environment identifier confirmation did not match.")
             )
+
+
+class ProjectResourcesForm(StarletteForm):
+    cpus = DecimalField(
+        _l("CPUs"),
+        validators=[
+            Optional(),
+            NumberRange(min=0, max=64, message=_l("CPUs must be between 0 and 64.")),
+        ],
+    )
+    memory = IntegerField(
+        _l("Memory (MB)"),
+        validators=[
+            Optional(),
+            NumberRange(
+                min=0, max=262144, message=_l("Memory must be between 0 and 262144 MB.")
+            ),
+        ],
+    )
 
 
 class ProjectDomainForm(StarletteForm):

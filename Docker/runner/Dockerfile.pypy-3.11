@@ -7,6 +7,7 @@ RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
+        build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
@@ -24,5 +25,6 @@ USER appuser
 
 # Set pip to install packages in user's home
 ENV PIP_USER=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV HOME=/home/appuser

@@ -4,6 +4,7 @@ import aiodocker
 from sqlalchemy import select, exc, inspect
 from arq.connections import ArqRedis, RedisSettings, create_pool
 import httpx
+from datetime import datetime, timezone
 from config import get_settings
 
 from db import AsyncSessionLocal
@@ -11,7 +12,7 @@ from models import Deployment
 
 logger = logging.getLogger(__name__)
 
-deployment_status = {}  # deployment_id -> {"container": container_obj, "probe_active": bool}
+deployment_probe_state = {}  # deployment_id -> {"container": container_obj, "probe_active": bool}
 
 
 async def _http_probe(ip: str, port: int, timeout: float = 5) -> bool:
@@ -31,17 +32,36 @@ async def _check_status(
 ):
     """Checks the status of a single deployment's container."""
     if (
-        deployment.id in deployment_status
-        and deployment_status[deployment.id]["probe_active"]
+        deployment.id in deployment_probe_state
+        and deployment_probe_state[deployment.id]["probe_active"]
     ):
         return
 
     log_prefix = f"[DeployMonitor:{deployment.id}]"
 
-    if deployment.id not in deployment_status:
+    # Timeout check
+    try:
+        settings = get_settings()
+        now_utc = datetime.now(timezone.utc)
+        created_at = (
+            deployment.created_at.replace(tzinfo=timezone.utc)
+            if deployment.created_at.tzinfo is None
+            else deployment.created_at
+        )
+        if (now_utc - created_at).total_seconds() > settings.deployment_timeout:
+            await redis_pool.enqueue_job(
+                "deploy_fail", deployment.id, "Deployment timeout"
+            )
+            logger.warning(f"{log_prefix} Deployment timed out; failure job enqueued.")
+            await _cleanup_deployment(deployment.id)
+            return
+    except Exception:
+        logger.error(f"{log_prefix} Error while evaluating timeout.", exc_info=True)
+
+    if deployment.id not in deployment_probe_state:
         try:
             container = await docker_client.containers.get(deployment.container_id)
-            deployment_status[deployment.id] = {
+            deployment_probe_state[deployment.id] = {
                 "container": container,
                 "probe_active": True,
             }
@@ -51,9 +71,10 @@ async def _check_status(
             )
             return
     else:
-        deployment_status[deployment.id]["probe_active"] = True
-        container = deployment_status[deployment.id]["container"]
+        deployment_probe_state[deployment.id]["probe_active"] = True
+        container = deployment_probe_state[deployment.id]["container"]
 
+    # Probe check
     try:
         logger.info(f"{log_prefix} Probing container {deployment.container_id}")
         container_info = await container.show()
@@ -85,15 +106,15 @@ async def _check_status(
         await redis_pool.enqueue_job("deploy_fail", deployment.id, str(e))
         await _cleanup_deployment(deployment.id)
     finally:
-        if deployment.id in deployment_status:
-            deployment_status[deployment.id]["probe_active"] = False
+        if deployment.id in deployment_probe_state:
+            deployment_probe_state[deployment.id]["probe_active"] = False
 
 
 # Cleanup function
 async def _cleanup_deployment(deployment_id: str):
     """Cleans up a deployment from the status dictionary."""
-    if deployment_id in deployment_status:
-        del deployment_status[deployment_id]
+    if deployment_id in deployment_probe_state:
+        del deployment_probe_state[deployment_id]
 
 
 async def monitor():

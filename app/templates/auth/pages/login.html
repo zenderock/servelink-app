@@ -6,17 +6,7 @@
 <div class="flex flex-col items-center justify-center h-[calc(100vh-65px)]">
   <div class="w-full max-w-xs space-y-6">
     <h2 class="h2 text-center">Sign in to {{ app_name }}</h2>
-    {% if alert_title or alert_description %}
-      <div class="alert">
-        {% include "icons/info.svg" %}
-        {% if alert_title %}
-          <h2>{{ alert_title }}</h2>
-        {% endif %}
-        {% if alert_description %}
-          <section>{{ alert_description }}</section>
-        {% endif %}
-      </div>
-    {% endif %}
+    {{ login_header | safe }}
     <section
       class="grid gap-4"
       x-data="{

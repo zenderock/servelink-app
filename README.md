@@ -28,35 +28,8 @@ An open-source and self-hostable alternative to Vercel, Render, Netlify and the 
 
 ## Documentation
 
-Read the documentation online: [devpu.sh/docs](https://devpu.sh/docs)
-
-## Stack
-
-- Docker & [Docker Compose](https://github.com/docker/compose)
-- [Traefik](https://github.com/traefik/traefik)
-- [Loki](https://github.com/grafana/loki)
-- [PostgreSQL](https://www.postgresql.org/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [arq](https://arq-docs.helpmanual.io/)
-- [HTMX](https://htmx.org)
-- [Alpine.js](https://alpinejs.dev/)
-- [Basecoat](https://basecoatui.com)
-
-## Overview
-
-- **App**: The app handles all of the user-facing logic (managing teams/projects, authenticating, searching logs...). It communicates with the workers via Redis/
-- **Workers**: When we create a new deployment, we queue a deploy job using arq. It will start a container, then delegate monitoring to a separate backrgound worker (`app/workers/arq.py`), before wrapping things back with yet another job. These workers are also used to run certain batch jobs (e.g. deleting a team, cleaning up inactive deployments and their containers).
-- **Logs**: build and runtime logs are streamed from Loki and served to the user via an SSE endpoint in the app.
-- **Runners**: User apps are deployed on one of the runner containers (e.g. `Docker/runner/Dockerfile.python-3`). They are created in the deploy job (`app/tasks/deploy.py`) and then run a series of commands based on the user configuration.
-- **Reverse proxy**: We have Traefik sitting in front of both app and the deployed runner containers. All routing is done using Traefik labels, but we also maintain environment and branch aliases (e.g. `my-project-env-staging.devpush.app`) maintaining Traefik config files.
-
-## File structure
-
-- `app/`: The main FastAPI application (see Readme file).
-- `app/workers`: The workers (`arq` and `monitor`)
-- `Docker/`: Container definitions and entrypoint scripts. Includes local development specific files (e.g. `Dockerfile.app.dev`, `entrypoint.worker-arq.dev.sh`).
-- `scripts/`: Helper scripts for local (macOS) and production environments
-- `docker-compose.yml`: Container orchestration with [Docker Compose](https://docs.docker.com/compose/) with overrides for local development (`docker-compose.override.dev.yml`).
+- User documentation: [devpu.sh/docs](https://devpu.sh/docs)
+- Technical documentation: [ARCHITECTURE](ARCHITECTURE.md)
 
 ## Quickstart
 
@@ -249,8 +222,8 @@ Variable | Comments | Default
 `ENV` | Environment (development/production). | `development`
 `ACCESS_DENIED_MESSAGE` | Message shown to users who are denied access based on  [sign-in access control](#sign-in-access-control). | `Sign-in not allowed for this email.`
 `ACCESS_DENIED_WEBHOOK` | Optional webhook to receive denied events (read more about [Sign-in access control](#sign-in-access-control)). | `""`
-`LOGIN_ALERT_TITLE` | Title for a callout banner displayed on the login screen. Will be displayed only if either `LOGIN_ALERT_TITLE` or `LOGIN_ALERT_DESCRIPTION` is not empty. | `""`
-`LOGIN_ALERT_DESCRIPTION` | Description for a callout banner displayed on the login screen. Will be displayed only if either `LOGIN_ALERT_TITLE` or `LOGIN_ALERT_DESCRIPTION` is not empty. | `""`
+`LOGIN_HEADER` | HTML snippet displayed above the login form. | `""`
+`TOASTER_HEADER` | HTML snippet displayed at the top of the toaster (useful to display a permanent toast on all pages). | `""`
 
 ## GitHub App
 
@@ -305,7 +278,7 @@ Rules format (any/all may be used):
 
 Globs use shell-style wildcards; regex are Python patterns. If the file is missing or empty, all valid emails are allowed.
 
-Additionally, if you set the `ACCESS_EMAIL_DENIED_WEBHOOK_URL` [environment variable](#environment-variables), denied sign-in attempts will be posted to the provided URL with the following payload:
+Additionally, if you set the `ACCESS_DENIED_WEBHOOK` [environment variable](#environment-variables), denied sign-in attempts will be posted to the provided URL with the following payload:
 
 ```json
 {

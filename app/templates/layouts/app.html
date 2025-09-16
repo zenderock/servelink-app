@@ -6,5 +6,8 @@
 {% block app_content %}{% endblock %}
 
 {% from "macros/toast.html" import toaster %}
-{{ toaster(toasts=get_flashed_messages()) }}
+{% call toaster(toasts=get_flashed_messages()) %}
+{{ toaster_header | safe }}
+{% endcall %}
+
 {% endblock %}
