@@ -330,7 +330,7 @@ async def team_settings(
             )
             db.add(invite)
             await db.commit()
-            _send_member_invite(request, invite, team, current_user, settings)
+            await _send_member_invite(request, invite, team, current_user, settings)
 
     delete_member_form: Any = await TeamDeleteMemberForm.from_formdata(request)
 
@@ -396,7 +396,7 @@ async def team_settings(
             flash(request, _("Invite not found."), "error")
             return Response(status_code=400, content="Invite not found.")
 
-        _send_member_invite(request, invite, team, current_user, settings)
+        await _send_member_invite(request, invite, team, current_user, settings)
         return templates.TemplateResponse(
             request=request,
             name="layouts/fragment.html",
@@ -487,7 +487,7 @@ async def team_settings(
     )
 
 
-def _send_member_invite(
+async def _send_member_invite(
     request: Request,
     invite: TeamInvite,
     team: Team,
