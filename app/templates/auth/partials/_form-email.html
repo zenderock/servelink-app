@@ -1,6 +1,6 @@
 <form method="post" action="{{ url_for('auth_login') }}" class="form grid gap-4" hx-post="{{ url_for('auth_login') }}"
-  hx-swap="outerHTML" hx-indicator="find .htmx-indicator" hx-swap="outerHTML" x-init="loading = null"
-  @htmx:before-send="loading = 'email'" @htmx:after-request="loading = null">
+  hx-swap="outerHTML" hx-indicator="find .htmx-indicator" hx-swap="outerHTML" @htmx:before-send="loading = 'email'"
+  @htmx:after-request="loading = null">
   {{ form.csrf_token }}
   <div class="grid gap-2">
     {{ form.email.label(class="sr-only") }}

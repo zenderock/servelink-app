@@ -1,5 +1,10 @@
 /* Servelink Theme - Flat Design with Black Palette */
 
+/* Apply Roboto font globally */
+* {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 :root {
     /* Servelink Color Palette - Light Theme */
     --servelink-black: #000000;
