@@ -88,7 +88,7 @@
         item._x_currentIfEl && item._x_currentIfEl.remove()
       })
     })
-    {# Loading bar fro hx - boost links # }
+    {# Loading bar for hx - boost links #}
     document.addEventListener('DOMContentLoaded', () => {
       document.body.addEventListener('htmx:beforeRequest', (event) => {
         if (event.detail.boosted === true) {
