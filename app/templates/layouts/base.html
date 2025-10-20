@@ -79,7 +79,6 @@
     document.addEventListener('htmx:historyRestore', () => {
       if (window.basecoat) window.basecoat.initAll();
     });
-    {# Fix for backward / forward browser navigation with HTMX + Alpine.js # }
     document.addEventListener('htmx:beforeHistorySave', (evt) => {
       document.querySelectorAll('[x-for]').forEach((item) => {
         item._x_lookup && Object.values(item._x_lookup).forEach((el) => el.remove())
@@ -88,7 +87,6 @@
         item._x_currentIfEl && item._x_currentIfEl.remove()
       })
     })
-    {# Loading bar for hx - boost links #}
     document.addEventListener('DOMContentLoaded', () => {
       document.body.addEventListener('htmx:beforeRequest', (event) => {
         if (event.detail.boosted === true) {
