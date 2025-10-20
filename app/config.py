@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     resend_api_key: str = ""
+    onesignal_app_id: str = ""
+    onesignal_api_key: str = ""
     email_logo: str = ""
     email_sender_name: str = "Servelink"
     email_sender_address: str = ""

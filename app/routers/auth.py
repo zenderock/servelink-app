@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 import resend
+from services.onesignal import OneSignalService
 from datetime import timedelta
 from typing import Any
 import secrets
@@ -150,50 +151,52 @@ async def auth_login(
             )
         )
 
-        resend.api_key = settings.resend_api_key
-
-        try:
-            resend.Emails.send(
-                {
-                    "from": f"{settings.email_sender_name} <{settings.email_sender_address}>",
-                    "to": [email],
-                    "subject": _("Sign in to %(app_name)s", app_name=settings.app_name),
-                    "html": templates.get_template("email/login.html").render(
-                        {
-                            "request": request,
-                            "email": email,
-                            "verify_link": verify_link,
-                            "email_logo": settings.email_logo
-                            or request.url_for("assets", path="logo-email.png"),
-                            "app_name": settings.app_name,
-                            "app_description": settings.app_description,
-                            "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
-                        }
+        # Send email via OneSignal
+        async with OneSignalService(settings) as onesignal:
+            try:
+                html_content = templates.get_template("email/login.html").render(
+                    {
+                        "request": request,
+                        "email": email,
+                        "verify_link": verify_link,
+                        "email_logo": settings.email_logo
+                        or request.url_for("assets", path="logo-email.png"),
+                        "app_name": settings.app_name,
+                        "app_description": settings.app_description,
+                        "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
+                    }
+                )
+                
+                await onesignal.send_email(
+                    to_email=email,
+                    subject=_("Sign in to %(app_name)s", app_name=settings.app_name),
+                    html_content=html_content,
+                    from_name=settings.email_sender_name,
+                    from_address=settings.email_sender_address
+                )
+                
+                flash(
+                    request,
+                    _(
+                        "We just sent a login link to %(email)s, please check your inbox.",
+                        email=email,
                     ),
-                }
-            )
-            flash(
-                request,
-                _(
-                    "We just sent a login link to %(email)s, please check your inbox.",
-                    email=email,
-                ),
-                "success",
-            )
-            return RedirectResponseX(
-                request.url_for("auth_login"), status_code=303, request=request
-            )
+                    "success",
+                )
+                return RedirectResponseX(
+                    request.url_for("auth_login"), status_code=303, request=request
+                )
 
-        except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
-            flash(
-                request,
-                _(
-                    "Uh oh, something went wrong. We couldn't send a login link to %(email)s. Please try again.",
-                    email=email,
-                ),
-                "error",
-            )
+            except Exception as e:
+                logger.error(f"Failed to send email: {str(e)}")
+                flash(
+                    request,
+                    _(
+                        "Uh oh, something went wrong. We couldn't send a login link to %(email)s. Please try again.",
+                        email=email,
+                    ),
+                    "error",
+                )
 
     return TemplateResponse(
         request=request,
