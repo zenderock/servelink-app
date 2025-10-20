@@ -9,4 +9,5 @@
 @source inline("bg-muted");
 
 @import "basecoat-css";
+@import "./servelink-theme.css";
 @import "./custom.css"

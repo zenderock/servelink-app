@@ -1,0 +1,210 @@
+/* Servelink Theme - Flat Design with Black Palette */
+
+:root {
+    /* Servelink Color Palette - Light Theme */
+    --servelink-black: #000000;
+    --servelink-gray-900: #1a1a1a;
+    --servelink-gray-800: #2a2a2a;
+    --servelink-gray-700: #3a3a3a;
+    --servelink-gray-600: #4a4a4a;
+    --servelink-gray-500: #6a6a6a;
+    --servelink-gray-400: #8a8a8a;
+    --servelink-gray-300: #aaaaaa;
+    --servelink-gray-200: #cccccc;
+    --servelink-gray-100: #e5e5e5;
+    --servelink-white: #ffffff;
+
+    /* Override Basecoat Variables for Flat Design */
+    --radius: 0px;
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+
+    /* Basecoat Theme Overrides - Light */
+    --background: var(--servelink-white);
+    --foreground: var(--servelink-black);
+    --card: var(--servelink-white);
+    --card-foreground: var(--servelink-black);
+    --popover: var(--servelink-white);
+    --popover-foreground: var(--servelink-black);
+    --primary: var(--servelink-black);
+    --primary-foreground: var(--servelink-white);
+    --secondary: var(--servelink-gray-100);
+    --secondary-foreground: var(--servelink-black);
+    --muted: var(--servelink-gray-100);
+    --muted-foreground: var(--servelink-gray-500);
+    --accent: var(--servelink-gray-200);
+    --accent-foreground: var(--servelink-black);
+    --destructive: #dc2626;
+    --destructive-foreground: var(--servelink-white);
+    --border: var(--servelink-gray-200);
+    --input: var(--servelink-white);
+    --ring: var(--servelink-black);
+    --sidebar: var(--servelink-white);
+    --sidebar-foreground: var(--servelink-black);
+    --sidebar-accent: var(--servelink-gray-100);
+    --sidebar-accent-foreground: var(--servelink-black);
+    --sidebar-border: var(--servelink-gray-200);
+    --sidebar-ring: var(--servelink-black);
+}
+
+.dark {
+    /* Servelink Color Palette - Dark Theme */
+    --servelink-black: #000000;
+    --servelink-gray-900: #0a0a0a;
+    --servelink-gray-800: #1a1a1a;
+    --servelink-gray-700: #2a2a2a;
+    --servelink-gray-600: #3a3a3a;
+    --servelink-gray-500: #5a5a5a;
+    --servelink-gray-400: #7a7a7a;
+    --servelink-gray-300: #9a9a9a;
+    --servelink-gray-200: #bababa;
+    --servelink-gray-100: #dadada;
+    --servelink-white: #ffffff;
+
+    /* Basecoat Theme Overrides - Dark */
+    --background: var(--servelink-gray-900);
+    --foreground: var(--servelink-white);
+    --card: var(--servelink-gray-800);
+    --card-foreground: var(--servelink-white);
+    --popover: var(--servelink-gray-800);
+    --popover-foreground: var(--servelink-white);
+    --primary: var(--servelink-white);
+    --primary-foreground: var(--servelink-black);
+    --secondary: var(--servelink-gray-700);
+    --secondary-foreground: var(--servelink-white);
+    --muted: var(--servelink-gray-700);
+    --muted-foreground: var(--servelink-gray-300);
+    --accent: var(--servelink-gray-600);
+    --accent-foreground: var(--servelink-white);
+    --destructive: #ef4444;
+    --destructive-foreground: var(--servelink-white);
+    --border: var(--servelink-gray-600);
+    --input: var(--servelink-gray-800);
+    --ring: var(--servelink-white);
+    --sidebar: var(--servelink-gray-800);
+    --sidebar-foreground: var(--servelink-white);
+    --sidebar-accent: var(--servelink-gray-700);
+    --sidebar-accent-foreground: var(--servelink-white);
+    --sidebar-border: var(--servelink-gray-600);
+    --sidebar-ring: var(--servelink-white);
+}
+
+/* Remove shadows globally for flat design */
+* {
+    box-shadow: none !important;
+}
+
+/* Override specific shadow classes */
+.shadow,
+.shadow-sm,
+.shadow-md,
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl {
+    box-shadow: none !important;
+}
+
+/* Flat design for cards */
+.card {
+    border: 1px solid var(--border);
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* Flat design for buttons */
+.btn,
+.btn-sm,
+.btn-lg {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid transparent;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: none;
+    box-shadow: none !important;
+}
+
+.btn-outline {
+    border: 1px solid var(--border);
+    background: transparent;
+}
+
+.btn-outline:hover {
+    background: var(--muted);
+    border-color: var(--foreground);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.btn-ghost:hover {
+    background: var(--muted);
+}
+
+/* Flat design for inputs */
+.input {
+    border-radius: 0 !important;
+    border: 1px solid var(--border);
+    box-shadow: none !important;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: none !important;
+}
+
+/* Flat design for badges */
+.badge,
+.badge-outline {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.badge-outline {
+    border: 1px solid var(--border);
+    background: transparent;
+}
+
+/* Flat design for dropdowns and popovers */
+.dropdown-menu,
+.popover {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border);
+}
+
+/* Flat design for modals and dialogs */
+.dialog,
+.modal {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Flat design for tabs */
+.tabs {
+    border-radius: 0 !important;
+}
+
+.tab {
+    border-radius: 0 !important;
+}
+
+/* Flat design for progress bars */
+.progress {
+    border-radius: 0 !important;
+}
+
+/* Flat design for toasts */
+.toast {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border);
+}

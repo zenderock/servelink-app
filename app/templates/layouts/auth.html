@@ -1,0 +1,33 @@
+{% extends "layouts/base.html" %}
+
+{% block base_content %}
+<div class="min-h-screen bg-background flex flex-col">
+    <!-- Simple header with just logo -->
+    <header class="border-b bg-background">
+        <div class="container mx-auto px-8 py-4">
+            <a href="/" class="flex items-center gap-3" aria-label="{{ app_name }}">
+                <img src="{{ url_for('assets', path='/logo.svg') }}" alt="{{ app_name }}" class="w-8 h-8" />
+                <span class="text-xl font-semibold">{{ app_name }}</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="flex-1 flex items-center justify-center">
+        {% block auth_content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t bg-background py-6">
+        <div class="container mx-auto px-8 text-center text-muted-foreground text-sm">
+            <p>&copy; 2025 {{ app_name }}. Deploy your applications with zero-downtime updates.</p>
+        </div>
+    </footer>
+</div>
+
+{% from "macros/toast.html" import toaster %}
+{% call toaster(toasts=get_flashed_messages()) %}
+{{ toaster_header | safe }}
+{% endcall %}
+
+{% endblock %}
