@@ -10,6 +10,7 @@ from typing import Any
 from authlib.jose import jwt
 from datetime import timedelta
 import resend
+from services.onesignal import OneSignalService
 
 from models import Project, Deployment, User, Team, TeamMember, utc_now, TeamInvite
 from dependencies import (
@@ -329,7 +330,7 @@ async def team_settings(
             )
             db.add(invite)
             await db.commit()
-            _send_member_invite(request, invite, team, current_user, settings)
+            await _send_member_invite(request, invite, team, current_user, settings)
 
     delete_member_form: Any = await TeamDeleteMemberForm.from_formdata(request)
 
@@ -395,7 +396,7 @@ async def team_settings(
             flash(request, _("Invite not found."), "error")
             return Response(status_code=400, content="Invite not found.")
 
-        _send_member_invite(request, invite, team, current_user, settings)
+        await _send_member_invite(request, invite, team, current_user, settings)
         return templates.TemplateResponse(
             request=request,
             name="layouts/fragment.html",
@@ -486,7 +487,7 @@ async def team_settings(
     )
 
 
-def _send_member_invite(
+async def _send_member_invite(
     request: Request,
     invite: TeamInvite,
     team: Team,
@@ -513,50 +514,52 @@ def _send_member_invite(
         )
     )
 
-    resend.api_key = settings.resend_api_key
-
-    try:
-        resend.Emails.send(
-            {
-                "from": f"{settings.email_sender_name} <{settings.email_sender_address}>",
-                "to": [invite.email],
-                "subject": _(
+    # Send email via OneSignal
+    async with OneSignalService(settings) as onesignal:
+        try:
+            html_content = templates.get_template("email/team-invite.html").render(
+                {
+                    "request": request,
+                    "email": invite.email,
+                    "invite_link": invite_link,
+                    "inviter_name": current_user.name,
+                    "team_name": team.name,
+                    "email_logo": settings.email_logo
+                    or request.url_for("assets", path="logo-email.png"),
+                    "app_name": settings.app_name,
+                    "app_description": settings.app_description,
+                    "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
+                }
+            )
+            
+            await onesignal.send_email(
+                to_email=invite.email,
+                subject=_(
                     'You have been invited to join the "%(team_name)s" team',
                     team_name=team.name,
                 ),
-                "html": templates.get_template("email/team-invite.html").render(
-                    {
-                        "request": request,
-                        "email": invite.email,
-                        "invite_link": invite_link,
-                        "inviter_name": current_user.name,
-                        "team_name": team.name,
-                        "email_logo": settings.email_logo
-                        or request.url_for("assets", path="logo-email.png"),
-                        "app_name": settings.app_name,
-                        "app_description": settings.app_description,
-                        "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
-                    }
+                html_content=html_content,
+                from_name=settings.email_sender_name,
+                from_address=settings.email_sender_address
+            )
+            
+            flash(
+                request,
+                _(
+                    'Email invitation to join the "%(team_name)s" team sent to %(email)s.',
+                    team_name=team.name,
+                    email=invite.email,
                 ),
-            }
-        )
-        flash(
-            request,
-            _(
-                'Email invitation to join the "%(team_name)s" team sent to %(email)s.',
-                team_name=team.name,
-                email=invite.email,
-            ),
-            "success",
-        )
+                "success",
+            )
 
-    except Exception as e:
-        logger.error(f"Failed to send email: {str(e)}")
-        flash(
-            request,
-            _(
-                "Uh oh, something went wrong. We couldn't send an email invitation to %(email)s. Please try again.",
-                email=invite.email,
-            ),
-            "error",
-        )
+        except Exception as e:
+            logger.error(f"Failed to send email: {str(e)}")
+            flash(
+                request,
+                _(
+                    "Uh oh, something went wrong. We couldn't send an email invitation to %(email)s. Please try again.",
+                    email=invite.email,
+                ),
+                "error",
+            )

@@ -5,9 +5,9 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
-    app_name: str = "/dev/push"
+    app_name: str = "Servelink"
     app_description: str = (
-        "An open-source platform to build and deploy any app from GitHub."
+        "Deploy your applications with zero-downtime updates and real-time monitoring."
     )
     url_scheme: str = "https"
     app_hostname: str = ""
@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     resend_api_key: str = ""
+    onesignal_app_id: str = ""
+    onesignal_api_key: str = ""
     email_logo: str = ""
-    email_sender_name: str = "/dev/push"
+    email_sender_name: str = "Servelink"
     email_sender_address: str = ""
     secret_key: str = ""
     encryption_key: str = ""

@@ -1,3 +1,6 @@
+/* Servelink Custom Components - Flat Design */
+
+/* Enhanced HTMX indicators with flat design */
 .htmx-indicator {
   transition-behavior: allow-discrete;
   @apply invisible opacity-0 transition-all;
@@ -12,6 +15,7 @@
   @apply visible opacity-100;
 }
 
+/* Flat progress bar animation */
 @keyframes progress-bar {
   0% {
     width: 0%
@@ -38,16 +42,20 @@
   }
 }
 
+/* Flat loading bar */
 body:after {
-  @apply content-[''] fixed top-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-500 z-[999] opacity-0 w-0 transition-[opacity,width] pointer-events-none;
+  @apply content-[''] fixed top-0 left-0 h-0.5 bg-black dark:bg-white z-[999] opacity-0 w-0 transition-all pointer-events-none;
 }
+
 body.loading:after {
   @apply opacity-100 animate-[progress-bar_4s_linear_forwards];
 }
+
 body:not(.loading):after {
-  @apply w-full opacity-0 transition-[width,opacity] duration-300 ease-in-out;
+  @apply w-full opacity-0 transition-all duration-300 ease-in-out;
 }
 
+/* Flat typography */
 .h1,
 .h2,
 .h3,
@@ -75,7 +83,12 @@ body:not(.loading):after {
   @apply text-base;
 }
 
+/* Flat toast design */
 .toast {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 1px solid var(--border);
+
   &[data-category="success"] .toast-content svg {
     @apply text-green-600 dark:text-green-400;
   }
@@ -87,4 +100,106 @@ body:not(.loading):after {
   &[data-category="warning"] .toast-content svg {
     @apply text-orange-600 dark:text-orange-400;
   }
+}
+
+/* Servelink Button Variants */
+.btn-sm-icon,
+.btn-sm-icon-outline,
+.btn-sm-icon-ghost {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-sm-icon-outline {
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+.btn-sm-icon-outline:hover {
+  background: var(--muted);
+  border-color: var(--foreground);
+}
+
+.btn-sm-icon-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.btn-sm-icon-ghost:hover {
+  background: var(--muted);
+}
+
+/* Servelink Form Elements */
+.label {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* Servelink Card Enhancements */
+.card header {
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.card section {
+  padding: 1rem;
+}
+
+/* Servelink Navigation */
+.nav-link {
+  border-radius: 0 !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.nav-link:hover {
+  background: var(--muted);
+  transform: none;
+}
+
+/* Servelink Status Indicators */
+.status-indicator {
+  border-radius: 0 !important;
+  border: 1px solid var(--border);
+}
+
+/* Servelink Tables */
+.table {
+  border-radius: 0 !important;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--border);
+}
+
+/* Servelink Code Blocks */
+.code,
+pre {
+  border-radius: 0 !important;
+  border: 1px solid var(--border);
+  background: var(--muted);
+}
+
+/* Servelink Tooltips */
+[data-tooltip] {
+  border-radius: 0 !important;
+}
+
+/* Servelink Loading States */
+.loading-spinner {
+  border-radius: 0 !important;
+}
+
+/* Servelink Focus States */
+*:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 0 !important;
+}
+
+/* Servelink Selection States */
+::selection {
+  background: var(--muted);
+  color: var(--foreground);
 }

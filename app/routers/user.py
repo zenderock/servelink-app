@@ -10,6 +10,7 @@ from typing import Any
 from authlib.jose import jwt
 from datetime import timedelta
 import resend
+from services.onesignal import OneSignalService
 
 from config import Settings, get_settings
 from dependencies import (
@@ -206,48 +207,50 @@ async def user_settings(
                 )
             )
 
-            resend.api_key = settings.resend_api_key
-
-            try:
-                resend.Emails.send(
-                    {
-                        "from": f"{settings.email_sender_name} <{settings.email_sender_address}>",
-                        "to": [new_email],
-                        "subject": _("Verify your new email address"),
-                        "html": templates.get_template(
-                            "email/email-change.html"
-                        ).render(
-                            {
-                                "request": request,
-                                "email": new_email,
-                                "verify_link": verify_link,
-                                "email_logo": f"{settings.email_logo}"
-                                or request.url_for("assets", path="logo-email.png"),
-                                "app_name": settings.app_name,
-                                "app_description": settings.app_description,
-                                "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
-                            }
+            # Send email via OneSignal
+            async with OneSignalService(settings) as onesignal:
+                try:
+                    html_content = templates.get_template(
+                        "email/email-change.html"
+                    ).render(
+                        {
+                            "request": request,
+                            "email": new_email,
+                            "verify_link": verify_link,
+                            "email_logo": f"{settings.email_logo}"
+                            or request.url_for("assets", path="logo-email.png"),
+                            "app_name": settings.app_name,
+                            "app_description": settings.app_description,
+                            "app_url": f"{settings.url_scheme}://{settings.app_hostname}",
+                        }
+                    )
+                    
+                    await onesignal.send_email(
+                        to_email=new_email,
+                        subject=_("Verify your new email address"),
+                        html_content=html_content,
+                        from_name=settings.email_sender_name,
+                        from_address=settings.email_sender_address
+                    )
+                    
+                    flash(
+                        request,
+                        _(
+                            "Verification email sent to %(email)s. Please check your inbox.",
+                            email=new_email,
                         ),
-                    }
-                )
-                flash(
-                    request,
-                    _(
-                        "Verification email sent to %(email)s. Please check your inbox.",
-                        email=new_email,
-                    ),
-                    "success",
-                )
-            except Exception as e:
-                logger.error(f"Failed to send email change verification: {str(e)}")
-                flash(
-                    request,
-                    _(
-                        "Uh oh, something went wrong. We couldn't send a verification link to %(email)s. Please try again.",
-                        email=new_email,
-                    ),
-                    "error",
-                )
+                        "success",
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send email change verification: {str(e)}")
+                    flash(
+                        request,
+                        _(
+                            "Uh oh, something went wrong. We couldn't send a verification link to %(email)s. Please try again.",
+                            email=new_email,
+                        ),
+                        "error",
+                    )
 
         if request.headers.get("HX-Request"):
             return TemplateResponse(
