@@ -2,11 +2,8 @@
   action="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='resources') }}"
   hx-post="{{ url_for('project_settings', team_slug=team.slug, project_name=project.name).include_query_params(fragment='resources') }}"
   hx-swap="outerHTML" x-data="{ changed: false }"
-  hx-on::before-request="document.activeElement && document.activeElement.blur()"
-  @input="changed = true"
-  @change="changed = true"
-  hx-indicator="next .htmx-indicator" class="card"
->
+  hx-on::before-request="document.activeElement && document.activeElement.blur()" @input="changed = true"
+  @change="changed = true" hx-indicator="next .htmx-indicator" class="card">
   {{ resources_form.csrf_token(id=False) }}
   <header class="border-b">
     <h2>{{ _('Resources') }}</h2>
@@ -19,18 +16,13 @@
       {{ resources_form.cpus.label() }}
       <div class="flex items-center gap-x-2" x-data="{ cpus: '{{ resources_form.cpus.data or '' }}' }">
         {{ resources_form.cpus(
-          id=False,
-          class="w-full",
-          placeholder=default_cpus,
-          **{'x-model': 'cpus'}
+        id=False,
+        class="w-full",
+        placeholder=default_cpus,
+        **{'x-model': 'cpus'}
         ) }}
-        <button
-          type="button"
-          class="btn-ghost"
-          data-tooltip="{{ _('Use default') }}"
-          :disabled="cpus == ''"
-          @click="cpus = ''; $dispatch('change')"
-        >
+        <button type="button" class="btn-ghost" data-tooltip="{{ _('Use default') }}" :disabled="cpus == ''"
+          @click="cpus = ''; $dispatch('change')">
           {% include "icons/x.svg" %}
         </button>
       </div>
@@ -38,26 +30,20 @@
         {{ _('Number of CPU cores to allocate (empty = use defaults, 0 = no limit, supports decimals like 0.5)') }}
       </p>
       {% for error in resources_form.cpus.errors %}
-        <p class="text-destructive text-sm">{{ error }}</p>
+      <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     </div>
     <div class="space-y-3">
       {{ resources_form.memory.label() }}
       <div class="flex items-center gap-x-2" x-data="{ memory: '{{ resources_form.memory.data or '' }}' }">
-        <span x-text="useDefault"></span>
         {{ resources_form.memory(
-          id=False,
-          class="w-full",
-          placeholder=default_memory,
-          **{'x-model': 'memory'}
+        id=False,
+        class="w-full",
+        placeholder=default_memory,
+        **{'x-model': 'memory'}
         ) }}
-        <button
-          type="button"
-          class="btn-ghost"
-          data-tooltip="{{ _('Use default') }}"
-          :disabled="memory == ''"
-          @click="memory = ''; $dispatch('change')"
-        >
+        <button type="button" class="btn-ghost" data-tooltip="{{ _('Use default') }}" :disabled="memory == ''"
+          @click="memory = ''; $dispatch('change')">
           {% include "icons/x.svg" %}
         </button>
       </div>
@@ -65,7 +51,7 @@
         {{ _('Memory limit in megabytes (empty = use defaults, 0 = no limit, max 256GB)') }}
       </p>
       {% for error in resources_form.memory.errors %}
-        <p class="text-destructive text-sm">{{ error }}</p>
+      <p class="text-destructive text-sm">{{ error }}</p>
       {% endfor %}
     </div>
   </section>

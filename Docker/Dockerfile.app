@@ -4,9 +4,10 @@ FROM python:3.13-slim
 RUN addgroup --gid 1000 appgroup \
     && adduser  --uid 1000 --gid 1000 --system --home /app appuser
 
-# System dependencies
+# System dependencies (FIX psycopg2)
 RUN apt-get update && apt-get install -y \
     curl \
+    postgresql-client \
     libpq-dev \
     libffi-dev \
     gcc \

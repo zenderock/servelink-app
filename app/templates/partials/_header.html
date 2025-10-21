@@ -124,7 +124,7 @@ body_attrs={"class": "space-y-4"}
 				alt="{{ current_user.email }}" class="size-8 rounded-full shrink-0">
 			{% endset %}
 			{{ avatar(item=current_user, prefix="user", name=current_user.name if current_user.name else
-			current_user.username, class="!rounded-full", fallback=fallback) }}
+			current_user.username, class="!rounded-none", fallback=fallback) }}
 			{% endset %}
 			{% call dropdown_menu(
 			trigger=trigger,
