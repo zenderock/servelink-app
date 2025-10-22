@@ -14,13 +14,20 @@
   <div class="flex flex-row-reverse gap-x-6">
     <nav class="sticky top-[122px] min-w-64 h-full flex flex-col gap-y-1 max-lg:hidden">
       <a href="#general" class="btn-sm-ghost justify-start">{{ _("General") }}</a>
+      <a href="#plan" class="btn-sm-ghost justify-start">{{ _("Plan & Usage") }}</a>
       <a href="#members" class="btn-sm-ghost justify-start">{{ _("Members") }}</a>
-      <a href="#danger" class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20">{{ _("Danger") }}</a>
+      <a href="#danger"
+        class="btn-sm-ghost justify-start text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20">{{
+        _("Danger") }}</a>
     </nav>
 
     <div class="space-y-6 w-full">
       <section class="relative rounded-xl scroll-mt-[101px]" id="general">
         {% include "team/partials/_settings-general.html" %}
+      </section>
+
+      <section class="relative rounded-xl scroll-mt-[101px]" id="plan">
+        {% include "team/partials/_settings-plan.html" %}
       </section>
 
       <section class="relative rounded-xl scroll-mt-[101px]" id="members">

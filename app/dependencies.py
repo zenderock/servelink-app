@@ -22,6 +22,7 @@ from db import get_db
 from models import User, Project, Deployment, Team, TeamMember
 from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
+from services.pricing import PricingService
 
 
 @lru_cache
@@ -38,6 +39,11 @@ def get_github_service() -> GitHubService:
 @lru_cache
 def get_github_installation_service() -> GitHubInstallationService:
     return GitHubInstallationService(get_github_service())
+
+
+@lru_cache
+def get_pricing_service() -> PricingService:
+    return PricingService()
 
 
 @lru_cache

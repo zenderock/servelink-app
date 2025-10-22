@@ -81,6 +81,11 @@ async def _create_user_with_team(
 
     user.default_team_id = team.id
     db.add(TeamMember(team_id=team.id, user_id=user.id, role="owner"))
+    
+    # Assign free plan to new team
+    from services.pricing import PricingService
+    pricing_service = PricingService()
+    await pricing_service.assign_free_plan_to_team(team, db)
 
     return user
 
