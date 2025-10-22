@@ -3,7 +3,7 @@
     "build": "npm run css && npm run email && npm run alpine && npm run htmx && npm run htmx-sse && npm run basecoat",
     "css:dev": "tailwindcss --silent -i ./src/styles.css -o ./assets/styles.css --watch",
     "css": "tailwindcss -i ./src/styles.css -o ./assets/styles.css --minify",
-    "email": "mjml src/login.mjml -o ./templates/email/login.html && mjml src/email-change.mjml -o ./templates/email/email-change.html && mjml src/team-invite.mjml -o ./templates/email/team-invite.html",
+    "email": "mjml src/login.mjml -o ./templates/email/login.html && mjml src/email-change.mjml -o ./templates/email/email-change.html && mjml src/team-invite.mjml -o ./templates/email/team-invite.html && mjml src/deployment-notification.mjml -o ./templates/email/deployment-notification.html",
     "alpine": "cp node_modules/alpinejs/dist/cdn.min.js ./assets/alpine.min.js",
     "htmx": "cp node_modules/htmx.org/dist/htmx.min.js ./assets/htmx.min.js",
     "htmx-sse": "cp node_modules/htmx-ext-sse/dist/sse.min.js ./assets/htmx-sse.min.js",

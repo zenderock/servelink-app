@@ -17,6 +17,7 @@ from dependencies import (
 from config import get_settings
 from arq.connections import ArqRedis
 from services.deployment import DeploymentService
+from services.notification import DeploymentNotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +262,10 @@ async def deploy_finalize(ctx, deployment_id: str):
             deployment = (
                 await db.execute(
                     select(Deployment)
-                    .options(joinedload(Deployment.project))
+                    .options(
+                        joinedload(Deployment.project),
+                        joinedload(Deployment.created_by_user)
+                    )
                     .where(Deployment.id == deployment_id)
                 )
             ).scalar_one()
@@ -273,6 +277,17 @@ async def deploy_finalize(ctx, deployment_id: str):
             deployment.project.updated_at = now
             deployment.concluded_at = now
             await db.commit()
+
+            # Send notification email to deployment creator
+            if deployment.created_by_user:
+                try:
+                    async with DeploymentNotificationService(settings) as notification_service:
+                        await notification_service.send_deployment_notification(
+                            deployment=deployment,
+                            user=deployment.created_by_user
+                        )
+                except Exception as e:
+                    logger.warning(f"{log_prefix} Failed to send deployment notification: {str(e)}")
 
             # Log a success message
             async with aiodocker.Docker(url=settings.docker_host) as docker_client:
@@ -384,7 +399,10 @@ async def deploy_fail(ctx, deployment_id: str, reason: str = None):
         deployment = (
             await db.execute(
                 select(Deployment)
-                .options(joinedload(Deployment.project))
+                .options(
+                    joinedload(Deployment.project),
+                    joinedload(Deployment.created_by_user)
+                )
                 .where(Deployment.id == deployment_id)
             )
         ).scalar_one()
@@ -416,6 +434,18 @@ async def deploy_fail(ctx, deployment_id: str, reason: str = None):
         deployment.project.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         deployment.concluded_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.commit()
+
+        # Send notification email to deployment creator
+        if deployment.created_by_user:
+            try:
+                async with DeploymentNotificationService(settings) as notification_service:
+                    await notification_service.send_deployment_notification(
+                        deployment=deployment,
+                        user=deployment.created_by_user,
+                        reason=reason
+                    )
+            except Exception as e:
+                logger.warning(f"{log_prefix} Failed to send deployment notification: {str(e)}")
 
         fields = {
             "event_type": "deployment_status_update",
