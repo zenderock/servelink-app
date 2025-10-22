@@ -23,6 +23,7 @@ from dependencies import (
     templates,
     get_role,
     get_access,
+    get_pricing_service,
 )
 from config import get_settings, Settings
 from db import get_db
@@ -47,14 +48,29 @@ async def new_team(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    pricing_service: PricingService = Depends(get_pricing_service),
 ):
     form: Any = await NewTeamForm.from_formdata(request)
 
     if request.method == "POST" and await form.validate_on_submit():
+        # Validate team creation limits
+        can_create, error_message = await pricing_service.validate_team_creation(current_user, db)
+        if not can_create:
+            flash(request, error_message, "error")
+            return TemplateResponse(
+                request=request,
+                name="team/partials/_dialog-new-team.html",
+                context={"form": form},
+            )
+        
         team = Team(name=form.name.data, created_by_user_id=current_user.id)
         db.add(team)
         await db.flush()
         db.add(TeamMember(team_id=team.id, user_id=current_user.id, role="owner"))
+        
+        # Assign free plan to new team
+        await pricing_service.assign_free_plan_to_team(team, db)
+        
         await db.commit()
         return Response(
             status_code=200,
@@ -322,15 +338,21 @@ async def team_settings(
 
     if fragment == "add_member":
         if await add_member_form.validate_on_submit():
-            invite = TeamInvite(
-                team_id=team.id,
-                email=add_member_form.email.data.strip().lower(),
-                role=add_member_form.role.data,
-                inviter_id=current_user.id,
-            )
-            db.add(invite)
-            await db.commit()
-            await _send_member_invite(request, invite, team, current_user, settings)
+            # Validate member addition limits
+            pricing_service = get_pricing_service()
+            can_add, error_message = await pricing_service.validate_member_addition(team, db)
+            if not can_add:
+                flash(request, error_message, "error")
+            else:
+                invite = TeamInvite(
+                    team_id=team.id,
+                    email=add_member_form.email.data.strip().lower(),
+                    role=add_member_form.role.data,
+                    inviter_id=current_user.id,
+                )
+                db.add(invite)
+                await db.commit()
+                await _send_member_invite(request, invite, team, current_user, settings)
 
     delete_member_form: Any = await TeamDeleteMemberForm.from_formdata(request)
 

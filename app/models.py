@@ -189,10 +189,74 @@ class Team(Base):
     created_by_user: Mapped[User | None] = relationship(
         foreign_keys=[created_by_user_id]
     )
+    subscription: Mapped["TeamSubscription"] = relationship(
+        back_populates="team", uselist=False
+    )
 
     @property
     def color(self) -> str:
         return get_color(self.id)
+
+    @property
+    def current_plan(self) -> "SubscriptionPlan":
+        """Get current subscription plan or default free plan"""
+        if self.subscription and self.subscription.status == "active":
+            return self.subscription.plan
+        return get_default_free_plan()
+
+    def can_add_member(self) -> bool:
+        """Check if team can add more members"""
+        if self.current_plan.max_team_members == -1:
+            return True
+        
+        # Count active members
+        active_members = len([
+            member for member in self.members 
+            if hasattr(member, 'user') and member.user.status == "active"
+        ])
+        return active_members < self.current_plan.max_team_members
+
+    def can_add_project(self) -> bool:
+        """Check if team can add more projects"""
+        if self.current_plan.max_projects == -1:
+            return True
+        
+        active_projects = len([
+            project for project in self.projects 
+            if project.status == "active"
+        ])
+        return active_projects < self.current_plan.max_projects
+
+    def can_add_custom_domain(self) -> bool:
+        """Check if team can add custom domains"""
+        return self.current_plan.custom_domains_allowed
+
+    def get_usage_stats(self) -> dict:
+        """Get current usage statistics"""
+        active_members = len([
+            member for member in self.members 
+            if hasattr(member, 'user') and member.user.status == "active"
+        ])
+        active_projects = len([
+            project for project in self.projects 
+            if project.status == "active"
+        ])
+        
+        return {
+            "members": {
+                "current": active_members,
+                "limit": self.current_plan.max_team_members,
+                "unlimited": self.current_plan.max_team_members == -1
+            },
+            "projects": {
+                "current": active_projects,
+                "limit": self.current_plan.max_projects,
+                "unlimited": self.current_plan.max_projects == -1
+            },
+            "custom_domains": {
+                "allowed": self.current_plan.custom_domains_allowed
+            }
+        }
 
 
 @event.listens_for(Team, "after_insert")
@@ -825,3 +889,68 @@ class Domain(Base):
     @override
     def __repr__(self):
         return f"<Domain {self.hostname}>"
+
+
+class SubscriptionPlan(Base):
+    __tablename__ = "subscription_plan"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    display_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    max_teams: Mapped[int] = mapped_column(nullable=False)
+    max_team_members: Mapped[int] = mapped_column(nullable=False)
+    max_projects: Mapped[int] = mapped_column(nullable=False)
+    custom_domains_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    price_per_month: Mapped[float] = mapped_column(nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    @override
+    def __repr__(self):
+        return f"<SubscriptionPlan {self.name}>"
+
+
+class TeamSubscription(Base):
+    __tablename__ = "team_subscription"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    team_id: Mapped[str] = mapped_column(
+        ForeignKey("team.id"), unique=True, nullable=False
+    )
+    plan_id: Mapped[str] = mapped_column(
+        ForeignKey("subscription_plan.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("active", "cancelled", "expired", name="subscription_status"),
+        nullable=False,
+        default="active",
+    )
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    team: Mapped["Team"] = relationship(back_populates="subscription")
+    plan: Mapped["SubscriptionPlan"] = relationship()
+
+    @override
+    def __repr__(self):
+        return f"<TeamSubscription {self.team_id}:{self.plan_id}>"
+
+
+def get_default_free_plan() -> SubscriptionPlan:
+    """Get default free plan for fallback when team has no subscription"""
+    return SubscriptionPlan(
+        name="free",
+        display_name="Free",
+        max_teams=1,
+        max_team_members=1,
+        max_projects=2,
+        custom_domains_allowed=False,
+        price_per_month=None,
+        is_active=True
+    )

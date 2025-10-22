@@ -35,6 +35,16 @@ body_attrs={"class": "space-y-4"}
 					class="btn-sm-ghost pl-2 {% if project or deployment %}pr-2{% endif %}" hx-boost="true">
 					{{ avatar(item=team, prefix="team", name=team.name, size="xs") }}
 					<span {% if project or deployment %}class="max-sm:hidden" {% endif %}>{{ team.name }}</span>
+					{% if team.current_plan %}
+					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full
+						{% if team.current_plan.name == 'free' %}
+							bg-muted text-muted-foreground
+						{% else %}
+							bg-primary/10 text-primary
+						{% endif %}">
+						{{ team.current_plan.display_name }}
+					</span>
+					{% endif %}
 				</a>
 				{% call dropdown_menu(
 				trigger=trigger,

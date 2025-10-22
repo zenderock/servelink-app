@@ -26,6 +26,7 @@ from dependencies import (
     get_role,
     get_access,
     get_github_installation_service,
+    get_pricing_service,
 )
 from models import (
     Project,
@@ -124,6 +125,26 @@ async def new_project_details(
         form.production_branch.data = repo_default_branch
 
     if request.method == "POST" and await form.validate_on_submit():
+        # Validate project creation limits
+        pricing_service = get_pricing_service()
+        can_create, error_message = await pricing_service.validate_project_creation(team, db)
+        if not can_create:
+            flash(request, error_message, "error")
+            return TemplateResponse(
+                request=request,
+                name="project/pages/new-project-details.html",
+                context={
+                    "form": form,
+                    "team": team,
+                    "repo": {
+                        "id": repo_id,
+                        "owner": repo_owner,
+                        "name": repo_name,
+                        "default_branch": repo_default_branch,
+                    },
+                },
+            )
+        
         try:
             github_oauth_token = await get_user_github_token(db, current_user)
             if not github_oauth_token:
@@ -1276,6 +1297,26 @@ async def project_settings(
 
     if fragment == "domain":
         if await domain_form.validate_on_submit():
+            # Validate custom domain limits (only for new domains)
+            if not domain_form.domain_id.data:
+                pricing_service = get_pricing_service()
+                can_add, error_message = await pricing_service.validate_custom_domain(team, db)
+                if not can_add:
+                    flash(request, error_message, "error")
+                    return TemplateResponse(
+                        request=request,
+                        name="project/partials/_settings-domains.html",
+                        context={
+                            "project": project,
+                            "domains": domains,
+                            "domain_form": domain_form,
+                            "remove_domain_form": remove_domain_form,
+                            "verify_domain_form": verify_domain_form,
+                            "server_ip": settings.server_ip,
+                            "deploy_domain": settings.deploy_domain,
+                        },
+                    )
+            
             try:
                 if domain_form.domain_id.data:
                     domain = await project.get_domain_by_id(
