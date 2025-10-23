@@ -37,10 +37,4 @@ class WorkerSettings:
     job_completion_wait = settings.job_completion_wait
     health_check_interval = 65  # Greater than 60s to avoid health check timeout
     allow_abort_jobs = True
-    cron_jobs = [
-        # Exécuter la vérification des projets inactifs tous les jours à 03h00 UTC
-        {
-            "function": "check_inactive_projects",
-            "cron": "0 3 * * *",  # Tous les jours à 03h00 UTC
-        }
-    ]
+    cron_jobs = []
