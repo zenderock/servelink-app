@@ -77,8 +77,13 @@ async def new_project(
     request: Request,
     current_user: User = Depends(get_current_user),
     team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    db: AsyncSession = Depends(get_db),
+    pricing_service: PricingService = Depends(get_pricing_service),
 ):
     team, membership = team_and_membership
+
+    # Check if team can create more projects
+    can_create, error_message = await pricing_service.validate_project_creation(team, db)
 
     return TemplateResponse(
         request=request,
@@ -86,6 +91,8 @@ async def new_project(
         context={
             "current_user": current_user,
             "team": team,
+            "can_create_project": can_create,
+            "project_creation_error": error_message,
         },
     )
 
@@ -1257,17 +1264,41 @@ async def project_settings(
 
     if fragment == "resources":
         if await resources_form.validate_on_submit():
-            project.config = {
-                **project.config,
-                "cpus": float(resources_form.cpus.data)
-                if resources_form.cpus.data is not None
-                else None,
-                "memory": resources_form.memory.data,
-            }
-            await db.commit()
-            flash(request, _("Resources updated."), "success")
+            # Validation custom selon plan
+            from services.pricing import ResourceValidationService
+            valid, error_msg = await ResourceValidationService.validate_resources(
+                team, 
+                resources_form.cpus.data, 
+                resources_form.memory.data,
+                db,
+                project.id
+            )
+            
+            if not valid:
+                flash(request, error_msg, "error")
+            else:
+                # Mise à jour config ET colonnes
+                cpu_value = float(resources_form.cpus.data) if resources_form.cpus.data else None
+                memory_value = resources_form.memory.data
+                
+                project.config = {
+                    **project.config,
+                    "cpus": cpu_value,
+                    "memory": memory_value,
+                }
+                project.allocated_cpu_cores = cpu_value
+                project.allocated_memory_mb = memory_value
+                
+                await db.commit()
+                flash(request, _("Resources updated."), "success")
 
         if request.headers.get("HX-Request"):
+            # Calculer mémoire disponible pour Pay as You Go
+            available_memory = None
+            if team.current_plan and team.current_plan.name == "pay_as_you_go":
+                from services.pricing import ResourceValidationService
+                available_memory = await ResourceValidationService.get_available_memory(team, db)
+            
             return TemplateResponse(
                 request=request,
                 name="project/partials/_settings-resources.html",
@@ -1278,6 +1309,7 @@ async def project_settings(
                     "resources_form": resources_form,
                     "default_cpus": settings.default_cpus,
                     "default_memory": settings.default_memory_mb,
+                    "available_memory": available_memory,
                 },
             )
 

@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 async def github_repo_select(
     request: Request,
     account: str | None = None,
+    can_create: str | None = None,
+    error_message: str | None = None,
     current_user: User = Depends(get_current_user),
     github_service: GitHubService = Depends(get_github_service),
     db: AsyncSession = Depends(get_db),
@@ -82,6 +84,8 @@ async def github_repo_select(
             "accounts": accounts,
             "selected_account": selected_account,
             "has_github_oauth_token": has_github_oauth_token,
+            "can_create_project": can_create == "True" if can_create else True,
+            "project_creation_error": error_message or "",
         },
     )
 
@@ -93,6 +97,8 @@ async def github_repo_list(
     github: GitHubService = Depends(get_github_service),
     account: str | None = None,
     query: str | None = None,
+    can_create: str | None = None,
+    error_message: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     github_oauth_token = await get_user_github_token(db, current_user)
@@ -102,7 +108,11 @@ async def github_repo_list(
     return TemplateResponse(
         request=request,
         name="github/partials/_repo-select-list.html",
-        context={"repos": repos},
+        context={
+            "repos": repos,
+            "can_create_project": can_create == "True" if can_create else True,
+            "project_creation_error": error_message or "",
+        },
     )
 
 

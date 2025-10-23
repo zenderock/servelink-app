@@ -1,11 +1,5 @@
-<form
-  method="post"
-  action="{{ url_for('new_team') }}"
-  hx-post="{{ url_for('new_team') }}"
-  hx-swap="outerHTML"
-  class="space-y-4"
-  x-data="{ name: '' }"
->
+<form method="post" action="{{ url_for('new_team') }}" hx-post="{{ url_for('new_team') }}" hx-swap="outerHTML"
+  class="space-y-4" x-data="{ name: '' }">
   {{ form.csrf_token() }}
   <div class="space-y-3">
     {{ form.name.label(class="label") }}
@@ -15,11 +9,16 @@
     {% endfor %}
   </div>
   <footer class="flex justify-end gap-x-2">
-    <button
-      type="button"
-      class="btn-ghost"
-      onclick="document.getElementById('dialog-new-team').close()"
-    >{{ _("Cancel") }}</button>
+    <button type="button" class="btn-ghost" onclick="document.getElementById('dialog-new-team').close()">{{ _("Cancel")
+      }}</button>
+    {% if current_user and current_user.default_team and current_user.default_team.current_plan and
+    current_user.default_team.current_plan.max_teams != -1 and user_teams_count >=
+    current_user.default_team.current_plan.max_teams %}
+    <button type="button" class="btn-primary opacity-50 cursor-not-allowed" disabled
+      title="{{ _('Team limit reached. You can have up to') }} {{ current_user.default_team.current_plan.max_teams }} {{ _('team(s) on the') }} {{ current_user.default_team.current_plan.display_name }} {{ _('plan.') }}">{{
+      _("Create team") }}</button>
+    {% else %}
     {{ form.submit(class_="btn-primary", **{":disabled": "!name.trim()"}) }}
+    {% endif %}
   </footer>
 </form>

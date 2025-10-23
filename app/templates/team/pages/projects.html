@@ -31,10 +31,18 @@
       </a>
     </div>
     {% elif projects %}
+    {% if team.can_add_project() %}
     <a href="{{ url_for('new_project', team_slug=team.slug) }}" class="btn" hx-boost="true">
       {% include "icons/plus.svg" %}
       {{ _("New project") }}
     </a>
+    {% else %}
+    <button class="btn opacity-50 cursor-not-allowed" disabled
+      title="{{ _('Project limit reached. You can have up to') }} {{ team.get_usage_stats().projects.limit }} {{ _('project(s) on the') }} {{ team.current_plan.display_name }} {{ _('plan.') }}">
+      {% include "icons/plus.svg" %}
+      {{ _("New project") }}
+    </button>
+    {% endif %}
     {% endif %}
   </header>
 
