@@ -2,134 +2,178 @@
 
 {% call dialog(
 id="dialog-upgrade-plan",
-title=_("Upgrade to Pro Plan"),
-dialog_attrs={"class": "max-w-4xl w-[80vw] h-[80vh]"}
+title=_("Upgrade to Pro"),
+dialog_attrs={"class": "max-w-6xl w-[95vw] h-[90vh]"}
 ) %}
 <div class="flex flex-col h-full">
-    <!-- Header with plan comparison -->
-    <div class="flex-1 overflow-y-auto p-6">
-        <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold mb-2">{{ _("Choose Your Plan") }}</h2>
-            <p class="text-muted-foreground">{{ _("Unlock powerful features and scale your deployments") }}</p>
-        </div>
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold mb-3">{{ _("Unlock the Full Power of Servelink") }}</h2>
+        <p class="text-lg text-muted-foreground">{{ _("Scale your deployments with unlimited projects, custom domains,
+            and priority support") }}</p>
+    </div>
 
-        <!-- Plan comparison cards -->
-        <div class="grid md:grid-cols-2 gap-6 mb-8">
-            <!-- Free Plan -->
-            <div class="border rounded-lg p-6 relative plan-card">
-                <div class="text-center">
-                    <h3 class="text-xl font-semibold mb-2">{{ _("Free Plan") }}</h3>
-                    <div class="text-3xl font-bold mb-4">0 FCFA</div>
-                    <p class="text-muted-foreground text-sm mb-6">{{ _("Perfect for getting started") }}</p>
+    <!-- Main content with Pro plan highlighted -->
+    <div class="flex-1 overflow-y-auto">
+        <div class="grid lg:grid-cols-4 gap-6 mb-8">
+            <!-- Current Free Plan (smaller, 1 column) -->
+            <div class="lg:col-span-1">
+                <div class="border rounded-lg p-4 bg-muted/30 h-full">
+                    <div class="text-center mb-4">
+                        <h3 class="text-lg font-semibold text-muted-foreground">{{ _("Current Plan") }}</h3>
+                        <div class="text-2xl font-bold text-muted-foreground">Free</div>
+                        <p class="text-xs text-muted-foreground">{{ _("Limited features") }}</p>
+                    </div>
+                    <ul class="space-y-2 text-sm text-muted-foreground">
+                        <li class="flex items-center">
+                            <span class="text-green-500 mr-2">✓</span>
+                            {{ _("1 Team, 1 Member") }}
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-green-500 mr-2">✓</span>
+                            {{ _("2 Projects") }}
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-red-500 mr-2">✗</span>
+                            {{ _("Custom domains") }}
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-red-500 mr-2">✗</span>
+                            {{ _("Priority support") }}
+                        </li>
+                    </ul>
                 </div>
-                <ul class="space-y-3 text-sm">
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("1 Team") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("1 Member") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("2 Projects") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Basic support") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-red-500 mr-2">✗</span>
-                        {{ _("Custom domains") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-red-500 mr-2">✗</span>
-                        {{ _("Priority support") }}
-                    </li>
-                </ul>
             </div>
 
-            <!-- Pro Plan -->
-            <div class="border-2 border-primary rounded-lg p-6 relative bg-primary/5 plan-card">
-                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
-                        {{ _("Recommended") }}
-                    </span>
+            <!-- Pro Plan (highlighted, takes 3 columns) -->
+            <div class="lg:col-span-3">
+                <div
+                    class="border-2 border-primary rounded-xl p-8 bg-gradient-to-br from-primary/5 to-primary/10 relative overflow-hidden">
+                    <!-- Recommended badge -->
+                    <div class="absolute top-4 right-4">
+                        <span class="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium">
+                            {{ _("Most Popular") }}
+                        </span>
+                    </div>
+
+                    <!-- Pro Plan Header -->
+                    <div class="text-center mb-8">
+                        <h3 class="text-3xl font-bold mb-3">{{ _("Pro Plan") }}</h3>
+                        <div class="text-5xl font-bold text-primary mb-3">
+                            5,000 FCFA
+                            <span class="text-xl font-normal text-muted-foreground">/mois</span>
+                        </div>
+                        <p class="text-lg text-muted-foreground">{{ _("Everything you need to scale") }}</p>
+                    </div>
+
+                    <!-- Features Grid -->
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="space-y-4">
+                            <h4 class="font-semibold text-primary text-lg">{{ _("Scale & Growth") }}</h4>
+                            <ul class="space-y-3 text-sm">
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Unlimited Teams") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Unlimited Members") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Unlimited Projects") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Custom domains") }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="space-y-4">
+                            <h4 class="font-semibold text-primary text-lg">{{ _("Support & Features") }}</h4>
+                            <ul class="space-y-3 text-sm">
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Priority support") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Advanced analytics") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Team collaboration") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("API access") }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="space-y-4">
+                            <h4 class="font-semibold text-primary text-lg">{{ _("Performance") }}</h4>
+                            <ul class="space-y-3 text-sm">
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Up to 4GB Memory") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Up to 2 CPU") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("Faster deployments") }}
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-3 text-lg">✓</span>
+                                    {{ _("99.9% uptime") }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <h3 class="text-xl font-semibold mb-2">{{ _("Pro Plan") }}</h3>
-                    <div class="text-3xl font-bold mb-4">5,000 FCFA<span
-                            class="text-sm font-normal text-muted-foreground">/mois</span></div>
-                    <p class="text-muted-foreground text-sm mb-6">{{ _("For growing teams and businesses") }}</p>
-                </div>
-                <ul class="space-y-3 text-sm">
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Unlimited Teams") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Unlimited Members") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Unlimited Projects") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Custom domains") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Priority support") }}
-                    </li>
-                    <li class="flex items-center">
-                        <span class="text-green-500 mr-2">✓</span>
-                        {{ _("Advanced analytics") }}
-                    </li>
-                </ul>
             </div>
         </div>
 
         <!-- Payment methods -->
-        <div class="border-t pt-6">
-            <h3 class="text-lg font-semibold mb-4 text-center">{{ _("Choose Payment Method") }}</h3>
-            <div class="grid md:grid-cols-2 gap-4">
+        <div class="border-t pt-8">
+            <h3 class="text-2xl font-semibold mb-6 text-center">{{ _("Choose Your Payment Method") }}</h3>
+            <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <!-- Local Payment -->
-                <div class="border rounded-lg p-6 hover:border-primary transition-colors cursor-pointer payment-method-card"
+                <div class="border-2 rounded-xl p-8 hover:border-primary transition-all duration-200 cursor-pointer payment-method-card group"
                     onclick="selectPaymentMethod('local')">
                     <div class="text-center">
                         <div
-                            class="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                            <span class="text-orange-600 dark:text-orange-400 font-bold text-lg">💰</span>
+                            class="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="text-orange-600 dark:text-orange-400 font-bold text-2xl">💰</span>
                         </div>
-                        <h4 class="font-semibold mb-2">{{ _("Local Payment") }}</h4>
-                        <p class="text-sm text-muted-foreground mb-4">{{ _("Orange Money & MTN Mobile Money") }}</p>
-                        <div class="flex justify-center space-x-4 text-xs text-muted-foreground">
-                            <span>Orange Money</span>
+                        <h4 class="text-xl font-semibold mb-3">{{ _("Local Payment") }}</h4>
+                        <p class="text-muted-foreground mb-4">{{ _("Pay with your mobile money") }}</p>
+                        <div class="flex justify-center space-x-4 text-sm text-muted-foreground">
+                            <span class="font-medium">Orange Money</span>
                             <span>•</span>
-                            <span>MTN Mobile Money</span>
+                            <span class="font-medium">MTN Mobile Money</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card Payment -->
-                <div class="border rounded-lg p-6 hover:border-primary transition-colors cursor-pointer payment-method-card"
+                <div class="border-2 rounded-xl p-8 hover:border-primary transition-all duration-200 cursor-pointer payment-method-card group"
                     onclick="selectPaymentMethod('card')">
                     <div class="text-center">
                         <div
-                            class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                            <span class="text-blue-600 dark:text-blue-400 font-bold text-lg">💳</span>
+                            class="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="text-blue-600 dark:text-blue-400 font-bold text-2xl">💳</span>
                         </div>
-                        <h4 class="font-semibold mb-2">{{ _("Card Payment") }}</h4>
-                        <p class="text-sm text-muted-foreground mb-4">{{ _("Credit & Debit Cards") }}</p>
-                        <div class="flex justify-center space-x-2 text-xs text-muted-foreground">
-                            <span>Visa</span>
+                        <h4 class="text-xl font-semibold mb-3">{{ _("Card Payment") }}</h4>
+                        <p class="text-muted-foreground mb-4">{{ _("Secure card payments") }}</p>
+                        <div class="flex justify-center space-x-2 text-sm text-muted-foreground">
+                            <span class="font-medium">Visa</span>
                             <span>•</span>
-                            <span>Mastercard</span>
+                            <span class="font-medium">Mastercard</span>
                             <span>•</span>
-                            <span>American Express</span>
+                            <span class="font-medium">Amex</span>
                         </div>
                     </div>
                 </div>
@@ -141,15 +185,16 @@ dialog_attrs={"class": "max-w-4xl w-[80vw] h-[80vh]"}
     <div class="border-t p-6 bg-muted/50">
         <div class="flex justify-between items-center">
             <div class="text-sm text-muted-foreground">
-                {{ _("Cancel anytime • No setup fees") }}
+                {{ _("Cancel anytime • No setup fees • 30-day money back guarantee") }}
             </div>
-            <div class="flex gap-x-3">
-                <button type="button" class="btn-ghost"
+            <div class="flex gap-x-4">
+                <button type="button" class="btn-ghost px-6"
                     onclick="document.getElementById('dialog-upgrade-plan').close()">
-                    {{ _("Cancel") }}
+                    {{ _("Maybe Later") }}
                 </button>
-                <button type="button" id="proceed-payment" class="btn-primary" onclick="proceedToPayment()" disabled>
-                    {{ _("Proceed to Payment") }}
+                <button type="button" id="proceed-payment" class="btn-primary px-8 text-lg" onclick="proceedToPayment()"
+                    disabled>
+                    {{ _("Upgrade Now") }}
                 </button>
             </div>
         </div>
@@ -165,11 +210,11 @@ dialog_attrs={"class": "max-w-4xl w-[80vw] h-[80vh]"}
         // Remove previous selection
         document.querySelectorAll('.payment-method-card').forEach(el => {
             el.classList.remove('selected', 'border-primary', 'bg-primary/5');
-            el.classList.add('border');
+            el.classList.add('border-2');
         });
 
         // Add selection to clicked element
-        event.currentTarget.classList.remove('border');
+        event.currentTarget.classList.remove('border-2');
         event.currentTarget.classList.add('selected', 'border-primary', 'bg-primary/5');
 
         // Enable proceed button
