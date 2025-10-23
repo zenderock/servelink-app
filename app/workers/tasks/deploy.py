@@ -146,7 +146,7 @@ async def deploy_start(ctx, deployment_id: str):
                     f"traefik.http.routers.{router}.service": f"{router}@docker",
                     f"traefik.http.routers.{router}.priority": "10",
                     f"traefik.http.services.{router}.loadbalancer.server.port": "8000",
-                    "traefik.docker.network": "runner",
+                    "traefik.docker.network": "servelink_runner",
                     "deployment_id": deployment.id,
                     "project_id": deployment.project_id,
                     "environment_id": deployment.environment_id,
@@ -187,7 +187,7 @@ async def deploy_start(ctx, deployment_id: str):
                         "Env": [f"{k}={v}" for k, v in env_vars_dict.items()],
                         "WorkingDir": "/app",
                         "Labels": labels,
-                        "NetworkingConfig": {"EndpointsConfig": {"runner": {}}},
+                        "NetworkingConfig": {"EndpointsConfig": {"servelink_runner": {}}},
                         "HostConfig": {
                             **(
                                 {"CpuQuota": int(cpus * 100000), "CpuPeriod": 100000}
@@ -203,7 +203,7 @@ async def deploy_start(ctx, deployment_id: str):
                             "LogConfig": {
                                 "Type": "loki",
                                 "Config": {
-                                    "loki-url": "http://loki:3100/loki/api/v1/push",
+                                    "loki-url": "http://127.0.0.1:3100/loki/api/v1/push",
                                     "loki-batch-size": "200",
                                     "labels": "deployment_id,project_id,environment_id,branch",
                                 },
