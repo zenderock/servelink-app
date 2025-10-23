@@ -13,12 +13,12 @@ USG
 fi
 
 command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
-args="-p devpush -f docker-compose.yml -f docker-compose.override.dev.yml"
+args="-p servelink -f docker-compose.yml -f docker-compose.override.dev.yml"
 
 [ -f .env ] && . ./.env
 container=${DB_CONTAINER:-pgsql}
-db_user=${POSTGRES_USER:-devpush}
-db_name=${POSTGRES_DB:-devpush}
+db_user=${POSTGRES_USER:-servelink}
+db_name=${POSTGRES_DB:-servelink}
 
 echo "Warning: This will DROP and recreate schema 'public' in database '$db_name'."
 printf "Proceed? [y/N]: "

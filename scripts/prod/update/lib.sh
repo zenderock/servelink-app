@@ -15,13 +15,13 @@ blue_green_update() {
   
   info "Executing blue-green update for '$service'..."
   
-  local args=(-p devpush)
+  local args=(-p servelink)
 
   # Build new image if Dockerfile has changed
   docker compose build "$service" || true
 
   local old_ids
-  old_ids=$(docker ps --filter "name=devpush-$service" --format '{{.ID}}' || true)
+  old_ids=$(docker ps --filter "name=servelink-$service" --format '{{.ID}}' || true)
 
   local cur_cnt
   cur_cnt=$(echo "$old_ids" | wc -w | tr -d ' ' || echo 0)
@@ -34,7 +34,7 @@ blue_green_update() {
   info "Waiting for new container to appear..."
   for _ in $(seq 1 60); do
     local cur_ids
-    cur_ids=$(docker ps --filter "name=devpush-$service" --format '{{.ID}}' | tr ' ' '\n' | sort)
+    cur_ids=$(docker ps --filter "name=servelink-$service" --format '{{.ID}}' | tr ' ' '\n' | sort)
     new_id=$(comm -13 <(echo "$old_ids" | tr ' ' '\n' | sort) <(echo "$cur_ids"))
     [[ -n "$new_id" ]] && break
     sleep 2

@@ -41,13 +41,13 @@ scripts/prod/check-env.sh --env-file "$envf" --quiet
 # Wait for database
 info "Waiting for database..."
 for i in $(seq 1 $((timeout/5))); do
-  if docker compose -p devpush exec -T pgsql pg_isready -U "${POSTGRES_USER:-devpush-app}" >/dev/null 2>&1; then
+  if docker compose -p servelink exec -T pgsql pg_isready -U "${POSTGRES_USER:-servelink-app}" >/dev/null 2>&1; then
     break
   fi
   sleep 5
 done
 
-if ! docker compose -p devpush exec -T pgsql pg_isready -U "${POSTGRES_USER:-devpush-app}" >/dev/null 2>&1; then
+if ! docker compose -p servelink exec -T pgsql pg_isready -U "${POSTGRES_USER:-servelink-app}" >/dev/null 2>&1; then
   err "Database not ready"
   exit 1
 fi
@@ -55,12 +55,12 @@ fi
 # Wait for app container
 info "Waiting for app container..."
 for i in $(seq 1 $((timeout/5))); do
-  running=$(docker ps --filter "name=devpush-app" -q | wc -l | tr -d ' ')
+  running=$(docker ps --filter "name=servelink-app" -q | wc -l | tr -d ' ')
   if [ "$running" != "0" ]; then break; fi
   sleep 5
 done
 
 # Run database migrations
 info "Running migrations..."
-docker compose -p devpush exec -T app uv run alembic upgrade head
+docker compose -p servelink exec -T app uv run alembic upgrade head
 ok "Migrations applied."

@@ -51,7 +51,7 @@ else
 fi
 
 # Optional no-cache build for services
-args=(-p devpush -f docker-compose.yml -f docker-compose.override.dev.yml)
+args=(-p servelink -f docker-compose.yml -f docker-compose.override.dev.yml)
 if ((no_cache==1)); then
   echo "Building services with --no-cache..."
   docker-compose "${args[@]}" build --no-cache

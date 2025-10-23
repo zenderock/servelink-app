@@ -41,7 +41,7 @@ scripts/prod/check-env.sh --env-file "$envf"
 
 # Start services
 info "Starting services..."
-args=(-p devpush)
+args=(-p servelink)
 ((pull_always==1)) && pullflag=(--pull always) || pullflag=()
 docker compose "${args[@]}" up -d "${pullflag[@]}" --remove-orphans
 ok "Started."

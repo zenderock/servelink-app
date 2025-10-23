@@ -21,11 +21,11 @@ Usage: install.sh [--repo <url>] [--ref <tag>] [--include-prerelease] [--user de
 
 Install and configure /dev/push on a server (Docker, Loki plugin, user, repo, .env).
 
-  --repo URL             Git repo to clone (default: https://github.com/hunvreus/devpush.git)
+  --repo URL             Git repo to clone (default: https://github.com/zenderock/servelink-app.git)
   --ref TAG              Git tag/branch to install (default: latest stable tag, fallback to main)
   --include-prerelease   Allow beta/rc tags when selecting latest
-  --user NAME            System user to own the app (default: devpush)
-  --app-dir PATH         App directory (default: /home/<user>/devpush)
+  --user NAME            System user to own the app (default: servelink)
+  --app-dir PATH         App directory (default: /home/<user>/servelink-app)
   --ssh-pub KEY|PATH     Public key content or file to seed authorized_keys for the user
   --harden               Run system hardening at the end (non-fatal)
   --harden-ssh           Run SSH hardening at the end (non-fatal)
@@ -36,7 +36,7 @@ USG
   exit 1
 }
 
-repo="https://github.com/hunvreus/devpush.git"; ref=""; include_pre=0; user="devpush"; app_dir=""; ssh_pub=""; run_harden=0; run_harden_ssh=0; telemetry=1
+repo="https://github.com/zenderock/servelink-app.git"; ref=""; include_pre=0; user="servelink"; app_dir=""; ssh_pub=""; run_harden=0; run_harden_ssh=0; telemetry=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -128,9 +128,9 @@ ok "Data dirs ready."
 # Resolve app_dir now that user state is known
 if [[ -z "${app_dir:-}" ]]; then
   if id -u "$user" >/dev/null 2>&1 && [[ -d "/home/$user" ]]; then
-    app_dir="/home/$user/devpush"
+    app_dir="/home/$user/servelink-app"
   else
-    app_dir="/opt/devpush"
+    app_dir="/opt/servelink"
   fi
 fi
 
@@ -210,20 +210,20 @@ fi
 
 # Seed access.json for per-file mount
 info "Seeding access.json..."
-install -d -m 0755 /srv/devpush || true
-if [[ ! -f "/srv/devpush/access.json" ]]; then
+install -d -m 0755 /srv/servelink || true
+if [[ ! -f "/srv/servelink/access.json" ]]; then
   if [[ -f "$app_dir/access.example.json" ]]; then
-    cp "$app_dir/access.example.json" "/srv/devpush/access.json"
+    cp "$app_dir/access.example.json" "/srv/servelink/access.json"
   else
-    cat > /srv/devpush/access.json <<'JSON'
+    cat > /srv/servelink/access.json <<'JSON'
 { "emails": [], "domains": [], "globs": [], "regex": [] }
 JSON
   fi
-  chown 1000:1000 /srv/devpush/access.json || true
-  chmod 0644 /srv/devpush/access.json || true
-  ok "Seeded /srv/devpush/access.json"
+  chown 1000:1000 /srv/servelink/access.json || true
+  chmod 0644 /srv/servelink/access.json || true
+  ok "Seeded /srv/servelink/access.json"
 else
-  ok "/srv/devpush/access.json exists; not modified."
+  ok "/srv/servelink/access.json exists; not modified."
 fi
 
 # Build runners images
@@ -242,21 +242,21 @@ fi
 # Save install metadata (version.json)
 commit=$(runuser -u "$user" -- git -C "$app_dir" rev-parse --verify HEAD)
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-install -d -m 0755 /var/lib/devpush
-if [[ ! -f /var/lib/devpush/version.json ]]; then
+install -d -m 0755 /var/lib/servelink
+if [[ ! -f /var/lib/servelink/version.json ]]; then
   install_id=$(cat /proc/sys/kernel/random/uuid)
-  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/servelink/version.json
 else
-  install_id=$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)
+  install_id=$(jq -r '.install_id' /var/lib/servelink/version.json 2>/dev/null || true)
   [[ -n "$install_id" && "$install_id" != "null" ]] || install_id=$(cat /proc/sys/kernel/random/uuid)
-  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/devpush/version.json
+  printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$install_id" "${ref}" "$commit" "$ts" > /var/lib/servelink/version.json
 fi
-chown "$user:$user" /var/lib/devpush/version.json || true
-chmod 0644 /var/lib/devpush/version.json || true
+chown "$user:$user" /var/lib/servelink/version.json || true
+chmod 0644 /var/lib/servelink/version.json || true
 
 # Send telemetry
 if ((telemetry==1)); then
-  payload=$(jq -c --arg ev "install" '. + {event: $ev}' /var/lib/devpush/version.json 2>/dev/null || echo "")
+  payload=$(jq -c --arg ev "install" '. + {event: $ev}' /var/lib/servelink/version.json 2>/dev/null || echo "")
   if [[ -n "$payload" ]]; then
     curl -fsSL -X POST -H 'Content-Type: application/json' -d "$payload" https://api.devpu.sh/v1/telemetry >/dev/null 2>&1 || true
   fi
@@ -289,6 +289,6 @@ ok "Install complete."
 echo ""
 info "Next steps:"
 echo "1. Switch to the app user: ${BLD}sudo -iu ${user}${NC}"
-echo "2. Change dir and edit .env: ${BLD}cd devpush && vi .env${NC}"
+echo "2. Change dir and edit .env: ${BLD}cd servelink-app && vi .env${NC}"
 echo "   Set LE_EMAIL, APP_HOSTNAME, DEPLOY_DOMAIN, EMAIL_SENDER_ADDRESS, RESEND_API_KEY, GitHub App settings."
 echo "3. Start the application: ${BLD}./scripts/prod/start.sh --migrate${NC}"
