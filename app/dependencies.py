@@ -225,6 +225,9 @@ async def get_team_by_slug(
     result = await db.execute(
         select(Team, TeamMember)
         .join(TeamMember)
+        .options(
+            selectinload(Team.subscription).selectinload(TeamSubscription.plan)
+        )
         .where(
             Team.slug == team_slug,
             TeamMember.user_id == current_user.id,
@@ -237,6 +240,13 @@ async def get_team_by_slug(
         raise HTTPException(status_code=404, detail="Team not found or access denied")
 
     team, team_member = team_and_membership
+    
+    # Set current_plan for template access
+    if team.subscription and team.subscription.status == "active":
+        team._current_plan = team.subscription.plan
+    else:
+        team._current_plan = None
+    
     return team, team_member
 
 

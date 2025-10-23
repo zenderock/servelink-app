@@ -200,8 +200,8 @@ class Team(Base):
     @property
     def current_plan(self) -> "SubscriptionPlan | None":
         """Get current subscription plan"""
-        if self.subscription and self.subscription.status == "active":
-            return self.subscription.plan
+        if hasattr(self, '_current_plan'):
+            return self._current_plan
         return None
 
     def can_add_member(self) -> bool:
