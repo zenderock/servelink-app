@@ -198,14 +198,16 @@ class Team(Base):
         return get_color(self.id)
 
     @property
-    def current_plan(self) -> "SubscriptionPlan":
-        """Get current subscription plan or default free plan"""
+    def current_plan(self) -> "SubscriptionPlan | None":
+        """Get current subscription plan"""
         if self.subscription and self.subscription.status == "active":
             return self.subscription.plan
-        return get_default_free_plan()
+        return None
 
     def can_add_member(self) -> bool:
         """Check if team can add more members"""
+        if not self.current_plan:
+            return False
         if self.current_plan.max_team_members == -1:
             return True
         
@@ -218,6 +220,8 @@ class Team(Base):
 
     def can_add_project(self) -> bool:
         """Check if team can add more projects"""
+        if not self.current_plan:
+            return False
         if self.current_plan.max_projects == -1:
             return True
         
@@ -229,6 +233,8 @@ class Team(Base):
 
     def can_add_custom_domain(self) -> bool:
         """Check if team can add custom domains"""
+        if not self.current_plan:
+            return False
         return self.current_plan.custom_domains_allowed
 
     def get_usage_stats(self) -> dict:
