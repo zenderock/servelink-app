@@ -44,7 +44,7 @@
     --accent-foreground: var(--servelink-black);
     --destructive: #dc2626;
     --destructive-foreground: var(--servelink-white);
-    --border: var(--servelink-gray-400);
+    --border: var(--servelink-gray-200);
     --input: var(--servelink-white);
     --ring: var(--servelink-black);
     --sidebar: var(--servelink-white);
@@ -86,7 +86,7 @@
     --accent-foreground: var(--servelink-white);
     --destructive: #ef4444;
     --destructive-foreground: var(--servelink-white);
-    --border: var(--servelink-gray-400);
+    --border: var(--servelink-gray-200);
     --input: var(--servelink-gray-800);
     --ring: var(--servelink-white);
     --sidebar: var(--servelink-gray-800);

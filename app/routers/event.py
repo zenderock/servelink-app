@@ -62,7 +62,38 @@ async def deployment_event(
         )
 
         try:
+            # Send initial logs immediately
+            logger.info(f"SSE: Getting logs for deployment {deployment.id}")
+            logs = await request.app.state.loki_service.get_logs(
+                project_id=deployment.project_id,
+                deployment_id=deployment.id,
+                start_timestamp=logs_start_timestamp,
+                limit=5000,
+            )
+            logger.info(f"SSE: Retrieved {len(logs)} logs")
+
+            if logs:
+                logs_html = logs_template.module.log_list(logs=logs)
+                yield "event: deployment_log\n"
+                yield f"data: {logs_html.replace(chr(10), '').replace(chr(13), '')}\n\n"
+                logs_start_timestamp = (
+                    max(int(log["timestamp"]) for log in logs) + 1
+                )
+            else:
+                # Send a message indicating no logs yet
+                yield "event: deployment_log\n"
+                yield "data: <div class='flex items-center justify-center p-4 text-muted-foreground'>No logs available yet...</div>\n\n"
+
+            # Add timeout to prevent infinite loops
+            start_time = time.time()
+            max_duration = 1800  # 30 minutes max
+            
             while True:
+                # Check if we've been running too long
+                if time.time() - start_time > max_duration:
+                    yield "event: deployment_log_closed\n"
+                    yield "data: timeout\n\n"
+                    break
                 if (
                     deployment_conclusion
                     and deployment_concluded_at
