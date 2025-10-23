@@ -59,6 +59,7 @@ from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
 from services.deployment import DeploymentService
 from services.domain import DomainService
+from services.project_monitoring import ProjectMonitoringService
 from utils.project import get_latest_projects, get_latest_deployments
 from utils.team import get_latest_teams
 from utils.pagination import paginate
@@ -1891,4 +1892,57 @@ async def project_logs(
             "latest_projects": latest_projects,
             "latest_teams": latest_teams,
         },
+    )
+
+
+@router.post(
+    "/{team_slug}/projects/{project_name}/reactivate",
+    name="project_reactivate",
+)
+async def project_reactivate(
+    request: Request,
+    project: Project = Depends(get_project_by_name),
+    current_user: User = Depends(get_current_user),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_slug),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    """Réactiver un projet inactif"""
+    team, membership = team_and_membership
+    
+    # Vérifier que l'utilisateur a les permissions
+    if membership.role not in ["owner", "admin"]:
+        flash(request, _("You don't have permission to reactivate this project."), "error")
+        return RedirectResponseX(
+            url=request.url_for("project_index", team_slug=team.slug, project_name=project.name),
+            status_code=303
+        )
+    
+    # Vérifier que le projet peut être réactivé
+    if not project.can_be_reactivated():
+        flash(request, _("This project cannot be reactivated."), "error")
+        return RedirectResponseX(
+            url=request.url_for("project_index", team_slug=team.slug, project_name=project.name),
+            status_code=303
+        )
+    
+    try:
+        # Réactiver le projet
+        success = await ProjectMonitoringService.reactivate_project(project, db)
+        
+        if success:
+            # Mettre à jour la configuration Traefik
+            deployment_service = DeploymentService()
+            await deployment_service.update_traefik_config(project, db, settings)
+            
+            flash(request, _("Project reactivated successfully!"), "success")
+        else:
+            flash(request, _("Failed to reactivate project."), "error")
+    except Exception as e:
+        logger.error(f"Error reactivating project {project.id}: {e}")
+        flash(request, _("An error occurred while reactivating the project."), "error")
+    
+    return RedirectResponseX(
+        url=request.url_for("project_index", team_slug=team.slug, project_name=project.name),
+        status_code=303
     )

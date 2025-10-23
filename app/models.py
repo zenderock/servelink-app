@@ -242,6 +242,16 @@ class Team(Base):
             if project.status == "active"
         ])
         
+        inactive_projects = len([
+            project for project in self.projects 
+            if project.status == "inactive"
+        ])
+        
+        permanently_disabled_projects = len([
+            project for project in self.projects 
+            if project.status == "permanently_disabled"
+        ])
+        
         return {
             "members": {
                 "current": active_members,
@@ -250,6 +260,8 @@ class Team(Base):
             },
             "projects": {
                 "current": active_projects,
+                "inactive": inactive_projects,
+                "permanently_disabled": permanently_disabled_projects,
                 "limit": self.current_plan.max_projects,
                 "unlimited": self.current_plan.max_projects == -1
             },
@@ -405,11 +417,14 @@ class Project(Base):
         index=True, nullable=False, default=utc_now, onupdate=utc_now
     )
     status: Mapped[str] = mapped_column(
-        SQLAEnum("active", "paused", "deleted", name="project_status"),
+        SQLAEnum("active", "paused", "inactive", "permanently_disabled", "deleted", name="project_status"),
         nullable=False,
         default="active",
     )
     team_id: Mapped[str] = mapped_column(ForeignKey("team.id"), index=True)
+    last_traffic_at: Mapped[datetime | None] = mapped_column(nullable=True, index=True)
+    deactivated_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    reactivation_count: Mapped[int] = mapped_column(nullable=False, default=0)
 
     # Relationships
     github_installation: Mapped[GithubInstallation] = relationship(
@@ -636,6 +651,10 @@ class Project(Base):
         """Get branch URL"""
         settings = get_settings()
         return f"{settings.url_scheme}://{self.get_branch_hostname(branch)}"
+
+    def can_be_reactivated(self) -> bool:
+        """Check if project can be reactivated"""
+        return self.status != "permanently_disabled"
 
 
 @event.listens_for(Project, "after_insert")
