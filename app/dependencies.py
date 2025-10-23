@@ -19,7 +19,7 @@ from arq.connections import ArqRedis
 
 from config import get_settings, Settings
 from db import get_db
-from models import User, Project, Deployment, Team, TeamMember
+from models import User, Project, Deployment, Team, TeamMember, TeamSubscription
 from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
 from services.pricing import PricingService
