@@ -11,6 +11,7 @@ from authlib.jose import jwt
 from datetime import timedelta
 import resend
 from services.onesignal import OneSignalService
+from services.pricing import PricingService
 
 from models import Project, Deployment, User, Team, TeamMember, utc_now, TeamInvite
 from dependencies import (
