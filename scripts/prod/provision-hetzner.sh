@@ -20,7 +20,7 @@ Provision a Hetzner Cloud server and create an SSH-enabled sudo user.
 
   --token TOKEN   Hetzner API token (required)
   --user NAME     Login username to create (optional; defaults to current shell user; must not be 'root')
-  --name HOST     Server name/hostname (optional; defaults to devpush-<region>)
+  --name HOST     Server name/hostname (optional; defaults to servelink-<region>)
   --region LOC    Region (optional; defaults to 'hil'). Available:
                   fsn1 (Falkenstein, DE)
                   nbg1 (Nuremberg, DE)
@@ -82,7 +82,7 @@ info "Provisioning: $server_type in $region"
 echo ""
 
 # Determine server name (flag overrides default; no prompt)
-server_name="${name_flag:-devpush-$region}"
+server_name="${name_flag:-servelink-$region}"
 
 # Determine login user (flag overrides default)
 login_user="${login_user_flag:-${USER:-admin}}"
@@ -158,5 +158,5 @@ info "Server IP: $server_ip"
 echo ""
 echo "Next steps:"
 echo "- SSH in: ssh $login_user@$server_ip"
-echo "- Install /dev/push: curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/install.sh | sudo bash"
-echo "- Optional: harden system: curl -fsSL https://raw.githubusercontent.com/hunvreus/devpush/main/scripts/prod/harden.sh | sudo bash -s -- --ssh"
+echo "- Install Servelink: curl -fsSL https://raw.githubusercontent.com/zenderock/servelink-app/main/scripts/prod/install.sh | sudo bash"
+echo "- Optional: harden system: curl -fsSL https://raw.githubusercontent.com/zenderock/servelink-app/main/scripts/prod/harden.sh | sudo bash -s -- --ssh"

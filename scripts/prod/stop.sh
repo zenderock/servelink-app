@@ -38,7 +38,7 @@ done
 cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 
 info "Stopping services..."
-args=(-p devpush)
+args=(-p servelink)
 if ((hard==1)); then
   docker compose "${args[@]}" down --remove-orphans
 else

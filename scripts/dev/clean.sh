@@ -28,11 +28,11 @@ if ((hard==1)); then
   docker images -aq | xargs -r docker rmi -f || true
 else
   command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
-  docker-compose -p devpush -f docker-compose.yml -f docker-compose.override.dev.yml down --remove-orphans || true
+  docker-compose -p servelink -f docker-compose.yml -f docker-compose.override.dev.yml down --remove-orphans || true
 fi
 
-docker network rm devpush_default >/dev/null 2>&1 || true
-docker network rm devpush_internal >/dev/null 2>&1 || true
+docker network rm servelink_default >/dev/null 2>&1 || true
+docker network rm servelink_internal >/dev/null 2>&1 || true
 
 rm -rf ./data/traefik/* ./data/upload/* 2>/dev/null || true
 mkdir -p ./data/traefik ./data/upload

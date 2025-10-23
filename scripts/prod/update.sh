@@ -82,7 +82,7 @@ git fetch --depth 1 origin "refs/tags/$ref" || git fetch --depth 1 origin "$ref"
 git reset --hard FETCH_HEAD
 
 # Skip work if commit unchanged (use system state file)
-version_file="/var/lib/devpush/version.json"
+version_file="/var/lib/servelink/version.json"
 prev_commit="$(jq -r '.git_commit' "$version_file" 2>/dev/null || echo "")"
 current_commit="$(git rev-parse --verify HEAD)"
 if [[ -n "$prev_commit" && "$prev_commit" == "$current_commit" ]]; then
@@ -91,7 +91,7 @@ if [[ -n "$prev_commit" && "$prev_commit" == "$current_commit" ]]; then
 fi
 
 # Update Docker images
-args=(-p devpush)
+args=(-p servelink)
 if ((pull==1)); then
   info "Pulling images..."
   docker compose "${args[@]}" pull || true
@@ -174,15 +174,15 @@ fi
 # Update install metadata (version.json)
 commit=$(git rev-parse --verify HEAD)
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-[[ -d /var/lib/devpush ]] || install -d -m 0755 /var/lib/devpush || true
-old_id="$(jq -r '.install_id' /var/lib/devpush/version.json 2>/dev/null || true)"
+[[ -d /var/lib/servelink ]] || install -d -m 0755 /var/lib/servelink || true
+old_id="$(jq -r '.install_id' /var/lib/servelink/version.json 2>/dev/null || true)"
 [[ -n "$old_id" && "$old_id" != "null" ]] || old_id=$(cat /proc/sys/kernel/random/uuid)
-{ printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts"; } > /var/lib/devpush/version.json
+{ printf '{"install_id":"%s","git_ref":"%s","git_commit":"%s","updated_at":"%s"}\n' "$old_id" "$ref" "$commit" "$ts"; } > /var/lib/servelink/version.json
 
 ok "Update complete to $ref"
 
 # Send telemetry
-payload=$(jq -c --arg ev "update" '. + {event: $ev}' /var/lib/devpush/version.json 2>/dev/null || echo "")
+payload=$(jq -c --arg ev "update" '. + {event: $ev}' /var/lib/servelink/version.json 2>/dev/null || echo "")
 if [[ -n "$payload" ]]; then
   curl -fsSL -X POST -H 'Content-Type: application/json' -d "$payload" https://api.devpu.sh/v1/telemetry >/dev/null 2>&1 || true
 fi
