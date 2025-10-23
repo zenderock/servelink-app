@@ -121,7 +121,7 @@ body_attrs={"class": "space-y-4"}
 			popover_attrs={"data-align": "end"}
 			) %}
 			<a href="https://changelog.servel.ink/" target="_blank" role="menuitem">
-				{{ _('Change Log') }}
+				{{ _('Changelog') }}
 				<span class="ml-auto text-muted-foreground [&>svg]:size-3">
 					{% include "icons/external-link.svg" %}
 				</span>
@@ -134,7 +134,7 @@ body_attrs={"class": "space-y-4"}
 			</div>
 			{% set trigger %}
 			{% set fallback %}
-			<img src="https://unavatar.io/{{ current_user.email }}?fallback=https://avatar.vercel.sh/{{ current_user.email }}?size=120"
+			<img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ current_user.email }}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&size=32"
 				alt="{{ current_user.email }}" class="size-8 rounded-full shrink-0">
 			{% endset %}
 			{{ avatar(item=current_user, prefix="user", name=current_user.name if current_user.name else
