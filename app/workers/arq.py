@@ -1,5 +1,6 @@
 import logging
 from arq.connections import RedisSettings
+from arq import CronJob
 from workers.tasks.deploy import deploy_start, deploy_finalize, deploy_fail
 from workers.tasks.cleanup import (
     cleanup_user,
@@ -39,8 +40,8 @@ class WorkerSettings:
     allow_abort_jobs = True
     cron_jobs = [
         # Exécuter la vérification des projets inactifs tous les jours à 03h00 UTC
-        {
-            "function": "check_inactive_projects",
-            "cron": "0 3 * * *",  # Tous les jours à 03h00 UTC
-        }
+        CronJob(
+            function=check_inactive_projects,
+            cron="0 3 * * *",  # Tous les jours à 03h00 UTC
+        )
     ]
