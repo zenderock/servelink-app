@@ -67,7 +67,7 @@ class PricingService:
             default_team = await db.get(Team, user.default_team.id)
             if default_team:
                 plan = default_team.current_plan
-                if plan.max_teams != -1 and len(user_teams) >= plan.max_teams:
+                if plan and plan.max_teams != -1 and len(user_teams) >= plan.max_teams:
                     return False, f"Team limit reached. You can have up to {plan.max_teams} team(s) on the {plan.display_name} plan."
         
         return True, ""
@@ -77,9 +77,11 @@ class PricingService:
         """Validate if team can add a new member"""
         if not team.can_add_member():
             plan = team.current_plan
-            if plan.max_team_members == -1:
+            if plan and plan.max_team_members == -1:
                 return True, ""
-            return False, f"Member limit reached. You can have up to {plan.max_team_members} member(s) on the {plan.display_name} plan."
+            if plan:
+                return False, f"Member limit reached. You can have up to {plan.max_team_members} member(s) on the {plan.display_name} plan."
+            return False, "Member limit reached. No active plan found."
         
         return True, ""
 
@@ -88,9 +90,11 @@ class PricingService:
         """Validate if team can create a new project"""
         if not team.can_add_project():
             plan = team.current_plan
-            if plan.max_projects == -1:
+            if plan and plan.max_projects == -1:
                 return True, ""
-            return False, f"Project limit reached. You can have up to {plan.max_projects} project(s) on the {plan.display_name} plan."
+            if plan:
+                return False, f"Project limit reached. You can have up to {plan.max_projects} project(s) on the {plan.display_name} plan."
+            return False, "Project limit reached. No active plan found."
         
         return True, ""
 
@@ -99,7 +103,9 @@ class PricingService:
         """Validate if team can add custom domains"""
         if not team.can_add_custom_domain():
             plan = team.current_plan
-            return False, f"Custom domains are not available on the {plan.display_name} plan. Upgrade to add custom domains."
+            if plan:
+                return False, f"Custom domains are not available on the {plan.display_name} plan. Upgrade to add custom domains."
+            return False, "Custom domains are not available. No active plan found."
         
         return True, ""
 
@@ -192,26 +198,28 @@ class PricingService:
         
         plan = team.current_plan
         
-        return {
-            "plan": {
-                "name": plan.name,
-                "display_name": plan.display_name,
-                "price_per_month": plan.price_per_month
-            },
-            "members": {
-                "current": active_members,
-                "limit": plan.max_team_members,
-                "unlimited": plan.max_team_members == -1,
-                "percentage": 0 if plan.max_team_members == -1 else (active_members / plan.max_team_members) * 100
-            },
-            "projects": {
-                "current": active_projects,
-                "limit": plan.max_projects,
-                "unlimited": plan.max_projects == -1,
-                "percentage": 0 if plan.max_projects == -1 else (active_projects / plan.max_projects) * 100
-            },
-            "custom_domains": {
-                "allowed": plan.custom_domains_allowed,
-                "current": custom_domains_count
+        if not plan:
+            # Return default free plan stats if no plan is found
+            return {
+                "plan": {
+                    "name": "free",
+                    "display_name": "Free",
+                    "price_per_month": None
+                },
+                "members": {
+                    "current": active_members,
+                    "limit": 1,  # Free plan default
+                    "unlimited": False,
+                    "percentage": (active_members / 1) * 100
+                },
+                "projects": {
+                    "current": active_projects,
+                    "limit": 2,  # Free plan default
+                    "unlimited": False,
+                    "percentage": (active_projects / 2) * 100
+                },
+                "custom_domains": {
+                    "allowed": False,  # Free plan default
+                    "current": custom_domains_count
+                }
             }
-        }
