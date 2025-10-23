@@ -5,13 +5,13 @@ services:
       - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=le
     volumes:
-      - /srv/devpush/traefik:/data/traefik
-      - /srv/devpush/upload:/app/upload
-      - /srv/devpush/access.json:/app/settings/access.json
+      - /srv/servelink/traefik:/data/traefik
+      - /srv/servelink/upload:/app/upload
+      - /srv/servelink/access.json:/app/settings/access.json
 
   worker-arq:
     volumes:
-      - /srv/devpush/traefik:/data/traefik
+      - /srv/servelink/traefik:/data/traefik
 
   pgsql:
     ports:
@@ -38,4 +38,4 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /srv/devpush/traefik:/etc/traefik/dynamic_conf
+      - /srv/servelink/traefik:/etc/traefik/dynamic_conf
