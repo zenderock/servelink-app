@@ -186,6 +186,7 @@ class Team(Base):
 
     # Relationships
     projects: Mapped[list["Project"]] = relationship(back_populates="team")
+    members: Mapped[list["TeamMember"]] = relationship(back_populates="team")
     created_by_user: Mapped[User | None] = relationship(
         foreign_keys=[created_by_user_id]
     )
@@ -315,7 +316,7 @@ class TeamMember(Base):
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
 
     # Relationships
-    team: Mapped[Team] = relationship()
+    team: Mapped[Team] = relationship(back_populates="members")
     user: Mapped[User] = relationship()
 
 
