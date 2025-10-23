@@ -28,6 +28,7 @@ from dependencies import (
     get_github_installation_service,
     get_pricing_service,
 )
+from services.pricing import PricingService
 from models import (
     Project,
     Deployment,
