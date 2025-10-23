@@ -44,6 +44,10 @@ body_attrs={"class": "space-y-4"}
 						{% endif %}">
 						{{ team.current_plan.display_name }}
 					</span>
+					{% else %}
+					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+						Free
+					</span>
 					{% endif %}
 				</a>
 				{% call dropdown_menu(
