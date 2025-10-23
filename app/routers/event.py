@@ -7,7 +7,7 @@ import time
 from typing import Any
 from datetime import datetime
 
-from models import Team, Project, Deployment, User
+from models import Team, Project, Deployment, User, TeamMember
 from dependencies import (
     get_current_user,
     get_deployment_by_id,
@@ -32,18 +32,20 @@ async def deployment_event(
     request: Request,
     start_timestamp: int | None = Query(None),
     current_user: User = Depends(get_current_user),
-    team: Team = Depends(get_team_by_id),
+    team_and_membership: tuple[Team, TeamMember] = Depends(get_team_by_id),
     project: Project = Depends(get_project_by_id),
     deployment: Deployment = Depends(get_deployment_by_id),
     redis_client: Redis = Depends(get_redis_client),
 ):
+    team, team_member = team_and_membership
+    
     async def event_generator():
         status_stream = (
             f"stream:project:{deployment.project_id}:deployment:{deployment.id}:status"
         )
         status_start_position = "0-0"
 
-        last_event_id = request.headers.get("Last-Event-ID")  # Reconnection
+        last_event_id = request.headers.get("Last-Event-ID")  
         logs_start_timestamp = (
             int(last_event_id)
             if last_event_id

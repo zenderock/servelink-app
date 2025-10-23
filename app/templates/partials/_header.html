@@ -36,7 +36,7 @@ body_attrs={"class": "space-y-4"}
 					{{ avatar(item=team, prefix="team", name=team.name, size="xs") }}
 					<span {% if project or deployment %}class="max-sm:hidden" {% endif %}>{{ team.name }}</span>
 					{% if team.current_plan %}
-					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full
+					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-none
 						{% if team.current_plan.name == 'free' %}
 							bg-muted text-muted-foreground
 						{% else %}
@@ -45,7 +45,7 @@ body_attrs={"class": "space-y-4"}
 						{{ team.current_plan.display_name }}
 					</span>
 					{% else %}
-					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+					<span class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded-none bg-muted text-muted-foreground">
 						Free
 					</span>
 					{% endif %}
