@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
 
-from models import Deployment, User
+from models import Deployment, User, Project, Team
 from services.onesignal import OneSignalService
 from dependencies import templates
 from config import Settings
@@ -80,6 +80,110 @@ class DeploymentNotificationService:
             logger.error(f"Failed to send deployment notification to {user.email} for deployment {deployment.id}: {str(e)}")
             return False
     
+    async def send_project_disabled_notification(
+        self,
+        project: Project,
+        user: User,
+        team: Team
+    ) -> bool:
+        """
+        Send project disabled notification email to the project owner.
+        
+        Args:
+            project: The project that was disabled
+            user: The user who owns the project
+            team: The team that owns the project
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        try:
+            subject = f"Project Temporarily Disabled - {project.name}"
+            
+            # Build URLs
+            project_url = f"{self.settings.url_scheme}://{self.settings.app_hostname}/{team.slug}/projects/{project.name}"
+            app_url = f"{self.settings.url_scheme}://{self.settings.app_hostname}"
+            
+            # Render email template
+            html_content = templates.get_template("email/project-disabled.html").render(
+                {
+                    "project_name": project.name,
+                    "project_url": project_url,
+                    "app_name": self.settings.app_name,
+                    "app_description": self.settings.app_description,
+                    "app_url": app_url,
+                    "email_logo": self.settings.email_logo,
+                }
+            )
+            
+            # Send email via OneSignal
+            await self.onesignal_service.send_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=html_content,
+                from_name=self.settings.email_sender_name,
+                from_address=self.settings.email_sender_address
+            )
+            
+            logger.info(f"Project disabled notification sent to {user.email} for project {project.id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send project disabled notification to {user.email} for project {project.id}: {str(e)}")
+            return False
+
+    async def send_project_permanently_disabled_notification(
+        self,
+        project: Project,
+        user: User,
+        team: Team
+    ) -> bool:
+        """
+        Send project permanently disabled notification email to the project owner.
+        
+        Args:
+            project: The project that was permanently disabled
+            user: The user who owns the project
+            team: The team that owns the project
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        try:
+            subject = f"Project Permanently Disabled - {project.name}"
+            
+            # Build URLs
+            dashboard_url = f"{self.settings.url_scheme}://{self.settings.app_hostname}/{team.slug}"
+            app_url = f"{self.settings.url_scheme}://{self.settings.app_hostname}"
+            
+            # Render email template
+            html_content = templates.get_template("email/project-permanently-disabled.html").render(
+                {
+                    "project_name": project.name,
+                    "dashboard_url": dashboard_url,
+                    "app_name": self.settings.app_name,
+                    "app_description": self.settings.app_description,
+                    "app_url": app_url,
+                    "email_logo": self.settings.email_logo,
+                }
+            )
+            
+            # Send email via OneSignal
+            await self.onesignal_service.send_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=html_content,
+                from_name=self.settings.email_sender_name,
+                from_address=self.settings.email_sender_address
+            )
+            
+            logger.info(f"Project permanently disabled notification sent to {user.email} for project {project.id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send project permanently disabled notification to {user.email} for project {project.id}: {str(e)}")
+            return False
+
     async def close(self):
         """Close the OneSignal service."""
         await self.onesignal_service.close()

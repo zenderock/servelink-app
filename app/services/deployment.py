@@ -28,6 +28,12 @@ class DeploymentService:
         """Update Traefik config for a project including domains."""
         path = os.path.join(settings.traefik_config_dir, f"project_{project.id}.yml")
 
+        # Check if project is active - if not, remove config and return
+        if project.status in ["inactive", "permanently_disabled"]:
+            if os.path.exists(path):
+                os.remove(path)
+            return
+
         # Get aliases
         result = await db.execute(
             select(Alias)

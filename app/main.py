@@ -17,6 +17,7 @@ from db import get_db, AsyncSessionLocal
 from models import User, Team, Deployment, Project
 from dependencies import get_current_user, TemplateResponse
 from services.loki import LokiService
+from middleware.traffic_recorder import TrafficRecorderMiddleware
 
 
 class CachedStaticFiles(StaticFiles):
@@ -54,6 +55,7 @@ app = FastAPI(
     middleware=[
         Middleware(SessionMiddleware, secret_key=settings.secret_key),
         Middleware(CSRFProtectMiddleware, csrf_secret=settings.secret_key),
+        Middleware(TrafficRecorderMiddleware, deploy_domain=settings.deploy_domain),
     ],
 )
 app.mount("/assets", CachedStaticFiles(directory="assets"), name="assets")
