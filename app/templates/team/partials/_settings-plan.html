@@ -6,7 +6,7 @@
 
     <div class="space-y-6">
         <!-- Current Plan -->
-        <div class="space-y-3">
+        <div class="space-y-3 px-4">
             <h3 class="font-medium">{{ _("Current Plan") }}</h3>
             <div class="flex items-center justify-between p-4 border rounded-lg">
                 <div class="space-y-1">
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Usage Statistics -->
-        <div class="space-y-4">
+        <div class="space-y-4 px-4 py-3">
             <h3 class="font-medium">{{ _("Usage") }}</h3>
 
             <!-- Members Usage -->
@@ -96,7 +96,7 @@
 
         <!-- Upgrade Button -->
         {% if team.current_plan.name == 'free' %}
-        <div class="pt-4 border-t">
+        <div class="pt-4 border-t px-4">
             <a href="https://servel.ink/pricing" target="_blank" rel="noopener noreferrer" class="btn-primary">
                 {{ _("Upgrade to Pay as You Go") }}
             </a>

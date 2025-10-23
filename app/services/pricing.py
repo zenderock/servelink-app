@@ -69,6 +69,10 @@ class PricingService:
                 plan = default_team.current_plan
                 if plan and plan.max_teams != -1 and len(user_teams) >= plan.max_teams:
                     return False, f"Team limit reached. You can have up to {plan.max_teams} team(s) on the {plan.display_name} plan."
+        else:
+            # If user has no default team, they're on free plan (max 1 team)
+            if len(user_teams) >= 1:
+                return False, "Team limit reached. You can have up to 1 team(s) on the Free plan."
         
         return True, ""
 
