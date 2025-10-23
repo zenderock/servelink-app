@@ -203,3 +203,40 @@ pre {
   background: var(--muted);
   color: var(--foreground);
 }
+
+/* Header Navigation - Remove borders by default */
+header .btn-sm-ghost {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+header .btn-sm-ghost:hover {
+  background: var(--muted);
+  border: none !important;
+}
+
+/* Header dropdown triggers - Remove borders */
+header [class*="btn-sm-ghost"] {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+header [class*="btn-sm-ghost"]:hover {
+  background: var(--muted);
+  border: none !important;
+}
+
+/* Disabled button states */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-ghost:disabled,
+.btn-outline:disabled,
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+/* Ensure disabled buttons show proper cursor */
+.opacity-50.cursor-not-allowed {
+  cursor: not-allowed !important;
+}

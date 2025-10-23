@@ -76,14 +76,14 @@ async def deployment_event(
 
             if logs:
                 logs_html = logs_template.module.log_list(logs=logs)
-                yield "event: deployment_log\n"
+                yield "event: deployment_log_initial\n"
                 yield f"data: {logs_html.replace(chr(10), '').replace(chr(13), '')}\n\n"
                 logs_start_timestamp = (
                     max(int(log["timestamp"]) for log in logs) + 1
                 )
             else:
                 # Send a message indicating no logs yet
-                yield "event: deployment_log\n"
+                yield "event: deployment_log_initial\n"
                 yield "data: <div class='flex items-center justify-center p-4 text-muted-foreground'>No logs available yet...</div>\n\n"
 
             # Add timeout to prevent infinite loops
