@@ -67,6 +67,7 @@ from utils.pagination import paginate
 from utils.environment import group_branches_by_environment, get_environment_for_branch
 from utils.color import COLORS
 from utils.user import get_user_github_token
+from utils.project import generate_unique_project_name
 
 logger = logging.getLogger(__name__)
 
@@ -189,8 +190,11 @@ async def new_project_details(
             for entry in form.env_vars
         ]
 
+        # Generate unique project name
+        unique_name = await generate_unique_project_name(db, team, form.name.data)
+        
         project = Project(
-            name=form.name.data,
+            name=unique_name,
             repo_id=form.repo_id.data,
             repo_full_name=repo["full_name"],
             github_installation=github_installation,
@@ -219,7 +223,12 @@ async def new_project_details(
 
         db.add(project)
         await db.commit()
-        flash(request, _("Project added."), "success")
+        
+        # Inform user if name was changed
+        if unique_name != form.name.data:
+            flash(request, _("Project added as '{name}' (original name was already taken).").format(name=unique_name), "info")
+        else:
+            flash(request, _("Project added."), "success")
 
         return RedirectResponseX(
             url=str(

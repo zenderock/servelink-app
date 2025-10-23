@@ -9,35 +9,25 @@
   <section class="w-full rounded-lg border group">
     <header class="px-4 h-10 w-full flex items-center gap-x-2">
       {{ _('Logs') }}
-      <a
-        href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(deployment_id=deployment.id) }}"
-        class="btn-sm-icon-ghost ml-auto"
-        data-tooltip="{{ _('All logs') }}"
-        data-alight="end"
-        aria-label="{{ _('All logs') }}"
-      >
+      <a href="{{ url_for('project_logs', team_slug=team.slug, project_name=project.name).include_query_params(deployment_id=deployment.id) }}"
+        class="btn-sm-icon-ghost ml-auto" data-tooltip="{{ _('All logs') }}" data-alight="end"
+        aria-label="{{ _('All logs') }}">
         {% include "icons/logs.svg" %}
       </a>
     </header>
 
-    <div
-      id="deployment-logs"
-      class="overflow-y-auto h-[500px] relative p-2 border-t scrollbar-thin scrollbar"
+    <div id="deployment-logs" class="overflow-y-auto h-[500px] relative p-2 border-t scrollbar-thin scrollbar"
       hx-trigger="load"
       hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=project.name, deployment_id=deployment.id).include_query_params(fragment='logs') }}"
-      hx-swap="beforeend"
-      x-init="$el.scrollTop = $el.scrollHeight"
-      hx-on::before-swap="
+      hx-swap="beforeend" x-init="$el.scrollTop = $el.scrollHeight" hx-on::before-swap="
         scrollBottom = this.scrollHeight - this.scrollTop;
-      "
-      hx-on::after-swap="
+      " hx-on::after-swap="
         if (event?.detail?.requestConfig?.triggeringEvent?.type == 'intersect') {
           this.scrollTop = this.scrollHeight - scrollBottom;
         } else {
           this.scrollTop = this.scrollHeight;
         }
-      "
-      x-data="{
+      " x-data="{
         getTime(timestamp) {
           return new Date(timestamp).toLocaleTimeString('default', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
         },
@@ -49,8 +39,7 @@
           ':data-tooltip'() { return this.getTooltip(this.$el.getAttribute('datetime')) },
           ':data-side': '\'right\''
         }
-      }"
-    >
+      }">
       <div class="absolute inset-0 hidden only:flex items-center justify-center text-muted-foreground">
         <div class="flex items-center gap-x-2 [&>svg]:size-4 [&>svg]:animate-spin">
           {% include "icons/loader.svg" %}
@@ -59,5 +48,17 @@
       </div>
     </div>
   </section>
+
+  <!-- SSE Connection for real-time logs -->
+  {% if deployment.status != "completed" or deployment.container_status == "running" or (deployment.concluded_at and
+  (utc_now() - deployment.concluded_at).total_seconds() < 5) %} <div hx-ext="sse"
+    sse-connect="{{ url_for('deployment_event', team_id=team.id, project_id=project.id, deployment_id=deployment.id) }}"
+    sse-close="deployment_log_closed" class="hidden">
+    <div sse-swap="deployment_log" hx-target="#deployment-logs" hx-swap="beforeend"></div>
+    <div hx-trigger="sse:deployment_concluded" hx-target="#deployment-page-header"
+      hx-get="{{ url_for('project_deployment', team_slug=team.slug, project_name=deployment.project.name, deployment_id=deployment.id).include_query_params(fragment='header') }}">
+    </div>
+</div>
+{% endif %}
 </div>
 {% endblock %}

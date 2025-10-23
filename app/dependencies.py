@@ -19,7 +19,7 @@ from arq.connections import ArqRedis
 
 from config import get_settings, Settings
 from db import get_db
-from models import User, Project, Deployment, Team, TeamMember, TeamSubscription
+from models import User, Project, Deployment, Team, TeamMember, TeamSubscription, utc_now
 from services.github import GitHubService
 from services.github_installation import GitHubInstallationService
 from services.pricing import PricingService
@@ -431,6 +431,7 @@ templates.env.globals["get_flashed_messages"] = get_flashed_messages
 templates.env.globals["toaster_header"] = settings.toaster_header
 templates.env.filters["time_ago"] = time_ago_filter
 templates.env.globals["get_access"] = get_access
+templates.env.globals["utc_now"] = utc_now
 
 
 def TemplateResponse(
