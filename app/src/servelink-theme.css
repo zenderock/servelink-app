@@ -44,7 +44,7 @@
     --accent-foreground: var(--servelink-black);
     --destructive: #dc2626;
     --destructive-foreground: var(--servelink-white);
-    --border: var(--servelink-gray-200);
+    --border: var(--servelink-gray-400);
     --input: var(--servelink-white);
     --ring: var(--servelink-black);
     --sidebar: var(--servelink-white);
@@ -86,7 +86,7 @@
     --accent-foreground: var(--servelink-white);
     --destructive: #ef4444;
     --destructive-foreground: var(--servelink-white);
-    --border: var(--servelink-gray-600);
+    --border: var(--servelink-gray-400);
     --input: var(--servelink-gray-800);
     --ring: var(--servelink-white);
     --sidebar: var(--servelink-gray-800);
@@ -158,12 +158,31 @@
     border-radius: 0 !important;
     border: 1px solid var(--border);
     box-shadow: none !important;
+    background-color: var(--input);
+    transition: border-color 0.15s ease-in-out;
+}
+
+.input:hover {
+    border-color: var(--muted-foreground);
 }
 
 .input:focus {
     outline: none;
     border-color: var(--ring);
     box-shadow: none !important;
+}
+
+.input:disabled {
+    background-color: var(--muted);
+    border-color: var(--muted-foreground);
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+}
+
+/* Input placeholder styling */
+.input::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.8;
 }
 
 /* Flat design for badges */
