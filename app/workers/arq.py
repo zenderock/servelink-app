@@ -1,6 +1,6 @@
 import logging
 from arq.connections import RedisSettings
-from arq import CronJob
+from arq.cron import CronJob
 from workers.tasks.deploy import deploy_start, deploy_finalize, deploy_fail
 from workers.tasks.cleanup import (
     cleanup_user,
