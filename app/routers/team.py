@@ -13,7 +13,7 @@ import resend
 from services.onesignal import OneSignalService
 from services.pricing import PricingService
 
-from models import Project, Deployment, User, Team, TeamMember, utc_now, TeamInvite
+from models import Project, Deployment, User, Team, TeamMember, TeamSubscription, utc_now, TeamInvite
 from dependencies import (
     get_current_user,
     get_team_by_slug,
@@ -80,6 +80,16 @@ async def new_team(
             },
         )
 
+    # Load current_user with all necessary relationships for template
+    result = await db.execute(
+        select(User)
+        .options(
+            selectinload(User.default_team).selectinload(Team.subscription).selectinload(TeamSubscription.plan)
+        )
+        .where(User.id == current_user.id)
+    )
+    current_user_with_relations = result.scalar_one()
+    
     # Count user's teams for UI validation
     result = await db.execute(
         select(Team)
@@ -88,12 +98,20 @@ async def new_team(
     )
     user_teams_count = len(result.scalars().all())
     
+    # Set current_plan for template access
+    if (current_user_with_relations.default_team and 
+        current_user_with_relations.default_team.subscription and 
+        current_user_with_relations.default_team.subscription.status == "active"):
+        current_user_with_relations.default_team._current_plan = current_user_with_relations.default_team.subscription.plan
+    elif current_user_with_relations.default_team:
+        current_user_with_relations.default_team._current_plan = None
+    
     return TemplateResponse(
         request=request,
         name="team/partials/_dialog-new-team.html",
         context={
             "form": form,
-            "current_user": current_user,
+            "current_user": current_user_with_relations,
             "user_teams_count": user_teams_count,
         },
     )
