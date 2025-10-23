@@ -56,14 +56,14 @@ def upgrade() -> None:
         UPDATE project 
         SET 
             allocated_cpu_cores = CAST(config->>'cpus' AS FLOAT)
-        WHERE config ? 'cpus' AND config->>'cpus' IS NOT NULL
+        WHERE config::text LIKE '%"cpus"%' AND config->>'cpus' IS NOT NULL
     """)
     
     op.execute("""
         UPDATE project 
         SET 
             allocated_memory_mb = CAST(config->>'memory' AS INTEGER)
-        WHERE config ? 'memory' AND config->>'memory' IS NOT NULL
+        WHERE config::text LIKE '%"memory"%' AND config->>'memory' IS NOT NULL
     """)
 
 
