@@ -63,7 +63,7 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO team_subscription (id, team_id, plan_id, status, created_at, updated_at)
         SELECT 
-            'sub_' || team.id,
+            'sub_' || substring(team.id::text, 1, 28),
             team.id,
             'free_plan_id',
             'active',
