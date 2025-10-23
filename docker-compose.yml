@@ -19,7 +19,7 @@ services:
       - "traefik.http.routers.app.service=app@docker"
       - "traefik.http.routers.app.entrypoints=web"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
-      - "traefik.docker.network=devpush_default"
+      - "traefik.docker.network=servelink_default"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 60s
@@ -123,10 +123,10 @@ services:
     environment:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
-      POSTGRES_DB: ${POSTGRES_DB:-devpush}
-      POSTGRES_USER: ${POSTGRES_USER:-devpush-app}
+      POSTGRES_DB: ${POSTGRES_DB:-servelink}
+      POSTGRES_USER: ${POSTGRES_USER:-servelink-app}
     volumes:
-      - devpush-db:/var/lib/postgresql/data
+      - servelink-db:/var/lib/postgresql/data
 
   loki:
     image: grafana/loki:3.4.1
@@ -147,14 +147,14 @@ services:
       start_period: 60s
 
 volumes:
-  devpush-db:
+  servelink-db:
   loki-data:
 
 networks:
   default:
-    name: devpush_default
+    name: servelink_default
   internal:
-    name: devpush_internal
+    name: servelink_internal
     internal: true
   runner:
-    name: devpush_runner
+    name: servelink_runner
