@@ -247,20 +247,26 @@ class ProjectDeleteEnvironmentForm(StarletteForm):
 class ProjectResourcesForm(StarletteForm):
     cpus = DecimalField(
         _l("CPUs"),
-        validators=[
-            Optional(),
-            NumberRange(min=0, max=64, message=_l("CPUs must be between 0 and 64.")),
-        ],
+        validators=[Optional()],  # Validation custom dans router
     )
     memory = IntegerField(
         _l("Memory (MB)"),
-        validators=[
-            Optional(),
-            NumberRange(
-                min=0, max=262144, message=_l("Memory must be between 0 and 262144 MB.")
-            ),
-        ],
+        validators=[Optional()],  # Validation custom dans router
     )
+    
+    async def validate_with_plan(self, team, db, project_id: str = None):
+        """Validation selon le plan de l'équipe"""
+        from services.pricing import ResourceValidationService
+        service = ResourceValidationService()
+        valid, msg = await service.validate_resources(
+            team, self.cpus.data, self.memory.data, db, project_id
+        )
+        if not valid:
+            if self.cpus.data and team.current_plan and self.cpus.data > team.current_plan.max_cpu_cores:
+                self.cpus.errors.append(msg)
+            if self.memory.data and team.current_plan and self.memory.data > team.current_plan.max_memory_mb:
+                self.memory.errors.append(msg)
+        return valid
 
 
 class ProjectDomainForm(StarletteForm):

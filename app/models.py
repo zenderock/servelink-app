@@ -432,6 +432,8 @@ class Project(Base):
     last_traffic_at: Mapped[datetime | None] = mapped_column(nullable=True, index=True)
     deactivated_at: Mapped[datetime | None] = mapped_column(nullable=True)
     reactivation_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    allocated_cpu_cores: Mapped[float | None] = mapped_column(nullable=True, default=None)
+    allocated_memory_mb: Mapped[int | None] = mapped_column(nullable=True, default=None)
 
     # Relationships
     github_installation: Mapped[GithubInstallation] = relationship(
@@ -929,6 +931,10 @@ class SubscriptionPlan(Base):
     max_team_members: Mapped[int] = mapped_column(nullable=False)
     max_projects: Mapped[int] = mapped_column(nullable=False)
     custom_domains_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    default_cpu_cores: Mapped[float] = mapped_column(nullable=False, default=0.3)
+    default_memory_mb: Mapped[int] = mapped_column(nullable=False, default=300)
+    max_cpu_cores: Mapped[float] = mapped_column(nullable=False, default=0.5)
+    max_memory_mb: Mapped[int] = mapped_column(nullable=False, default=500)
     price_per_month: Mapped[float] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(default=utc_now)

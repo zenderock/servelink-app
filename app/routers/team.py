@@ -80,10 +80,22 @@ async def new_team(
             },
         )
 
+    # Count user's teams for UI validation
+    result = await db.execute(
+        select(Team)
+        .join(TeamMember, Team.id == TeamMember.team_id)
+        .where(TeamMember.user_id == current_user.id, Team.status == "active")
+    )
+    user_teams_count = len(result.scalars().all())
+    
     return TemplateResponse(
         request=request,
         name="team/partials/_dialog-new-team.html",
-        context={"form": form},
+        context={
+            "form": form,
+            "current_user": current_user,
+            "user_teams_count": user_teams_count,
+        },
     )
 
 

@@ -14,11 +14,18 @@
     {{ resources_form.csrf_token(id=False) }}
     <div class="space-y-3">
       {{ resources_form.cpus.label() }}
+      <div class="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>Plan limit: {{ team.current_plan.max_cpu_cores }} cores</span>
+        <span>Default: {{ team.current_plan.default_cpu_cores }} cores</span>
+      </div>
       <div class="flex items-center gap-x-2" x-data="{ cpus: '{{ resources_form.cpus.data or '' }}' }">
         {{ resources_form.cpus(
         id=False,
         class="w-full",
-        placeholder=default_cpus,
+        placeholder=team.current_plan.default_cpu_cores,
+        min=0.1,
+        max=team.current_plan.max_cpu_cores,
+        step=0.1,
         **{'x-model': 'cpus'}
         ) }}
         <button type="button" class="btn-ghost" data-tooltip="{{ _('Use default') }}" :disabled="cpus == ''"
@@ -35,11 +42,24 @@
     </div>
     <div class="space-y-3">
       {{ resources_form.memory.label() }}
+      {% if team.current_plan.name == 'pay_as_you_go' %}
+      <div class="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>Available: {{ available_memory }}MB</span>
+        <span>Default: {{ team.current_plan.default_memory_mb }}MB</span>
+      </div>
+      {% else %}
+      <div class="flex items-center justify-between text-sm text-muted-foreground mb-2">
+        <span>Plan limit: {{ team.current_plan.max_memory_mb }}MB</span>
+        <span>Default: {{ team.current_plan.default_memory_mb }}MB</span>
+      </div>
+      {% endif %}
       <div class="flex items-center gap-x-2" x-data="{ memory: '{{ resources_form.memory.data or '' }}' }">
         {{ resources_form.memory(
         id=False,
         class="w-full",
-        placeholder=default_memory,
+        placeholder=team.current_plan.default_memory_mb,
+        min=1,
+        max=team.current_plan.max_memory_mb,
         **{'x-model': 'memory'}
         ) }}
         <button type="button" class="btn-ghost" data-tooltip="{{ _('Use default') }}" :disabled="memory == ''"

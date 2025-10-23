@@ -21,6 +21,10 @@ class PricingService:
                 max_team_members=1,
                 max_projects=2,
                 custom_domains_allowed=False,
+                default_cpu_cores=0.3,
+                default_memory_mb=300,
+                max_cpu_cores=0.5,
+                max_memory_mb=500,
                 price_per_month=None
             )
             db.add(plan)
@@ -44,6 +48,10 @@ class PricingService:
                 max_team_members=-1,  # Unlimited
                 max_projects=-1,  # Unlimited
                 custom_domains_allowed=True,
+                default_cpu_cores=0.5,
+                default_memory_mb=512,
+                max_cpu_cores=4.0,
+                max_memory_mb=6144,  # 6GB max théorique
                 price_per_month=0.0
             )
             db.add(plan)
@@ -227,3 +235,51 @@ class PricingService:
                     "current": custom_domains_count
                 }
             }
+        return usage_stats
+
+
+class ResourceValidationService:
+    @staticmethod
+    async def get_available_memory(team: Team, db: AsyncSession) -> int:
+        """Calcul dynamique basé sur VPS de 8GB et projets actifs"""
+        total_vps_memory = 8192  # 8GB en MB
+        system_reserve = 2048  # 2GB pour système
+        available = total_vps_memory - system_reserve
+        
+        # Calculer mémoire utilisée par autres projets de la team
+        result = await db.execute(
+            select(func.sum(Project.allocated_memory_mb))
+            .where(Project.team_id == team.id, Project.status == "active")
+        )
+        used_memory = result.scalar() or 0
+        return max(0, available - used_memory)
+    
+    @staticmethod
+    async def validate_resources(
+        team: Team, 
+        cpu: float | None, 
+        memory: int | None,
+        db: AsyncSession,
+        current_project_id: str | None = None
+    ) -> tuple[bool, str]:
+        """Valider allocation selon plan et disponibilité"""
+        plan = team.current_plan
+        if not plan:
+            return False, "No active plan found"
+        
+        # Validation CPU
+        if cpu is not None:
+            if cpu > plan.max_cpu_cores:
+                return False, f"CPU limit: {plan.max_cpu_cores} cores on {plan.display_name}"
+        
+        # Validation Mémoire avec calcul dynamique pour Pay as You Go
+        if memory is not None:
+            if plan.name == "pay_as_you_go":
+                available = await ResourceValidationService.get_available_memory(team, db)
+                if memory > available:
+                    return False, f"Insufficient memory. {available}MB available"
+            else:
+                if memory > plan.max_memory_mb:
+                    return False, f"Memory limit: {plan.max_memory_mb}MB on {plan.display_name}"
+        
+        return True, ""

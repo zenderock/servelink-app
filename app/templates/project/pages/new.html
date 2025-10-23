@@ -1,49 +1,58 @@
 {% extends "layouts/app.html" %}
 
 {% block app_content %}
-<div
-  class="container max-w-screen-md mx-auto p-8 space-y-6"
-  x-init
-  @repo-selected="
+<div class="container max-w-screen-md mx-auto p-8 space-y-6" x-init @repo-selected="
     const url = new URL('{{ url_for('new_project_details', team_slug=team.slug) }}', '{{ request.base_url }}');
     url.searchParams.set('repo_id', $event.detail.id);
     url.searchParams.set('repo_owner', $event.detail.owner);
     url.searchParams.set('repo_name', $event.detail.name);
     url.searchParams.set('repo_default_branch', $event.detail.defaultBranch);
     window.location = url.toString();
-  "
->
+  ">
   <h1 class="h1 flex items-center gap-x-2.5">
     {{ _('New project') }}
   </h1>
 
+  {% if not can_create_project %}
+  <div class="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+    <div class="flex items-center gap-x-2 text-destructive">
+      {% include "icons/triangle-alert.svg" %}
+      <h3 class="font-medium">{{ _('Project limit reached') }}</h3>
+    </div>
+    <p class="text-sm text-destructive/80 mt-1">{{ project_creation_error }}</p>
+  </div>
+  {% endif %}
+
   <ol class="flex items-center justify-between gap-x-2.5 mb-8 max-sm:hidden">
     <li class="flex items-center gap-x-2.5">
-      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">1</div>
+      <div
+        class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">
+        1</div>
       <h2 class="font-semibold">{{ _('Select repository') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border" />
     </li>
     <li class="flex items-center gap-x-2.5 opacity-50">
-      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">2</div>
+      <div
+        class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">
+        2</div>
       <h2 class="font-semibold">{{ _('Configure') }}</h2>
     </li>
     <li class="flex-1">
       <hr class="h-px border-border" />
     </li>
     <li class="flex items-center gap-x-2.5 opacity-50">
-      <div class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">3</div>
+      <div
+        class="shrink-0 rounded-full size-6 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono font-semibold">
+        3</div>
       <h2 class="font-semibold">{{ _('Deploy') }}</h2>
     </li>
   </ol>
 
   <div
-    hx-get="{{ url_for('github_repo_select').include_query_params(type='new_project') }}"
-    hx-trigger="load"
-    hx-swap="outerHTML"    
-    class="flex items-center justify-center h-[292px] w-full"
-  >
+    hx-get="{{ url_for('github_repo_select').include_query_params(type='new_project', can_create=can_create_project, error_message=project_creation_error) }}"
+    hx-trigger="load" hx-swap="outerHTML" class="flex items-center justify-center h-[292px] w-full">
     {% include "github/partials/_repo-select-skeleton.html" %}
   </div>
 </div>

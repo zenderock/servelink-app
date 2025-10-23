@@ -7,13 +7,21 @@
   </span>
 </span>
 {% for other_project in latest_projects %}
-<a href="{{ url_for('project_index', team_slug=team.slug, project_name=other_project.name) }}" role="menuitem" hx-boost="true">
+<a href="{{ url_for('project_index', team_slug=team.slug, project_name=other_project.name) }}" role="menuitem"
+  hx-boost="true">
   {{ avatar(item=other_project, prefix="project", name=other_project.name, size="xs") }}
   {{ other_project.name }}
   <span class="size-4 ml-auto"></span>
 </a>
 {% endfor %}
 <hr role="separator" />
+{% if team.can_add_project() %}
 <a href="{{ url_for('new_project', team_slug=team.slug) }}" role="menuitem" hx-boost="true">
   {{ _('Add new project') }}
 </a>
+{% else %}
+<span role="menuitem" class="opacity-50 cursor-not-allowed"
+  title="{{ _('Project limit reached. You can have up to') }} {{ team.get_usage_stats().projects.limit }} {{ _('project(s) on the') }} {{ team.current_plan.display_name }} {{ _('plan.') }}">
+  {{ _('Add new project') }}
+</span>
+{% endif %}

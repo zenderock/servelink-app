@@ -13,32 +13,27 @@
 </section>
 {% elif accounts %}
 <section class="space-y-4 w-full">
-  <form
-    class="form flex gap-x-2 items-center"
-    hx-trigger="
+  <form class="form flex gap-x-2 items-center" hx-trigger="
       keyup changed delay:500ms from:input[name='query'],
       search from:input[name='query'],
       change from:#account-select,
       load
     "
-    hx-get="{{ url_for('github_repo_list').include_query_params(type=request.query_params.get('type', '')) }}"
-    hx-target="next [role='listbox']"
-    hx-boost="true"
-    hx-indicator="next div > .htmx-indicator"
-  >
+    hx-get="{{ url_for('github_repo_list').include_query_params(type=request.query_params.get('type', ''), can_create=can_create_project, error_message=project_creation_error) }}"
+    hx-target="next [role='listbox']" hx-boost="true" hx-indicator="next div > .htmx-indicator">
     {% from "macros/select.html" import select %}
     {% call select(
-      id="account-select",
-      selected=selected_account,
-      name="account"
+    id="account-select",
+    selected=selected_account,
+    name="account"
     ) %}
     {% for account in accounts %}
-      <div role="option" data-value="{{ account }}">
-        <span class="flex items-center gap-x-2">
-          <img src="https://github.com/{{ account }}.png" alt="{{ account }}" class="size-5 rounded">
-          {{ account }}
-        </span>
-      </div>
+    <div role="option" data-value="{{ account }}">
+      <span class="flex items-center gap-x-2">
+        <img src="https://github.com/{{ account }}.png" alt="{{ account }}" class="size-5 rounded">
+        {{ account }}
+      </span>
+    </div>
     {% endfor %}
     <hr role="separator" />
     <a role="option" href="{{ url_for('github_install') }}">
@@ -67,7 +62,8 @@
   <div class="max-w-sm">
     <div class="text-center">
       <h2 class="h4">{{ _('Install the GitHub app') }}</h2>
-      <p class="text-muted-foreground mt-1">{{ _('Install the GitHub application for the accounts you want to select repositories from.') }}</p>
+      <p class="text-muted-foreground mt-1">{{ _('Install the GitHub application for the accounts you want to select
+        repositories from.') }}</p>
       <a class="btn-sm mt-4" href="{{ url_for('github_install') }}">
         {% include "icons/github.svg" %}
         {{ _('Install app') }}
