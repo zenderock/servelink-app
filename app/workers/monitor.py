@@ -91,7 +91,7 @@ async def _check_status(
 
         elif status == "running":
             networks = container_info.get("NetworkSettings", {}).get("Networks", {})
-            container_ip = networks.get("devpush_runner", {}).get("IPAddress")
+            container_ip = networks.get("runner", {}).get("IPAddress")
             if container_ip and await _http_probe(container_ip, 8000):
                 await redis_pool.enqueue_job("deploy_finalize", deployment.id)
                 logger.info(

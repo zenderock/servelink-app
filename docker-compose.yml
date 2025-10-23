@@ -137,6 +137,7 @@ services:
     networks:
       - default
       - internal
+      - runner
     volumes:
       - loki-data:/loki
     healthcheck:
