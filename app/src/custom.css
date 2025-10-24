@@ -243,10 +243,10 @@ button:disabled {
 
 /* Upgrade Plan Modal Styles */
 #dialog-upgrade-plan {
-  max-width: 80vw;
-  width: 80vw;
-  height: 80vh;
-  max-height: 80vh;
+  max-width: 80vw !important;
+  width: 80vw !important;
+  height: 80vh !important;
+  max-height: 80vh !important;
 }
 
 #dialog-upgrade-plan .dialog-content {
