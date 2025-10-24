@@ -55,5 +55,9 @@
     hx-trigger="load" hx-swap="outerHTML" class="flex items-center justify-center h-[292px] w-full">
     {% include "github/partials/_repo-select-skeleton.html" %}
   </div>
+
+  {% if project_presets %}
+  {% include "project/partials/_boilerplate-presets.html" %}
+  {% endif %}
 </div>
 {% endblock %}

@@ -9,6 +9,8 @@ from arq.connections import ArqRedis
 from urllib.parse import urlparse, parse_qs
 import logging
 import os
+import json
+from pathlib import Path
 from typing import Any
 
 from dependencies import (
@@ -84,8 +86,17 @@ async def new_project(
 ):
     team, membership = team_and_membership
 
-    # Check if team can create more projects
     can_create, error_message = await pricing_service.validate_project_creation(team, db)
+
+    project_presets = []
+    try:
+        presets_path = Path(__file__).parent.parent / "data" / "project_presets.json"
+        if presets_path.exists():
+            with open(presets_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                project_presets = data.get("presets", [])
+    except Exception as e:
+        logging.error(f"Error loading project presets: {e}")
 
     return TemplateResponse(
         request=request,
@@ -95,6 +106,7 @@ async def new_project(
             "team": team,
             "can_create_project": can_create,
             "project_creation_error": error_message,
+            "project_presets": project_presets,
         },
     )
 
