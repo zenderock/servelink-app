@@ -1,13 +1,14 @@
 {% macro render_build_and_deploy(form, presets, images) %}
-<div
-  class="space-y-6"
-  x-data="{
+<div class="space-y-6" x-data="{
     presets: {{ presets | tojson | replace('"', "'") | safe }},
     images: {{ images | tojson | replace('"', "'") | safe }},
     selectedImage: '{{ form.image.data or '' }}',
     setImages(presetSlug = null) {
       if (!presetSlug) presetSlug = '{{ form.preset.data or '' }}';
-      if (!presetSlug) presetSlug = this.presets[0].slug;
+      if (!presetSlug) {
+        const firstAvailablePreset = this.presets.find(p => !p.disabled);
+        presetSlug = firstAvailablePreset ? firstAvailablePreset.slug : this.presets[0].slug;
+      }
 
       const preset = this.presets.find(p => p.slug === presetSlug);
       if (!preset) {
@@ -38,32 +39,46 @@
       if ($refs.preDeployCommandInput) $refs.preDeployCommandInput.value = preset.pre_deploy_command || '';
       if ($refs.startCommandInput) $refs.startCommandInput.value = preset.start_command || '';
     },
-  }"
-  x-init="{{ 'setImages()' if form.preset.data else 'setPreset()' }}"
->
+  }" x-init="{{ 'setImages()' if form.preset.data else 'setPreset()' }}; 
+    $nextTick(() => {
+      const selectElement = $el.querySelector('[role=listbox]');
+      if (selectElement) {
+        selectElement.addEventListener('click', (e) => {
+          const option = e.target.closest('[role=option]');
+          if (option && option.getAttribute('aria-disabled') === 'true') {
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        }, true);
+      }
+    })">
   {# FRAMEWORK PRESET #}
   <div class="space-y-3">
     <label for="preset">{{ _('Framework preset') }}</label>
     {% from "macros/select.html" import select %}
     {% call select(
-      name="preset",
-      selected=form.preset.data,
-      main_attrs={'@change': 'setPreset(event.detail.value)'}
+    name="preset",
+    selected=form.preset.data,
+    main_attrs={'@change': 'setPreset(event.detail.value)'}
     ) %}
-      {% for preset in presets %}
-        <div role="option" data-value="{{ preset.slug }}">
-          <span class="flex items-center gap-x-2">
-            {{ preset.logo | safe }}
-            {{ preset.name | safe }}
-            {% if preset.beta %}
-              <span class="badge-outline">Beta</span>
-            {% endif %}
-          </span>
-        </div>
-      {% endfor %}
+    {% for preset in presets %}
+    <div role="option" data-value="{{ preset.slug }}" {% if preset.disabled %}aria-disabled="true"
+      class="opacity-50 cursor-not-allowed" {% endif %}>
+      <span class="flex items-center gap-x-2">
+        {{ preset.logo | safe }}
+        {{ preset.name | safe }}
+        {% if preset.beta %}
+        <span class="badge-outline">Beta</span>
+        {% endif %}
+        {% if preset.disabled %}
+        <span class="badge-outline text-muted-foreground">{{ _('Indisponible') }}</span>
+        {% endif %}
+      </span>
+    </div>
+    {% endfor %}
     {% endcall %}
     {% for error in form.preset.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
 
@@ -71,12 +86,12 @@
   <div class="space-y-3">
     {{ form.image.label() }}
     {{ form.image(
-      id=False,
-      class="font-mono text-[13px]",
-      **{'x-ref': 'imageInput'}
+    id=False,
+    class="font-mono text-[13px]",
+    **{'x-ref': 'imageInput'}
     ) }}
     {% for error in form.image.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
   </div>
 
@@ -85,15 +100,15 @@
     {{ form.root_directory.label() }}
     <div class="relative">
       {{ form.root_directory(
-        id=False,
-        class="w-full font-mono text-[13px]",
-        pattern="^\.?/?([a-zA-Z0-9_\-]+/?)*$",
-        placeholder="./",
-        **{'x-ref': 'rootDirectoryInput'}
+      id=False,
+      class="w-full font-mono text-[13px] border-[#e5e5e5]",
+      pattern="^\.?/?([a-zA-Z0-9_\-]+/?)*$",
+      placeholder="./",
+      **{'x-ref': 'rootDirectoryInput'}
       ) }}
     </div>
     {% for error in form.root_directory.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Commands will run from this directory.') }}
@@ -105,13 +120,13 @@
     {{ form.build_command.label() }}
     <div class="relative">
       {{ form.build_command(
-        id=False,
-        class="w-full font-mono text-[13px]",
-        **{'x-ref': 'buildCommandInput'}
+      id=False,
+      class="w-full font-mono text-[13px] border-[#e5e5e5]",
+      **{'x-ref': 'buildCommandInput'}
       ) }}
     </div>
     {% for error in form.build_command.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Install dependencies and build the project.') }}
@@ -123,13 +138,13 @@
     {{ form.pre_deploy_command.label() }}
     <div class="relative">
       {{ form.pre_deploy_command(
-        id=False,
-        class="w-full font-mono text-[13px]",
-        **{'x-ref': 'preDeployCommandInput'}
+      id=False,
+      class="w-full font-mono text-[13px] border-[#e5e5e5]",
+      **{'x-ref': 'preDeployCommandInput'}
       ) }}
     </div>
     {% for error in form.pre_deploy_command.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Run commands before we start the app (e.g. migrate database).') }}
@@ -141,13 +156,13 @@
     {{ form.start_command.label() }}
     <div class="relative">
       {{ form.start_command(
-        id=False,
-        class="w-full font-mono text-[13px]",
-        **{'x-ref': 'startCommandInput'}
+      id=False,
+      class="w-full font-mono text-[13px] border-[#e5e5e5]",
+      **{'x-ref': 'startCommandInput'}
       ) }}
     </div>
     {% for error in form.start_command.errors %}
-      <p class="text-sm text-destructive">{{ error }}</p>
+    <p class="text-sm text-destructive">{{ error }}</p>
     {% endfor %}
     <p class="text-sm text-muted-foreground">
       {{ _('Start the app (must listen on <code>0.0.0.0:8000</code>).') | safe }}

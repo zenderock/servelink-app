@@ -21,7 +21,7 @@
       <div class="flex items-center gap-x-2" x-data="{ cpus: '{{ resources_form.cpus.data or '' }}' }">
         {{ resources_form.cpus(
         id=False,
-        class="w-full",
+        class="w-full border-[#e5e5e5]",
         placeholder=team.current_plan.default_cpu_cores,
         min=0.1,
         max=team.current_plan.max_cpu_cores,
@@ -56,7 +56,7 @@
       <div class="flex items-center gap-x-2" x-data="{ memory: '{{ resources_form.memory.data or '' }}' }">
         {{ resources_form.memory(
         id=False,
-        class="w-full",
+        class="w-full border-[#e5e5e5]",
         placeholder=team.current_plan.default_memory_mb,
         min=1,
         max=team.current_plan.max_memory_mb,
@@ -68,7 +68,7 @@
         </button>
       </div>
       <p class="text-sm text-muted-foreground">
-        {{ _('Memory limit in megabytes (empty = use defaults, 0 = no limit, max 256GB)') }}
+        {{ _('Memory limit in megabytes (empty = use defaults, 0 = no limit)') }}
       </p>
       {% for error in resources_form.memory.errors %}
       <p class="text-destructive text-sm">{{ error }}</p>

@@ -42,6 +42,7 @@ async def _create_user_with_team(
     email: str,
     name: str | None = None,
     username: str | None = None,
+    assign_pro_plan: bool = False,
 ) -> User:
     if not username:
         username = email.split("@")[0]
@@ -82,10 +83,13 @@ async def _create_user_with_team(
     user.default_team_id = team.id
     db.add(TeamMember(team_id=team.id, user_id=user.id, role="owner"))
     
-    # Assign free plan to new team
     from services.pricing import PricingService
     pricing_service = PricingService()
-    await pricing_service.assign_free_plan_to_team(team, db)
+    
+    if assign_pro_plan:
+        await pricing_service.assign_pay_as_you_go_plan_to_team(team, db)
+    else:
+        await pricing_service.assign_free_plan_to_team(team, db)
 
     return user
 
@@ -264,7 +268,9 @@ async def auth_email_verify(
                     )
                     flash(request, _(settings.access_denied_message), "error")
                     return RedirectResponse("/auth/login", status_code=303)
-                user = await _create_user_with_team(db, email)
+                
+                is_servelink_email = email.lower().endswith("@servel.ink")
+                user = await _create_user_with_team(db, email, assign_pro_plan=is_servelink_email)
                 await db.commit()
                 await db.refresh(user)
 
@@ -342,7 +348,8 @@ async def auth_email_verify(
             else:
                 user = await get_user_by_email(db, email)
                 if not user:
-                    user = await _create_user_with_team(db, email)
+                    is_servelink_email = email.lower().endswith("@servel.ink")
+                    user = await _create_user_with_team(db, email, assign_pro_plan=is_servelink_email)
 
                 invite.status = "accepted"
                 db.add(
@@ -432,11 +439,15 @@ async def auth_github_callback(
                 )
                 flash(request, _(settings.access_denied_message), "error")
                 return RedirectResponse("/auth/login", status_code=303)
+            
+            user_email = email or f"{gh_user['login']}@github.local"
+            is_servelink_email = user_email.lower().endswith("@servel.ink")
             user = await _create_user_with_team(
                 db,
-                email=email or f"{gh_user['login']}@github.local",
+                email=user_email,
                 name=gh_user.get("name"),
                 username=gh_user["login"],
+                assign_pro_plan=is_servelink_email,
             )
 
         github_identity = UserIdentity(
@@ -521,10 +532,13 @@ async def auth_google_callback(
                     )
                     flash(request, _(settings.access_denied_message), "error")
                     return RedirectResponse("/auth/login", status_code=303)
+                
+                is_servelink_email = email.lower().endswith("@servel.ink")
                 user = await _create_user_with_team(
                     db,
                     email=email,
                     name=google_user_info.get("name"),
+                    assign_pro_plan=is_servelink_email,
                 )
 
             google_identity = UserIdentity(
