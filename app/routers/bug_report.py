@@ -54,15 +54,18 @@ async def submit_bug_report(
         })
         
         async with OneSignalService(settings) as onesignal:
-            await onesignal.send_email(
-                to_email="support@servel.ink",
-                subject=f"🐛 Bug Report: {title}",
-                html_content=html_content,
-                from_name=settings.email_sender_name,
-                from_address=settings.email_sender_address,
-                reply_to=current_user.email,
-                auto_register=False
-            )
+            recipients = ["support@servel.ink", "aubigo.techs@gmail.com"]
+            
+            for recipient in recipients:
+                await onesignal.send_email(
+                    to_email=recipient,
+                    subject=f"🐛 Bug Report: {title}",
+                    html_content=html_content,
+                    from_name=settings.email_sender_name,
+                    from_address=settings.email_sender_address,
+                    reply_to=current_user.email,
+                    auto_register=False
+                )
         
         logger.info(f"Bug report submitted by user {current_user.email}: {title}")
         
