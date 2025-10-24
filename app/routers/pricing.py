@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
-from dependencies import templates
+from dependencies import templates, TemplateResponse
 
 router = APIRouter()
 
 
-@router.get("/pricing", name="pricing", response_class=HTMLResponse)
+@router.get("/pricing", name="pricing")
 async def pricing(request: Request):
     """Display the pricing page."""
-    return templates.TemplateResponse(
+    return TemplateResponse(
         request=request,
         name="pricing/pages/index.html",
         context={}
