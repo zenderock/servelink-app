@@ -32,8 +32,8 @@
               <div class="flex items-center gap-x-2 size-8">
                 {% set fallback %}
                 <img
-                  src="https://unavatar.io/{{ member.user.email }}?fallback=https://avatar.vercel.sh/{{ member.user.email }}?size=120"
-                  alt="{{ member.user.email }}" class=" rounded-full shrink-0" />
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ member.user.email }}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&size=32"
+                  alt="{{ member.user.email }}" class="size-8 rounded-none shrink-0">
                 {% endset %}
                 {{ avatar(
                 item=member.user,
@@ -230,8 +230,8 @@
               <td>
                 <div class="flex items-center gap-x-2 size-8">
                   <img
-                    src="https://unavatar.io/{{ invite.email }}?fallback=https://avatar.vercel.sh/{{ invite.email }}?size=120"
-                    alt="{{ invite.email }}" class="rounded-full shrink-0" />
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ invite.email }}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&size=32"
+                    alt="{{ invite.email }}" class="size-8 rounded-full shrink-0" />
                 </div>
               </td>
               <td class="font-medium">{{ invite.email }}</td>

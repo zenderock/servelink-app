@@ -1,0 +1,138 @@
+<div id="bug-report-modal"
+	style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.92) 100%); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;"
+	onclick="if(event.target === this) this.style.display='none'">
+	<div style="background: #ffffff; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; border: 2px solid #000000;"
+		onclick="event.stopPropagation()">
+		<button type="button" onclick="document.getElementById('bug-report-modal').style.display='none'"
+			style="position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border: 2px solid #000000; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10;"
+			onmouseover="this.style.backgroundColor='#000000'; this.querySelector('svg').style.stroke='#ffffff'"
+			onmouseout="this.style.backgroundColor='#ffffff'; this.querySelector('svg').style.stroke='#000000'">
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.5"
+				stroke-linecap="square" stroke-linejoin="miter" style="transition: stroke 0.2s;">
+				<line x1="18" y1="6" x2="6" y2="18"></line>
+				<line x1="6" y1="6" x2="18" y2="18"></line>
+			</svg>
+		</button>
+
+		<div style="padding: 60px 40px 40px;">
+			<div style="text-align: center; margin-bottom: 40px;">
+				<div style="display: inline-block; background: #000000; color: #ffffff; padding: 8px 20px; margin-bottom: 20px; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">
+					Bug Report
+				</div>
+				<h2 style="font-size: 36px; font-weight: 900; margin-bottom: 16px; color: #000000; letter-spacing: -1px; line-height: 1.1;">
+					Report an issue
+				</h2>
+				<p style="font-size: 16px; color: #6a6a6a; max-width: 500px; margin: 0 auto; line-height: 1.6;">
+					Help us improve by reporting bugs you encounter
+				</p>
+			</div>
+
+			<form id="bug-report-form" method="POST" action="/bug-report/submit" enctype="multipart/form-data"
+				style="display: flex; flex-direction: column; gap: 24px;">
+				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+				
+				<div style="display: flex; flex-direction: column; gap: 8px;">
+					<label for="bug-title" style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #000000;">
+						Title*
+					</label>
+					<input type="text" id="bug-title" name="title" required maxlength="200"
+						style="width: 100%; padding: 14px; border: 2px solid #e5e5e5; background: #ffffff; color: #000000; font-size: 15px; transition: border-color 0.2s;"
+						placeholder="Brief description of the issue"
+						onfocus="this.style.borderColor='#000000'"
+						onblur="this.style.borderColor='#e5e5e5'">
+				</div>
+
+				<div style="display: flex; flex-direction: column; gap: 8px;">
+					<label for="bug-description" style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #000000;">
+						Description*
+					</label>
+					<textarea id="bug-description" name="description" required rows="6" maxlength="2000"
+						style="width: 100%; padding: 14px; border: 2px solid #e5e5e5; background: #ffffff; color: #000000; font-size: 15px; transition: border-color 0.2s; resize: vertical; min-height: 120px;"
+						placeholder="Describe what happened and what you expected..."
+						onfocus="this.style.borderColor='#000000'"
+						onblur="this.style.borderColor='#e5e5e5'"></textarea>
+				</div>
+
+				<div style="display: flex; flex-direction: column; gap: 8px;">
+					<label for="bug-attachment" style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #000000;">
+						Attachment (Optional)
+					</label>
+					<div style="position: relative;">
+						<input type="file" id="bug-attachment" name="attachment" accept="image/*,.pdf,.txt,.log"
+							style="display: none;"
+							onchange="document.getElementById('file-name').textContent = this.files[0]?.name || 'No file selected'; validateFileSize(this);">
+						<button type="button" onclick="document.getElementById('bug-attachment').click()"
+							style="width: 100%; padding: 14px; border: 2px solid #e5e5e5; background: #fafafa; color: #000000; font-size: 15px; cursor: pointer; text-align: left; transition: all 0.2s; font-weight: 500;"
+							onmouseover="this.style.borderColor='#000000'; this.style.backgroundColor='#ffffff'"
+							onmouseout="this.style.borderColor='#e5e5e5'; this.style.backgroundColor='#fafafa'">
+							<span id="file-name" style="color: #6a6a6a;">Choose file (Max 10MB)</span>
+						</button>
+					</div>
+					<p style="font-size: 13px; color: #6a6a6a; margin: 0;">
+						Accepted: Images, PDF, TXT, LOG files
+					</p>
+				</div>
+
+				<div style="display: flex; gap: 12px; margin-top: 16px;">
+					<button type="button" onclick="document.getElementById('bug-report-modal').style.display='none'"
+						style="flex: 1; padding: 16px; border: 2px solid #e5e5e5; background: #ffffff; color: #000000; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;"
+						onmouseover="this.style.borderColor='#000000'"
+						onmouseout="this.style.borderColor='#e5e5e5'">
+						Cancel
+					</button>
+					<button type="submit" id="submit-bug-btn"
+						style="flex: 1; padding: 16px; border: 2px solid #000000; background: #000000; color: #ffffff; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;"
+						onmouseover="this.style.backgroundColor='#ffffff'; this.style.color='#000000'"
+						onmouseout="this.style.backgroundColor='#000000'; this.style.color='#ffffff'">
+						Submit
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<script>
+function validateFileSize(input) {
+	const maxSize = 10 * 1024 * 1024;
+	if (input.files[0] && input.files[0].size > maxSize) {
+		alert('File size must be less than 10MB');
+		input.value = '';
+		document.getElementById('file-name').textContent = 'No file selected';
+	}
+}
+
+document.getElementById('bug-report-form')?.addEventListener('submit', async function(e) {
+	e.preventDefault();
+	
+	const submitBtn = document.getElementById('submit-bug-btn');
+	const originalText = submitBtn.textContent;
+	submitBtn.textContent = 'Sending...';
+	submitBtn.disabled = true;
+	
+	const formData = new FormData(this);
+	
+	try {
+		const response = await fetch(this.action, {
+			method: 'POST',
+			body: formData
+		});
+		
+		if (response.ok) {
+			document.getElementById('bug-report-modal').style.display = 'none';
+			this.reset();
+			document.getElementById('file-name').textContent = 'No file selected';
+			alert('Bug report submitted successfully! Thank you for your feedback.');
+		} else {
+			const data = await response.json();
+			alert(data.error || 'Failed to submit bug report. Please try again.');
+		}
+	} catch (error) {
+		console.error('Error:', error);
+		alert('An error occurred. Please try again.');
+	} finally {
+		submitBtn.textContent = originalText;
+		submitBtn.disabled = false;
+	}
+});
+</script>

@@ -120,6 +120,13 @@ body_attrs={"class": "space-y-4"}
 				Upgrade to Pro
 			</button>
 			{% endif %}
+			{% if current_user %}
+			<button type="button" onclick="document.getElementById('bug-report-modal').style.display='flex'"
+				class="btn-sm-outline max-sm:hidden">
+				{% include "icons/bug.svg" %}
+				Report a bug
+			</button>
+			{% endif %}
 			{% set trigger %}
 			{% include "icons/circle-question-mark.svg" %}
 			{% endset %}
@@ -195,3 +202,4 @@ body_attrs={"class": "space-y-4"}
 </header>
 
 {% include "partials/_pricing-modal.html" %}
+{% include "partials/_bug-report-modal.html" %}
