@@ -114,12 +114,11 @@ body_attrs={"class": "space-y-4"}
 		<nav class="flex items-center gap-x-2" aria-label="User menu">
 			{% if current_user and current_user.default_team and current_user.default_team.current_plan and
 			current_user.default_team.current_plan.name == 'free' %}
-			<button type="button"
-				class="btn-sm-outline text-primary border-primary hover:bg-primary hover:text-primary-foreground max-sm:hidden"
-				onclick="document.getElementById('dialog-upgrade-plan').showModal()">
+			<a href="{{ url_for('pricing') }}"
+				class="btn-sm-outline text-primary border-primary hover:bg-primary hover:text-primary-foreground max-sm:hidden">
 				{% include "icons/arrow-up-from-line.svg" %}
 				{{ _('Upgrade to Pro') }}
-			</button>
+			</a>
 			{% endif %}
 			{% set trigger %}
 			{% include "icons/circle-question-mark.svg" %}
