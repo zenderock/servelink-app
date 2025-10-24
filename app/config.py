@@ -77,15 +77,17 @@ def get_settings():
                     except Exception:
                         pass
         
-        for image in settings.images:
-            logo = image.get("logo", "")
-            if logo and not logo.startswith("<"):
-                icon_path = icons_dir / logo
-                if icon_path.exists():
-                    try:
-                        image["logo"] = icon_path.read_text(encoding="utf-8")
-                    except Exception:
-                        pass
+        if isinstance(settings.images, dict):
+            for group_name, images_list in settings.images.items():
+                for image in images_list:
+                    logo = image.get("logo", "")
+                    if logo and not logo.startswith("<"):
+                        icon_path = icons_dir / logo
+                        if icon_path.exists():
+                            try:
+                                image["logo"] = icon_path.read_text(encoding="utf-8")
+                            except Exception:
+                                pass
     except Exception:
         settings.presets = []
         settings.images = []
