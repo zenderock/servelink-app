@@ -115,7 +115,8 @@ class OneSignalService:
             try:
                 await self.register_subscriber(to_email)
             except Exception as e:
-                logger.warning(f"Failed to register subscriber {to_email}: {str(e)}. Continuing with email send...")
+                logger.error(f"Failed to register subscriber {to_email}: {str(e)}. Aborting email send.")
+                raise Exception(f"Cannot send email: subscriber registration failed for {to_email}")
         payload = {
             "app_id": self.settings.onesignal_app_id,
             "email_to": [to_email],

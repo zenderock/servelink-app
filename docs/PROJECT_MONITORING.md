@@ -39,7 +39,7 @@ Le système de monitoring des projets inactifs désactive automatiquement les pr
    - Bloque l'accès aux projets désactivés
 
 3. **Tâches ARQ** (`app/workers/tasks/project_monitoring.py`)
-   - `check_inactive_projects` : Tâche périodique (quotidienne à 03h00 UTC)
+   - `check_inactive_projects` : Tâche périodique (quotidienne à 02h00 UTC)
    - `reactivate_project_task` : Tâche de réactivation asynchrone
 
 ### Base de Données
@@ -74,14 +74,12 @@ Le statut du projet est visible :
 
 ### Tâche Cron
 
-La vérification des projets inactifs s'exécute automatiquement tous les jours à 03h00 UTC via la configuration ARQ :
+La vérification des projets inactifs s'exécute automatiquement tous les jours à 02h00 UTC via la configuration ARQ :
 
 ```python
 cron_jobs = [
-    {
-        "function": "check_inactive_projects",
-        "cron": "0 3 * * *",  # Tous les jours à 03h00 UTC
-    }
+    cron(check_inactive_projects, hour=2, minute=0, run_at_startup=False),  # Tous les jours à 02h00 UTC
+    cron(cleanup_inactive_deployments, hour=3, minute=0, run_at_startup=False),  # Nettoyage à 03h00 UTC
 ]
 ```
 

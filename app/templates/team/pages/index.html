@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 
+{% block title %}{{ team.name }}{% endblock %}
+
 {% block app_content %}
 {% from "macros/avatar.html" import avatar with context %}
 <div class="container max-w-screen-xl mx-auto p-8 space-y-6">
