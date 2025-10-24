@@ -249,6 +249,14 @@ button:disabled {
   max-height: 80vh !important;
 }
 
+/* Force the dialog element itself to be 80% width */
+dialog#dialog-upgrade-plan {
+  max-width: 80vw !important;
+  width: 80vw !important;
+  height: 80vh !important;
+  max-height: 80vh !important;
+}
+
 #dialog-upgrade-plan .dialog-content {
   height: 100%;
   display: flex;
