@@ -95,11 +95,7 @@
   </script>
 
   {# Title & Description #}
-  <title>
-    {% block title %}
-    {% if title %}{{ title }} | {{ app_name }}{% else %}{{ app_name }}{% endif %}
-    {% endblock %}
-  </title>
+  <title>{% block title %}{% if title %}{{ title }} | {{ app_name }}{% else %}{{ app_name }}{% endif %}{% endblock %}</title>
   <meta name="title" content="{% if title %}{{ title }} | {{ app_name }}{% else %}{{ app_name }}{% endif %}">
   <meta name="description" content="{{ description or app_description }}">
 
