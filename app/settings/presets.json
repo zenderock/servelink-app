@@ -62,6 +62,7 @@
     "build_command": "composer install && npm install && npm run build",
     "pre_deploy_command": "",
     "start_command": "php artisan serve",
-    "logo": "laravel.svg"
+    "logo": "laravel.svg",
+    "disabled": true
   }
 ]
