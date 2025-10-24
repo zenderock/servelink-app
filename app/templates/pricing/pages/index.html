@@ -1,0 +1,252 @@
+{% extends "layouts/app.html" %}
+
+{% block app_content %}
+<div class="min-h-screen bg-gradient-to-br from-background to-muted/20">
+    <!-- Hero Section -->
+    <div class="container mx-auto px-4 py-16">
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                {{ _("Simple, Transparent Pricing") }}
+            </h1>
+            <p class="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+                {{ _("Choose the perfect plan for your deployment needs. Start free, upgrade when you're ready to
+                scale.") }}
+            </p>
+            <div class="flex items-center justify-center gap-x-4 text-sm text-muted-foreground">
+                <span class="flex items-center gap-x-2">
+                    {% include "icons/check.svg" %}
+                    {{ _("No setup fees") }}
+                </span>
+                <span class="flex items-center gap-x-2">
+                    {% include "icons/check.svg" %}
+                    {{ _("Cancel anytime") }}
+                </span>
+                <span class="flex items-center gap-x-2">
+                    {% include "icons/check.svg" %}
+                    {{ _("30-day money back") }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
+            <!-- Free Plan -->
+            <div class="border rounded-xl p-8 bg-card relative">
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-bold mb-2">{{ _("Free Plan") }}</h3>
+                    <div class="text-4xl font-bold mb-2">0€</div>
+                    <p class="text-muted-foreground">{{ _("Perfect for getting started") }}</p>
+                </div>
+
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("1 Team") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("1 Member") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("2 Projects") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("500 MB Memory") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("0.25 CPU") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Basic support") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3 text-muted-foreground">
+                        {% include "icons/x.svg" %}
+                        <span>{{ _("Custom domains") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3 text-muted-foreground">
+                        {% include "icons/x.svg" %}
+                        <span>{{ _("Priority support") }}</span>
+                    </li>
+                </ul>
+
+                <button class="btn-outline w-full" disabled>
+                    {{ _("Current Plan") }}
+                </button>
+            </div>
+
+            <!-- Pro Plan -->
+            <div
+                class="border-2 border-primary rounded-xl p-8 bg-gradient-to-br from-primary/5 to-primary/10 relative overflow-hidden">
+                <!-- Popular Badge -->
+                <div
+                    class="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-2 rounded-bl-xl text-sm font-medium">
+                    {{ _("Most Popular") }}
+                </div>
+
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-bold mb-2">{{ _("Pro Plan") }}</h3>
+                    <div class="text-5xl font-bold text-primary mb-2">
+                        3€
+                        <span class="text-xl font-normal text-muted-foreground">/mois</span>
+                    </div>
+                    <p class="text-muted-foreground">{{ _("Everything you need to scale") }}</p>
+                </div>
+
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Unlimited Teams") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Unlimited Members") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Unlimited Projects") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Up to 4GB Memory") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Up to 2 CPU") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Custom domains") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Priority support") }}</span>
+                    </li>
+                    <li class="flex items-center gap-x-3">
+                        {% include "icons/check.svg" %}
+                        <span>{{ _("Advanced analytics") }}</span>
+                    </li>
+                </ul>
+
+                <div class="space-y-4">
+                    <a href="https://pay.mesomb.com/l/40h8eFwUX9rb3Rr4t7Bq" target="_blank"
+                        class="btn-primary w-full text-center block">
+                        {{ _("Pay with Mobile Money") }}
+                    </a>
+                    <a href="https://lemonsqueezy.servel.ink/checkout" target="_blank"
+                        class="btn-outline w-full text-center block">
+                        {{ _("Pay with Card") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Comparison -->
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">{{ _("Compare Features") }}</h2>
+
+            <div class="bg-card rounded-xl border overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="border-b bg-muted/50">
+                            <tr>
+                                <th class="text-left p-6 font-semibold">{{ _("Features") }}</th>
+                                <th class="text-center p-6 font-semibold">{{ _("Free") }}</th>
+                                <th class="text-center p-6 font-semibold">{{ _("Pro") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Teams") }}</td>
+                                <td class="p-6 text-center">1</td>
+                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Members per team") }}</td>
+                                <td class="p-6 text-center">1</td>
+                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Projects") }}</td>
+                                <td class="p-6 text-center">2</td>
+                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Memory") }}</td>
+                                <td class="p-6 text-center">500 MB</td>
+                                <td class="p-6 text-center">Up to 4GB</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("CPU") }}</td>
+                                <td class="p-6 text-center">0.25</td>
+                                <td class="p-6 text-center">Up to 2</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Custom domains") }}</td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/x.svg" %}
+                                </td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/check.svg" %}
+                                </td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-6 font-medium">{{ _("Priority support") }}</td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/x.svg" %}
+                                </td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/check.svg" %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="p-6 font-medium">{{ _("Advanced analytics") }}</td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/x.svg" %}
+                                </td>
+                                <td class="p-6 text-center">
+                                    {% include "icons/check.svg" %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="max-w-3xl mx-auto mt-20">
+            <h2 class="text-3xl font-bold text-center mb-12">{{ _("Frequently Asked Questions") }}</h2>
+
+            <div class="space-y-6">
+                <div class="bg-card rounded-lg border p-6">
+                    <h3 class="font-semibold mb-2">{{ _("Can I change plans anytime?") }}</h3>
+                    <p class="text-muted-foreground">{{ _("Yes! You can upgrade or downgrade your plan at any time.
+                        Changes take effect immediately.") }}</p>
+                </div>
+
+                <div class="bg-card rounded-lg border p-6">
+                    <h3 class="font-semibold mb-2">{{ _("What payment methods do you accept?") }}</h3>
+                    <p class="text-muted-foreground">{{ _("We accept Orange Money, MTN Mobile Money, and all major
+                        credit cards (Visa, Mastercard, American Express).") }}</p>
+                </div>
+
+                <div class="bg-card rounded-lg border p-6">
+                    <h3 class="font-semibold mb-2">{{ _("Is there a free trial?") }}</h3>
+                    <p class="text-muted-foreground">{{ _("Yes! The Free plan is available forever with no time limits.
+                        You can also try Pro for 30 days with our money-back guarantee.") }}</p>
+                </div>
+
+                <div class="bg-card rounded-lg border p-6">
+                    <h3 class="font-semibold mb-2">{{ _("What happens if I exceed my limits?") }}</h3>
+                    <p class="text-muted-foreground">{{ _("We'll notify you when you're approaching your limits. You can
+                        upgrade anytime to continue using our services.") }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
