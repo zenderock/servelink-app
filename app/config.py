@@ -61,9 +61,31 @@ def get_settings():
 
     presets_file = Path("settings/presets.json")
     images_file = Path("settings/images.json")
+    icons_dir = Path("templates/icons")
+    
     try:
         settings.presets = json.loads(presets_file.read_text(encoding="utf-8"))
         settings.images = json.loads(images_file.read_text(encoding="utf-8"))
+        
+        for preset in settings.presets:
+            logo = preset.get("logo", "")
+            if logo and not logo.startswith("<"):
+                icon_path = icons_dir / logo
+                if icon_path.exists():
+                    try:
+                        preset["logo"] = icon_path.read_text(encoding="utf-8")
+                    except Exception:
+                        pass
+        
+        for image in settings.images:
+            logo = image.get("logo", "")
+            if logo and not logo.startswith("<"):
+                icon_path = icons_dir / logo
+                if icon_path.exists():
+                    try:
+                        image["logo"] = icon_path.read_text(encoding="utf-8")
+                    except Exception:
+                        pass
     except Exception:
         settings.presets = []
         settings.images = []
