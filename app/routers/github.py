@@ -221,8 +221,10 @@ async def github_install(
         "Referer", "/"
     )
 
+    app_name_formatted = settings.github_app_name.lower().replace(" ", "-")
+    
     return RedirectResponse(
-        f"https://github.com/apps/{settings.github_app_name}/installations/new",
+        f"https://github.com/apps/{app_name_formatted}/installations/new",
         status_code=303,
     )
 
