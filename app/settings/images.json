@@ -20,5 +20,11 @@
       "slug": "go-1.25",
       "name": "Go 1.25"
     }
+  ],
+  "Laravel": [
+    {
+      "slug": "laravel-12",
+      "name": "Laravel 12"
+    }
   ]
 }
