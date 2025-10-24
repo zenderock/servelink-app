@@ -29,7 +29,7 @@
 
 			<form id="bug-report-form" method="POST" action="/bug-report/submit" enctype="multipart/form-data"
 				style="display: flex; flex-direction: column; gap: 24px;">
-				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+				<input type="hidden" name="csrf_token" value="{{ request.state.csrf_token if request and hasattr(request, 'state') and hasattr(request.state, 'csrf_token') else '' }}">
 				
 				<div style="display: flex; flex-direction: column; gap: 8px;">
 					<label for="bug-title" style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #000000;">
