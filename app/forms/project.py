@@ -68,6 +68,30 @@ def validate_root_directory(form, field):
         field.data = path
 
 
+def validate_start_command(form, field):
+    if not field.data:
+        return
+    
+    command = field.data.strip()
+    
+    worker_patterns = [
+        (r'\bgunicorn\b.*?(?:-w|--workers)\s+([2-9]|\d{2,})', 'Gunicorn'),
+        (r'\buvicorn\b.*?(?:--workers)\s+([2-9]|\d{2,})', 'Uvicorn'),
+        (r'\bhypercorn\b.*?(?:-w|--workers)\s+([2-9]|\d{2,})', 'Hypercorn'),
+        (r'\bdaphne\b.*?(?:-w|--workers)\s+([2-9]|\d{2,})', 'Daphne'),
+        (r'\bwaitress-serve\b.*?(?:--threads)\s+([2-9]|\d{2,})', 'Waitress'),
+        (r'\bpuma\b.*?(?:-w|--workers)\s+([2-9]|\d{2,})', 'Puma'),
+        (r'\bunicorn\b.*?(?:-w|--workers)\s+([2-9]|\d{2,})', 'Unicorn'),
+    ]
+    
+    for pattern, server_name in worker_patterns:
+        match = re.search(pattern, command, re.IGNORECASE)
+        if match:
+            raise ValidationError(
+                _(f"Multiple workers are not allowed. Please use a single worker for {server_name}. Remove the workers option or set it to 1.")
+            )
+
+
 def _normalize_env_vars_formdata(formdata):
     def getlist(key):
         try:
@@ -410,7 +434,7 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
     build_command = StringField(_l("Build command"))
     pre_deploy_command = StringField(_l("Pre-deploy command"))
     start_command = StringField(
-        _l("Start command"), validators=[DataRequired(), Length(min=1)]
+        _l("Start command"), validators=[DataRequired(), Length(min=1), validate_start_command]
     )
 
     def __init__(self, *args, **kwargs):
@@ -543,7 +567,7 @@ class NewProjectForm(StarletteForm):
     build_command = StringField(_l("Build command"))
     pre_deploy_command = StringField(_l("Pre-deploy command"))
     start_command = StringField(
-        _l("Start command"), validators=[DataRequired(), Length(min=1)]
+        _l("Start command"), validators=[DataRequired(), Length(min=1), validate_start_command]
     )
     env_vars = FieldList(FormField(ProjectEnvVarForm))
     submit = SubmitField(_l("Save"))
