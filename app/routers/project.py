@@ -107,8 +107,8 @@ DEFAULT_PROJECT_PRESETS = [
         "id": "nodejs-starter",
         "title": "Node.js Starter - API REST",
         "description": "Application Node.js professionnelle avec Express, ViewSets, pagination automatique et documentation Swagger.",
-        "github_url": "https://github.com/servelink-deploy/nodejs-starter",
-        "doc_url": "https://github.com/servelink-deploy/nodejs-starter",
+        "github_url": "https://github.com/servelink-deploy/nodejs-crud-starter",
+        "doc_url": "https://github.com/servelink-deploy/nodejs-crud-starter",
         "tags": ["Node.js", "Express", "PostgreSQL"],
         "icon": "nodejs"
     }

@@ -426,6 +426,16 @@ class ProjectBuildAndProjectDeployForm(StarletteForm):
             for group, items in self._images.items()
         }
 
+    def validate_preset(self, field):
+        preset = next(
+            (p for p in self._presets if p["slug"] == field.data),
+            None
+        )
+        if preset and preset.get("disabled"):
+            raise ValidationError(
+                _("This framework is currently unavailable.")
+            )
+
     validate_image = validate_image
 
     validate_root_directory = validate_root_directory
@@ -574,6 +584,16 @@ class NewProjectForm(StarletteForm):
                 raise ValidationError(
                     _("A project with this name already exists in this team.")
                 )
+
+    def validate_preset(self, field):
+        preset = next(
+            (p for p in self._presets if p["slug"] == field.data),
+            None
+        )
+        if preset and preset.get("disabled"):
+            raise ValidationError(
+                _("This framework is currently unavailable.")
+            )
 
     validate_image = validate_image
 
