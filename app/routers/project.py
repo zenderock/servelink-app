@@ -75,6 +75,45 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+DEFAULT_PROJECT_PRESETS = [
+    {
+        "id": "go-starter",
+        "title": "Go CRUD Starter - API REST",
+        "description": "API REST Go professionnelle avec Gin framework, architecture propre et performances optimales.",
+        "github_url": "https://github.com/servelink-deploy/go-crud-starter",
+        "doc_url": "https://github.com/servelink-deploy/go-crud-starter",
+        "tags": ["Go", "Gin", "PostgreSQL"],
+        "icon": "go"
+    },
+    {
+        "id": "django-starter",
+        "title": "Django CRUD Starter - API REST",
+        "description": "Application Django professionnelle avec Django REST Framework, ViewSets, pagination automatique et documentation Swagger.",
+        "github_url": "https://github.com/servelink-deploy/django-crud-starter",
+        "doc_url": "https://github.com/servelink-deploy/django-crud-starter",
+        "tags": ["Python", "Django", "Django REST Framework", "PostgreSQL"],
+        "icon": "python"
+    },
+    {
+        "id": "flask-starter",
+        "title": "Flask CRUD Starter - API REST",
+        "description": "Application Flask professionnelle avec Flask RESTful, ViewSets, pagination automatique et documentation Swagger.",
+        "github_url": "https://github.com/servelink-deploy/flask-crud-starter",
+        "doc_url": "https://github.com/servelink-deploy/flask-crud-starter",
+        "tags": ["Python", "Flask", "Flask RESTful", "PostgreSQL"],
+        "icon": "python"
+    },
+    {
+        "id": "nodejs-starter",
+        "title": "Node.js Starter - API REST",
+        "description": "Application Node.js professionnelle avec Express, ViewSets, pagination automatique et documentation Swagger.",
+        "github_url": "https://github.com/servelink-deploy/nodejs-starter",
+        "doc_url": "https://github.com/servelink-deploy/nodejs-starter",
+        "tags": ["Node.js", "Express", "PostgreSQL"],
+        "icon": "nodejs"
+    }
+]
+
 
 @router.get("/{team_slug}/new-project", name="new_project")
 async def new_project(
@@ -88,15 +127,17 @@ async def new_project(
 
     can_create, error_message = await pricing_service.validate_project_creation(team, db)
 
-    project_presets = []
+    project_presets = DEFAULT_PROJECT_PRESETS
     try:
         presets_path = Path(__file__).parent.parent / "data" / "project_presets.json"
         if presets_path.exists():
             with open(presets_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                project_presets = data.get("presets", [])
+                loaded_presets = data.get("presets", [])
+                if loaded_presets:
+                    project_presets = loaded_presets
     except Exception as e:
-        logging.error(f"Error loading project presets: {e}")
+        logging.error(f"Error loading project presets, using default: {e}")
 
     return TemplateResponse(
         request=request,
