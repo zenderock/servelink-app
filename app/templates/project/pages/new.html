@@ -57,7 +57,9 @@
   </div>
 
   {% if project_presets %}
+  {% with presets=project_presets %}
   {% include "project/partials/_boilerplate-presets.html" %}
+  {% endwith %}
   {% endif %}
 </div>
 {% endblock %}
