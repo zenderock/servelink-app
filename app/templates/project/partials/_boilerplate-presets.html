@@ -23,7 +23,7 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between gap-x-2 pt-1 border-t border-border/50">
+            <div class="flex flex-col gap-y-2 pt-1 border-t border-border/50">
                 <div class="flex flex-wrap gap-1.5">
                     {% for tag in preset.tags %}
                     <span
@@ -35,7 +35,7 @@
 
                 {% if preset.doc_url %}
                 <a href="{{ preset.doc_url }}" target="_blank" rel="noopener noreferrer"
-                    class="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-x-1"
+                    class="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-x-1 w-fit"
                     onclick="event.stopPropagation()">
                     <span class="[&>svg]:size-3.5">{% include "icons/book-open.svg" %}</span>
                     {{ _('Docs') }}
