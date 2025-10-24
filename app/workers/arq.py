@@ -1,5 +1,6 @@
 import logging
 from arq.connections import RedisSettings
+from arq.cron import cron
 from workers.tasks.deploy import deploy_start, deploy_finalize, deploy_fail
 from workers.tasks.cleanup import (
     cleanup_user,
@@ -37,4 +38,7 @@ class WorkerSettings:
     job_completion_wait = settings.job_completion_wait
     health_check_interval = 65  # Greater than 60s to avoid health check timeout
     allow_abort_jobs = True
-    cron_jobs = []
+    cron_jobs = [
+        cron(check_inactive_projects, hour=2, minute=0, run_at_startup=False),
+        cron(cleanup_inactive_deployments, hour=3, minute=0, run_at_startup=False),
+    ]

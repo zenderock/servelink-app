@@ -22,9 +22,9 @@ class PricingService:
                 max_projects=2,
                 custom_domains_allowed=False,
                 default_cpu_cores=0.3,
-                default_memory_mb=300,
-                max_cpu_cores=0.5,
-                max_memory_mb=500,
+                default_memory_mb=100,
+                max_cpu_cores=0.3,
+                max_memory_mb=100,
                 price_per_month=None
             )
             db.add(plan)
