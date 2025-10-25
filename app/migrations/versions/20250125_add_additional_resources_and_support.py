@@ -59,7 +59,7 @@ def upgrade() -> None:
         sa.Column('status', postgresql.ENUM('open', 'in_progress', 'waiting', 'resolved', 'closed', name='ticket_status'), nullable=False, server_default='open'),
         sa.Column('category', postgresql.ENUM('technical', 'billing', 'feature_request', 'bug_report', 'other', name='ticket_category'), nullable=False, server_default='technical'),
         sa.Column('assigned_to', sa.String(length=100), nullable=True),
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}'),
+        sa.Column('ticket_metadata', sa.JSON(), nullable=False, server_default='{}'),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.Column('resolved_at', sa.DateTime(), nullable=True),

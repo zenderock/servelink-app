@@ -1025,7 +1025,7 @@ class Payment(Base):
         nullable=False,
         default="pending",
     )
-    metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    payment_metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
     updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -1104,7 +1104,7 @@ class SupportTicket(Base):
         default="technical",
     )
     assigned_to: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    ticket_metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
     updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
     resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)

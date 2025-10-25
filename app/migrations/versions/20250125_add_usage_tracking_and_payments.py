@@ -56,7 +56,7 @@ def upgrade() -> None:
         sa.Column('currency', sa.String(length=3), nullable=False, server_default='EUR'),
         sa.Column('payment_method', postgresql.ENUM('mobile_money', 'credit_card', name='payment_method'), nullable=False),
         sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', name='payment_status'), nullable=False, server_default='pending'),
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}'),
+        sa.Column('payment_metadata', sa.JSON(), nullable=False, server_default='{}'),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.Column('completed_at', sa.DateTime(), nullable=True),
