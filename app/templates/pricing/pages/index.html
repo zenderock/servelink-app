@@ -1,246 +1,142 @@
 {% extends "layouts/app.html" %}
 
-{% block title %}{{ _("Pricing") }}{% endblock %}
+{% block title %}Pricing{% endblock %}
 
 {% block app_content %}
-<div class="min-h-screen bg-white">
-    <div class="container max-w-6xl mx-auto px-8 py-16">
-        <!-- Header -->
-        <div class="text-center mb-12">
-            <div class="inline-block bg-black text-white px-5 py-2 mb-5 text-xs font-bold tracking-[2px] uppercase">
-                PRICING
-            </div>
-            <h1 class="text-5xl font-black mb-4 text-black tracking-tight leading-tight">
-                Deploy without limits
-            </h1>
-            <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                Plans designed to scale with your needs
-            </p>
-        </div>
+<div style="background: #ffffff; width: 100%; padding: 60px 40px 40px;">
+	<div style="text-align: center; margin-bottom: 50px;">
+		<div style="display: inline-block; background: #000000; color: #ffffff; padding: 8px 20px; margin-bottom: 20px; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">
+			Pricing
+		</div>
+		<h2 style="font-size: 42px; font-weight: 900; margin-bottom: 16px; color: #000000; letter-spacing: -1px; line-height: 1.1;">
+			Deploy without limits
+		</h2>
+		<p style="font-size: 18px; color: #6a6a6a; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+			Plans designed to scale with your needs
+		</p>
+	</div>
 
-        <!-- Plans Grid -->
-        <div class="grid md:grid-cols-2 gap-8 mb-10">
-            <!-- Free Plan -->
-            <div class="border-2 border-gray-200 p-10 bg-gray-50 hover:border-black hover:-translate-y-1 transition-all duration-300">
-                <div class="mb-8">
-                    <div class="text-sm font-bold uppercase tracking-widest text-gray-600 mb-3">
-                        Free
-                    </div>
-                    <div class="flex items-baseline mb-2">
-                        <span class="text-6xl font-black text-black leading-none">0€</span>
-                    </div>
-                    <p class="text-gray-600 text-sm">To get started and test</p>
-                </div>
+	<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-bottom: 40px; max-width: 1100px; margin-left: auto; margin-right: auto;">
+		<!-- Free Plan -->
+		<div style="border: 2px solid #e5e5e5; padding: 40px 30px; background: #fafafa; position: relative; transition: all 0.3s;"
+			onmouseover="this.style.borderColor='#000000'; this.style.transform='translateY(-5px)'"
+			onmouseout="this.style.borderColor='#e5e5e5'; this.style.transform='translateY(0)'">
+			<div style="margin-bottom: 30px;">
+				<div style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #6a6a6a; margin-bottom: 12px;">
+					Free
+				</div>
+				<div style="display: flex; align-items: baseline; margin-bottom: 8px;">
+					<span style="font-size: 56px; font-weight: 900; color: #000000; line-height: 1;">0€</span>
+				</div>
+				<p style="color: #6a6a6a; font-size: 14px; line-height: 1.5;">To get started and test</p>
+			</div>
 
-                <div class="border-t-2 border-gray-200 pt-6 mb-8">
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("1 Team") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("1 Member") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("2 Projects") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("500 MB Memory") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("0.25 CPU") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Basic support") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3 text-muted-foreground">
-                        {% include "icons/x.svg" %}
-                        <span>{{ _("Custom domains") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3 text-muted-foreground">
-                        {% include "icons/x.svg" %}
-                        <span>{{ _("Priority support") }}</span>
-                    </li>
-                </ul>
+			<div style="border-top: 2px solid #e5e5e5; padding-top: 24px; margin-bottom: 30px;">
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #000000; margin-right: 12px;"></div>
+					<span style="color: #000000; font-size: 15px; font-weight: 500;">1 Team</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #000000; margin-right: 12px;"></div>
+					<span style="color: #000000; font-size: 15px; font-weight: 500;">1 Member</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #000000; margin-right: 12px;"></div>
+					<span style="color: #000000; font-size: 15px; font-weight: 500;">2 Projects</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #000000; margin-right: 12px;"></div>
+					<span style="color: #000000; font-size: 15px; font-weight: 500;">100 MB RAM</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #000000; margin-right: 12px;"></div>
+					<span style="color: #000000; font-size: 15px; font-weight: 500;">0.3 CPU</span>
+				</div>
+			</div>
 
-                <button class="btn-outline w-full" disabled>
-                    {{ _("Current Plan") }}
-                </button>
-            </div>
+			<button type="button" disabled
+				style="width: 100%; padding: 16px; border: 2px solid #e5e5e5; background: #ffffff; color: #aaaaaa; font-weight: 700; font-size: 15px; cursor: not-allowed; text-transform: uppercase; letter-spacing: 1px;">
+				Current plan
+			</button>
+		</div>
 
-            <!-- Pro Plan -->
-            <div
-                class="border-2 border-primary rounded-xl p-8 bg-gradient-to-br from-primary/5 to-primary/10 relative overflow-hidden">
-                <!-- Popular Badge -->
-                <div
-                    class="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-2 rounded-bl-xl text-sm font-medium">
-                    {{ _("Most Popular") }}
-                </div>
+		<!-- Pro Plan -->
+		<div style="border: 3px solid #000000; padding: 40px 30px; background: #000000; color: #ffffff; position: relative; transition: all 0.3s;"
+			onmouseover="this.style.transform='translateY(-5px) scale(1.02)'"
+			onmouseout="this.style.transform='translateY(0) scale(1)'">
+			<div style="position: absolute; top: -16px; left: 30px; background: #ffffff; color: #000000; padding: 6px 18px; font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #000000;">
+				Popular
+			</div>
 
-                <div class="text-center mb-8">
-                    <h3 class="text-2xl font-bold mb-2">{{ _("Pro Plan") }}</h3>
-                    <div class="text-5xl font-bold text-primary mb-2">
-                        3€
-                        <span class="text-xl font-normal text-muted-foreground">/mois</span>
-                    </div>
-                    <p class="text-muted-foreground">{{ _("Everything you need to scale") }}</p>
-                </div>
+			<div style="margin-bottom: 30px;">
+				<div style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #ffffff; margin-bottom: 12px;">
+					Pro
+				</div>
+				<div style="display: flex; align-items: baseline; margin-bottom: 8px;">
+					<span style="font-size: 56px; font-weight: 900; color: #ffffff; line-height: 1;">3€</span>
+					<span style="font-size: 18px; color: #aaaaaa; margin-left: 8px;">/month</span>
+				</div>
+				<p style="color: #cccccc; font-size: 14px; line-height: 1.5;">Everything you need</p>
+			</div>
 
-                <ul class="space-y-4 mb-8">
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Unlimited Teams") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Unlimited Members") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Unlimited Projects") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Up to 4GB Memory") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Up to 2 CPU") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Custom domains") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Priority support") }}</span>
-                    </li>
-                    <li class="flex items-center gap-x-3">
-                        {% include "icons/check.svg" %}
-                        <span>{{ _("Advanced analytics") }}</span>
-                    </li>
-                </ul>
+			<div style="border-top: 2px solid #333333; padding-top: 24px; margin-bottom: 30px;">
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Unlimited Teams</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Unlimited Members</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Unlimited Projects</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Up to 6 GB RAM</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Up to 4 CPU</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Custom domains</span>
+				</div>
+				<div style="margin-bottom: 14px; display: flex; align-items: center;">
+					<div style="width: 6px; height: 6px; background: #ffffff; margin-right: 12px;"></div>
+					<span style="color: #ffffff; font-size: 15px; font-weight: 500;">Priority support</span>
+				</div>
+			</div>
 
-                <div class="space-y-4">
-                    <a href="https://pay.mesomb.com/l/40h8eFwUX9rb3Rr4t7Bq" target="_blank"
-                        class="btn-primary w-full text-center block">
-                        {{ _("Pay with Mobile Money") }}
-                    </a>
-                    <a href="https://lemonsqueezy.servel.ink/checkout" target="_blank"
-                        class="btn-outline w-full text-center block">
-                        {{ _("Pay with Card") }}
-                    </a>
-                </div>
-            </div>
-        </div>
+			<div style="display: flex; flex-direction: column; gap: 12px;">
+				<button type="button" disabled
+					style="width: 100%; padding: 16px; border: 2px solid #555555; background: #333333; color: #888888; font-weight: 700; font-size: 15px; cursor: not-allowed; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
+					Mobile Money (Unavailable)
+				</button>
+				<button type="button" disabled
+					style="width: 100%; padding: 16px; border: 2px solid #555555; background: #333333; color: #888888; font-weight: 700; font-size: 15px; cursor: not-allowed; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
+					Credit Card (Unavailable)
+				</button>
+			</div>
+		</div>
+	</div>
 
-        <!-- Features Comparison -->
-        <div class="max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-12">{{ _("Compare Features") }}</h2>
-
-            <div class="bg-card rounded-xl border overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="border-b bg-muted/50">
-                            <tr>
-                                <th class="text-left p-6 font-semibold">{{ _("Features") }}</th>
-                                <th class="text-center p-6 font-semibold">{{ _("Free") }}</th>
-                                <th class="text-center p-6 font-semibold">{{ _("Pro") }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Teams") }}</td>
-                                <td class="p-6 text-center">1</td>
-                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Members per team") }}</td>
-                                <td class="p-6 text-center">1</td>
-                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Projects") }}</td>
-                                <td class="p-6 text-center">2</td>
-                                <td class="p-6 text-center">{{ _("Unlimited") }}</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Memory") }}</td>
-                                <td class="p-6 text-center">500 MB</td>
-                                <td class="p-6 text-center">Up to 4GB</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("CPU") }}</td>
-                                <td class="p-6 text-center">0.25</td>
-                                <td class="p-6 text-center">Up to 2</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Custom domains") }}</td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/x.svg" %}
-                                </td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/check.svg" %}
-                                </td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="p-6 font-medium">{{ _("Priority support") }}</td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/x.svg" %}
-                                </td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/check.svg" %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="p-6 font-medium">{{ _("Advanced analytics") }}</td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/x.svg" %}
-                                </td>
-                                <td class="p-6 text-center">
-                                    {% include "icons/check.svg" %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- FAQ Section -->
-        <div class="max-w-3xl mx-auto mt-20">
-            <h2 class="text-3xl font-bold text-center mb-12">{{ _("Frequently Asked Questions") }}</h2>
-
-            <div class="space-y-6">
-                <div class="bg-card rounded-lg border p-6">
-                    <h3 class="font-semibold mb-2">{{ _("Can I change plans anytime?") }}</h3>
-                    <p class="text-muted-foreground">{{ _("Yes! You can upgrade or downgrade your plan at any time.
-                        Changes take effect immediately.") }}</p>
-                </div>
-
-                <div class="bg-card rounded-lg border p-6">
-                    <h3 class="font-semibold mb-2">{{ _("What payment methods do you accept?") }}</h3>
-                    <p class="text-muted-foreground">{{ _("We accept Orange Money, MTN Mobile Money, and all major
-                        credit cards (Visa, Mastercard, American Express).") }}</p>
-                </div>
-
-                <div class="bg-card rounded-lg border p-6">
-                    <h3 class="font-semibold mb-2">{{ _("Is there a free trial?") }}</h3>
-                    <p class="text-muted-foreground">{{ _("Yes! The Free plan is available forever with no time limits.
-                        You can also try Pro for 30 days with our money-back guarantee.") }}</p>
-                </div>
-
-                <div class="bg-card rounded-lg border p-6">
-                    <h3 class="font-semibold mb-2">{{ _("What happens if I exceed my limits?") }}</h3>
-                    <p class="text-muted-foreground">{{ _("We'll notify you when you're approaching your limits. You can
-                        upgrade anytime to continue using our services.") }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- Footer with link to full comparison -->
+	<div style="text-align: center; padding: 30px 20px; border-top: 2px solid #e5e5e5; max-width: 1100px; margin-left: auto; margin-right: auto;">
+		<p style="color: #6a6a6a; font-size: 15px; margin-bottom: 16px;">
+			Need more details about our plans?
+		</p>
+		<a href="https://servel.ink/pricing" target="_blank" 
+			style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: #000000; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; border: 2px solid #000000;"
+			onmouseover="this.style.backgroundColor='#ffffff'; this.style.color='#000000'"
+			onmouseout="this.style.backgroundColor='#000000'; this.style.color='#ffffff'">
+			View full comparison
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
+				<path d="M5 12h14M12 5l7 7-7 7"/>
+			</svg>
+		</a>
+	</div>
 </div>
 {% endblock %}
