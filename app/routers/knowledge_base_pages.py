@@ -22,7 +22,7 @@ async def kb_index(
     """Page principale Knowledge Base"""
     
     # Récupérer les catégories avec comptage
-    categories_data = await KnowledgeBaseService.get_categories_with_count(db)
+    categories_data = await KnowledgeBaseService.get_categories_stats(db)
     
     # Formater les catégories
     category_names = {
