@@ -2,6 +2,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import SubscriptionPlan, Team, TeamMember, Project, User, TeamSubscription
 from config import get_settings
+from services.usage_tracking import UsageTrackingService
 
 
 class PricingService:
@@ -25,6 +26,8 @@ class PricingService:
                 default_memory_mb=100,
                 max_cpu_cores=0.3,
                 max_memory_mb=100,
+                max_traffic_gb_per_month=5,
+                max_storage_mb=100,
                 price_per_month=None
             )
             db.add(plan)
@@ -52,6 +55,8 @@ class PricingService:
                 default_memory_mb=512,
                 max_cpu_cores=4.0,
                 max_memory_mb=6144,  # 6GB max théorique
+                max_traffic_gb_per_month=10,
+                max_storage_mb=10240,  # 10GB
                 price_per_month=0.0
             )
             db.add(plan)

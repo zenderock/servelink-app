@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     onesignal_app_id: str = ""
     onesignal_api_key: str = ""
-    email_logo: str = ""
+    email_logo: str = "https://app.servel.ink/assets/logo-email.png"
     email_sender_name: str = "Servelink"
     email_sender_address: str = ""
     secret_key: str = ""
@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     login_header: str = ""
     toaster_header: str = ""
     server_ip: str = ""
+    payment_backend_url: str = "http://localhost:8001"
+    payment_api_key: str = ""
+    base_url: str = ""
 
     model_config = SettingsConfigDict(extra="ignore")
 
