@@ -1,0 +1,88 @@
+{% from "macros/dialog.html" import dialog %}
+
+{% call dialog(
+    title=_("Create Support Ticket"),
+    description=_("Describe your issue and our team will help you"),
+    id="dialog-new-ticket",
+    dialog_attrs={"class": "w-full max-w-2xl"},
+    body_attrs={"class": "space-y-4"}
+) %}
+<form method="post" action="{{ url_for('support_create_ticket') }}" class="space-y-4">
+    <div class="space-y-2">
+        <label for="team_id" class="label">{{ _("Team") }}</label>
+        <select id="team_id" name="team_id" class="input" required>
+            <option value="">{{ _("Select a team") }}</option>
+            {% if teams %}
+                {% for team in teams %}
+                <option value="{{ team.id }}">{{ team.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <p class="text-xs text-muted-foreground">
+            {{ _("Select the team related to this issue") }}
+        </p>
+    </div>
+
+    <div class="space-y-2">
+        <label for="subject" class="label required">{{ _("Subject") }}</label>
+        <input 
+            type="text" 
+            id="subject" 
+            name="subject" 
+            class="input" 
+            required
+            maxlength="255"
+            placeholder="{{ _('Brief description of your issue') }}"
+        />
+    </div>
+
+    <div class="space-y-2">
+        <label for="category" class="label">{{ _("Category") }}</label>
+        <select id="category" name="category" class="input">
+            <option value="technical">{{ _("Technical") }}</option>
+            <option value="billing">{{ _("Billing") }}</option>
+            <option value="feature_request">{{ _("Feature Request") }}</option>
+            <option value="bug_report">{{ _("Bug Report") }}</option>
+            <option value="other">{{ _("Other") }}</option>
+        </select>
+    </div>
+
+    <div class="space-y-2">
+        <label for="priority" class="label">{{ _("Priority") }}</label>
+        <select id="priority" name="priority" class="input">
+            <option value="low">{{ _("Low") }}</option>
+            <option value="normal" selected>{{ _("Normal") }}</option>
+            <option value="high">{{ _("High") }}</option>
+            <option value="urgent">{{ _("Urgent") }}</option>
+        </select>
+        <p class="text-xs text-muted-foreground">
+            {{ _("Urgent: System down or critical issue affecting production") }}
+        </p>
+    </div>
+
+    <div class="space-y-2">
+        <label for="description" class="label required">{{ _("Description") }}</label>
+        <textarea 
+            id="description" 
+            name="description" 
+            class="input min-h-[150px]" 
+            required
+            placeholder="{{ _('Please provide as much detail as possible about your issue') }}"
+        ></textarea>
+        <p class="text-xs text-muted-foreground">
+            {{ _("Include steps to reproduce, error messages, and any relevant context") }}
+        </p>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4 border-t">
+        <button type="button" 
+                onclick="document.getElementById('dialog-new-ticket').close()"
+                class="btn-secondary">
+            {{ _("Cancel") }}
+        </button>
+        <button type="submit" class="btn-primary">
+            {{ _("Create Ticket") }}
+        </button>
+    </div>
+</form>
+{% endcall %}

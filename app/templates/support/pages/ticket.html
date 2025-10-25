@@ -1,0 +1,238 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ ticket.subject }} - {{ _("Support") }}{% endblock %}
+
+{% block app_content %}
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
+  <div class="flex items-center gap-4 mb-6">
+    <a href="{{ url_for('support_index') }}" class="btn-icon-ghost">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-sm text-muted-foreground">#{{ ticket.id[:8] }}</span>
+        <span class="px-2 py-0.5 text-xs font-medium rounded
+          {% if ticket.priority == 'urgent' %}
+            bg-destructive/10 text-destructive
+          {% elif ticket.priority == 'high' %}
+            bg-warning/10 text-warning
+          {% else %}
+            bg-muted text-muted-foreground
+          {% endif %}">
+          {{ ticket.priority|upper }}
+        </span>
+        <span class="px-2 py-0.5 text-xs font-medium rounded
+          {% if ticket.status == 'open' %}
+            bg-primary/10 text-primary
+          {% elif ticket.status == 'in_progress' %}
+            bg-blue-500/10 text-blue-600
+          {% elif ticket.status == 'resolved' %}
+            bg-green-500/10 text-green-600
+          {% else %}
+            bg-muted text-muted-foreground
+          {% endif %}">
+          {{ ticket.status|replace('_', ' ')|title }}
+        </span>
+      </div>
+      <h1 class="text-2xl font-bold">{{ ticket.subject }}</h1>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="card">
+        <div class="p-6 border-b">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+              {% from "macros/avatar.html" import avatar with context %}
+              {{ avatar(item=ticket.user, prefix="user", name=ticket.user.username, size="md") }}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-medium">{{ ticket.user.username }}</span>
+                <span class="text-xs text-muted-foreground">
+                  {{ ticket.created_at.strftime('%d %b %Y at %H:%M') }}
+                </span>
+              </div>
+              <div class="prose prose-sm max-w-none mt-3">
+                {{ ticket.description|safe }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divide-y">
+          {% for message in ticket.messages %}
+          <div class="p-6
+            {% if message.author_type == 'support' %}
+              bg-primary/5
+            {% elif message.is_internal %}
+              bg-warning/5
+            {% endif %}">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0">
+                {% if message.user %}
+                  {{ avatar(item=message.user, prefix="user", name=message.user.username, size="md") }}
+                {% else %}
+                  <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                    S
+                  </div>
+                {% endif %}
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-medium">
+                    {% if message.author_type == 'support' %}
+                      {{ _("Support Team") }}
+                    {% elif message.user %}
+                      {{ message.user.username }}
+                    {% else %}
+                      {{ _("System") }}
+                    {% endif %}
+                  </span>
+                  {% if message.is_internal %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded bg-warning/20 text-warning">
+                      {{ _("Internal") }}
+                    </span>
+                  {% endif %}
+                  <span class="text-xs text-muted-foreground">
+                    {{ message.created_at.strftime('%d %b %Y at %H:%M') }}
+                  </span>
+                </div>
+                <div class="prose prose-sm max-w-none mt-2">
+                  {{ message.message|safe }}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if ticket.status not in ['closed', 'resolved'] %}
+        <form method="post" action="{{ url_for('support_add_message', ticket_id=ticket.id) }}" class="p-6 border-t">
+          <div class="space-y-4">
+            <label class="label">{{ _("Add a message") }}</label>
+            <textarea 
+              name="message" 
+              class="input min-h-[100px]" 
+              placeholder="{{ _('Type your message here...') }}"
+              required
+            ></textarea>
+            <div class="flex justify-end">
+              <button type="submit" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+                {{ _("Send Message") }}
+              </button>
+            </div>
+          </div>
+        </form>
+        {% else %}
+        <div class="p-6 bg-muted/50 text-center text-sm text-muted-foreground">
+          {{ _("This ticket is closed. Create a new ticket if you need further assistance.") }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="card">
+        <header class="border-b px-6 py-4">
+          <h2 class="font-semibold">{{ _("Ticket Details") }}</h2>
+        </header>
+        <div class="p-6 space-y-4 text-sm">
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Status") }}</div>
+            <span class="px-2 py-1 text-xs font-medium rounded
+              {% if ticket.status == 'open' %}
+                bg-primary/10 text-primary
+              {% elif ticket.status == 'in_progress' %}
+                bg-blue-500/10 text-blue-600
+              {% elif ticket.status == 'resolved' %}
+                bg-green-500/10 text-green-600
+              {% else %}
+                bg-muted text-muted-foreground
+              {% endif %}">
+              {{ ticket.status|replace('_', ' ')|title }}
+            </span>
+          </div>
+
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Priority") }}</div>
+            <span class="px-2 py-1 text-xs font-medium rounded
+              {% if ticket.priority == 'urgent' %}
+                bg-destructive/10 text-destructive
+              {% elif ticket.priority == 'high' %}
+                bg-warning/10 text-warning
+              {% else %}
+                bg-muted text-muted-foreground
+              {% endif %}">
+              {{ ticket.priority|upper }}
+            </span>
+          </div>
+
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Category") }}</div>
+            <div>{{ ticket.category|replace('_', ' ')|title }}</div>
+          </div>
+
+          {% if ticket.team %}
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Team") }}</div>
+            <div>{{ ticket.team.name }}</div>
+          </div>
+          {% endif %}
+
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Created") }}</div>
+            <div>{{ ticket.created_at.strftime('%d %b %Y at %H:%M') }}</div>
+          </div>
+
+          {% if ticket.updated_at != ticket.created_at %}
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Last Updated") }}</div>
+            <div>{{ ticket.updated_at.strftime('%d %b %Y at %H:%M') }}</div>
+          </div>
+          {% endif %}
+
+          {% if ticket.resolved_at %}
+          <div>
+            <div class="text-muted-foreground mb-1">{{ _("Resolved") }}</div>
+            <div>{{ ticket.resolved_at.strftime('%d %b %Y at %H:%M') }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if ticket.status not in ['closed'] %}
+      <div class="card">
+        <header class="border-b px-6 py-4">
+          <h2 class="font-semibold">{{ _("Actions") }}</h2>
+        </header>
+        <div class="p-6 space-y-2">
+          {% if ticket.status == 'resolved' %}
+          <form method="post" action="{{ url_for('support_close_ticket', ticket_id=ticket.id) }}">
+            <button type="submit" class="btn-secondary w-full">
+              {{ _("Close Ticket") }}
+            </button>
+          </form>
+          <p class="text-xs text-muted-foreground">
+            {{ _("Close this ticket if your issue is resolved") }}
+          </p>
+          {% else %}
+          <form method="post" action="{{ url_for('support_reopen_ticket', ticket_id=ticket.id) }}">
+            <button type="submit" class="btn-secondary w-full">
+              {{ _("Mark as Resolved") }}
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
