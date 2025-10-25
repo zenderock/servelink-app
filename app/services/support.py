@@ -148,6 +148,43 @@ class SupportService:
         return result.scalar_one_or_none()
     
     @staticmethod
+    async def get_user_tickets(
+        user_id: int,
+        db: AsyncSession,
+        status_filter: str | None = None,
+        load_messages: bool = False
+    ) -> list[SupportTicket]:
+        """
+        Récupère tous les tickets d'un utilisateur (tous teams confondus)
+        
+        Args:
+            user_id: ID de l'utilisateur
+            db: Session de base de données
+            status_filter: Filtrer par statut (optionnel)
+            load_messages: Charger les messages (par défaut False)
+            
+        Returns:
+            Liste des tickets
+        """
+        query = select(SupportTicket).where(
+            SupportTicket.user_id == user_id
+        )
+        
+        if status_filter:
+            query = query.where(SupportTicket.status == status_filter)
+        
+        if load_messages:
+            query = query.options(selectinload(SupportTicket.messages))
+        
+        query = query.options(
+            selectinload(SupportTicket.team),
+            selectinload(SupportTicket.user)
+        ).order_by(SupportTicket.created_at.desc())
+        
+        result = await db.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
     async def get_team_tickets(
         team_id: str,
         db: AsyncSession,

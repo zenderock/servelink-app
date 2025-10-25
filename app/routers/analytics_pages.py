@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 from db import get_db
 from dependencies import templates, TemplateResponse, get_team_by_slug
@@ -27,50 +27,67 @@ async def analytics_index(
     
     team, membership = team_and_membership
     
-    # Calculer les dates
-    end_date = datetime.utcnow()
-    start_date = end_date - timedelta(days=period)
+    # Récupérer le résumé complet
+    now = datetime.utcnow()
     
-    # Récupérer les stats
-    stats = await AnalyticsService.get_team_analytics(
+    # Trends pour le graphique
+    trends_data = await AnalyticsService.get_usage_trends(team.id, 30, db)
+    trends = trends_data.get('trends', [])
+    
+    # Préparer les données pour Chart.js (derniers 30 jours)
+    daily_labels = [t['month'] for t in trends[-30:]]
+    daily_traffic = [t['traffic_gb'] * 1024 for t in trends[-30:]]  # Convert to MB
+    
+    # Stats du mois en cours
+    current_month_data = await AnalyticsService.get_project_comparison(
         team.id,
-        db,
-        start_date=start_date,
-        end_date=end_date
-    )
-    
-    # Récupérer les données quotidiennes pour le graphique
-    daily_data = await AnalyticsService.get_daily_usage(
-        team.id,
-        db,
-        start_date=start_date,
-        end_date=end_date
-    )
-    
-    # Préparer les données pour Chart.js
-    daily_labels = [d['date'].strftime('%d %b') for d in daily_data]
-    daily_traffic = [d['traffic_mb'] for d in daily_data]
-    
-    # Récupérer les stats par projet
-    project_stats = await AnalyticsService.get_project_breakdown(
-        team.id,
+        now.month,
+        now.year,
         db
     )
     
-    # Récupérer l'historique mensuel
-    monthly_data = await AnalyticsService.get_monthly_history(
-        team.id,
-        db,
-        months=6
-    )
+    # Top consommateurs (pour storage by project)
+    top_consumers = await AnalyticsService.get_top_consumers(team.id, 5, db)
+    project_stats = top_consumers.get('top_consumers', [])
     
-    # Ajouter les noms de mois
+    # Historique mensuel
+    monthly_trends = await AnalyticsService.get_usage_trends(team.id, 6, db)
+    monthly_data = monthly_trends.get('trends', [])
+    
+    # Formater les noms de mois
     month_names = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ]
     for month in monthly_data:
-        month['month_name'] = f"{month_names[month['month'] - 1]} {month['year']}"
+        parts = month['month'].split('-')
+        year = int(parts[0])
+        month_num = int(parts[1])
+        month['month_name'] = f"{month_names[month_num - 1]} {year}"
+        month['project_count'] = len(project_stats)
+    
+    # Calculer les stats pour les cards
+    total_traffic_gb = current_month_data.get('total_traffic_gb', 0)
+    total_storage_mb = current_month_data.get('total_storage_mb', 0)
+    active_projects = len(project_stats)
+    
+    # Moyenne journalière (approximation)
+    avg_daily_traffic_mb = (total_traffic_gb * 1024) / 30 if total_traffic_gb > 0 else 0
+    
+    # Stats summary
+    stats = {
+        'total_traffic_gb': total_traffic_gb,
+        'total_storage_mb': total_storage_mb,
+        'active_projects': active_projects,
+        'avg_daily_traffic_mb': avg_daily_traffic_mb,
+        'traffic_change': 0,  # TODO: calculer basé sur mois précédent
+        'storage_change': 0   # TODO: calculer basé sur mois précédent
+    }
+    
+    # Formatter project_stats pour le template
+    for proj in project_stats:
+        proj['name'] = proj.get('project_name', 'Unknown')
+        proj['storage_mb'] = proj.get('storage_mb', 0)
     
     return templates.TemplateResponse(
         request,
@@ -100,24 +117,12 @@ async def export_analytics_csv(
     
     team, membership = team_and_membership
     
-    # Calculer les dates
-    end_date = datetime.utcnow()
-    start_date = end_date - timedelta(days=period)
-    
-    # Récupérer les données
-    daily_data = await AnalyticsService.get_daily_usage(
-        team.id,
-        db,
-        start_date=start_date,
-        end_date=end_date
-    )
-    
-    # Générer le CSV
+    # Générer le CSV avec les méthodes disponibles
+    months = max(1, period // 30)  # Convertir jours en mois
     csv_content = await AnalyticsService.export_to_csv(
         team.id,
-        db,
-        start_date=start_date,
-        end_date=end_date
+        months,
+        db
     )
     
     # Créer un buffer
@@ -126,7 +131,8 @@ async def export_analytics_csv(
     buffer.seek(0)
     
     # Nom du fichier
-    filename = f"analytics_{team.slug}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.csv"
+    now = datetime.utcnow()
+    filename = f"analytics_{team.slug}_{now.strftime('%Y%m%d')}.csv"
     
     return StreamingResponse(
         iter([buffer.getvalue()]),
