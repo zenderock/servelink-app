@@ -20,24 +20,47 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Create enums
-    op.execute("CREATE TYPE resource_type AS ENUM ('ram', 'cpu', 'traffic', 'storage')")
-    op.execute("CREATE TYPE resource_status AS ENUM ('active', 'expired', 'cancelled')")
-    op.execute("CREATE TYPE ticket_priority AS ENUM ('low', 'normal', 'high', 'urgent')")
-    op.execute("CREATE TYPE ticket_status AS ENUM ('open', 'in_progress', 'waiting', 'resolved', 'closed')")
-    op.execute("CREATE TYPE ticket_category AS ENUM ('technical', 'billing', 'feature_request', 'bug_report', 'other')")
-    op.execute("CREATE TYPE message_author_type AS ENUM ('user', 'support', 'system')")
+    # Create enums (if they don't exist)
+    try:
+        op.execute("CREATE TYPE resource_type AS ENUM ('ram', 'cpu', 'traffic', 'storage')")
+    except Exception:
+        pass
+    
+    try:
+        op.execute("CREATE TYPE resource_status AS ENUM ('active', 'expired', 'cancelled')")
+    except Exception:
+        pass
+    
+    try:
+        op.execute("CREATE TYPE ticket_priority AS ENUM ('low', 'normal', 'high', 'urgent')")
+    except Exception:
+        pass
+    
+    try:
+        op.execute("CREATE TYPE ticket_status AS ENUM ('open', 'in_progress', 'waiting', 'resolved', 'closed')")
+    except Exception:
+        pass
+    
+    try:
+        op.execute("CREATE TYPE ticket_category AS ENUM ('technical', 'billing', 'feature_request', 'bug_report', 'other')")
+    except Exception:
+        pass
+    
+    try:
+        op.execute("CREATE TYPE message_author_type AS ENUM ('user', 'support', 'system')")
+    except Exception:
+        pass
     
     # Create additional_resource table
     op.create_table('additional_resource',
         sa.Column('id', sa.String(length=32), nullable=False),
         sa.Column('team_id', sa.String(length=32), nullable=False),
-        sa.Column('resource_type', postgresql.ENUM('ram', 'cpu', 'traffic', 'storage', name='resource_type'), nullable=False),
+        sa.Column('resource_type', postgresql.ENUM('ram', 'cpu', 'traffic', 'storage', name='resource_type', create_type=False), nullable=False),
         sa.Column('quantity', sa.Integer(), nullable=False),
         sa.Column('unit_price', sa.Float(), nullable=False),
         sa.Column('currency', sa.String(length=3), nullable=False, server_default='EUR'),
         sa.Column('payment_id', sa.String(length=32), nullable=True),
-        sa.Column('status', postgresql.ENUM('active', 'expired', 'cancelled', name='resource_status'), nullable=False, server_default='active'),
+        sa.Column('status', postgresql.ENUM('active', 'expired', 'cancelled', name='resource_status', create_type=False), nullable=False, server_default='active'),
         sa.Column('expires_at', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
@@ -55,9 +78,9 @@ def upgrade() -> None:
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('subject', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=False),
-        sa.Column('priority', postgresql.ENUM('low', 'normal', 'high', 'urgent', name='ticket_priority'), nullable=False, server_default='normal'),
-        sa.Column('status', postgresql.ENUM('open', 'in_progress', 'waiting', 'resolved', 'closed', name='ticket_status'), nullable=False, server_default='open'),
-        sa.Column('category', postgresql.ENUM('technical', 'billing', 'feature_request', 'bug_report', 'other', name='ticket_category'), nullable=False, server_default='technical'),
+        sa.Column('priority', postgresql.ENUM('low', 'normal', 'high', 'urgent', name='ticket_priority', create_type=False), nullable=False, server_default='normal'),
+        sa.Column('status', postgresql.ENUM('open', 'in_progress', 'waiting', 'resolved', 'closed', name='ticket_status', create_type=False), nullable=False, server_default='open'),
+        sa.Column('category', postgresql.ENUM('technical', 'billing', 'feature_request', 'bug_report', 'other', name='ticket_category', create_type=False), nullable=False, server_default='technical'),
         sa.Column('assigned_to', sa.String(length=100), nullable=True),
         sa.Column('ticket_metadata', sa.JSON(), nullable=False, server_default='{}'),
         sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -78,7 +101,7 @@ def upgrade() -> None:
         sa.Column('id', sa.String(length=32), nullable=False),
         sa.Column('ticket_id', sa.String(length=32), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=True),
-        sa.Column('author_type', postgresql.ENUM('user', 'support', 'system', name='message_author_type'), nullable=False, server_default='user'),
+        sa.Column('author_type', postgresql.ENUM('user', 'support', 'system', name='message_author_type', create_type=False), nullable=False, server_default='user'),
         sa.Column('message', sa.Text(), nullable=False),
         sa.Column('is_internal', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('created_at', sa.DateTime(), nullable=False),
