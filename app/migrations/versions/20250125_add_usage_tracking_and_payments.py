@@ -43,9 +43,9 @@ def upgrade() -> None:
     op.create_index('ix_project_usage_month', 'project_usage', ['month'])
     op.create_index('ix_project_usage_year', 'project_usage', ['year'])
     
-    # Create payment enums
-    op.execute("CREATE TYPE payment_method AS ENUM ('mobile_money', 'credit_card')")
-    op.execute("CREATE TYPE payment_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
+    # Create payment enums (if they don't exist)
+    op.execute("CREATE TYPE IF NOT EXISTS payment_method AS ENUM ('mobile_money', 'credit_card')")
+    op.execute("CREATE TYPE IF NOT EXISTS payment_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
     
     # Create payment table
     op.create_table('payment',
