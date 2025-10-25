@@ -12,6 +12,11 @@ from workers.tasks.project_monitoring import (
     check_inactive_projects,
     reactivate_project_task,
 )
+from workers.tasks.usage_monitoring import (
+    update_project_storage,
+    check_usage_limits_task,
+    expire_additional_resources,
+)
 
 from config import get_settings
 
@@ -31,6 +36,9 @@ class WorkerSettings:
         cleanup_inactive_deployments,
         check_inactive_projects,
         reactivate_project_task,
+        update_project_storage,
+        check_usage_limits_task,
+        expire_additional_resources,
     ]
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     max_jobs = 8
@@ -41,4 +49,7 @@ class WorkerSettings:
     cron_jobs = [
         cron(check_inactive_projects, hour=2, minute=0, run_at_startup=False),
         cron(cleanup_inactive_deployments, hour=3, minute=0, run_at_startup=False),
+        cron(update_project_storage, hour=4, minute=0, run_at_startup=False),
+        cron(expire_additional_resources, hour=5, minute=0, run_at_startup=False),
+        cron(check_usage_limits_task, hour=6, minute=0, run_at_startup=False),
     ]

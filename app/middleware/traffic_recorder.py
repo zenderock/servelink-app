@@ -3,6 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.project_monitoring import ProjectMonitoringService
+from services.usage_tracking import UsageTrackingService
 from db import AsyncSessionLocal
 from config import get_settings
 import logging
@@ -59,6 +60,17 @@ class TrafficRecorderMiddleware(BaseHTTPMiddleware):
                 
                 # Continuer avec la requête normale
                 response = await call_next(request)
+                
+                # Enregistrer les octets transférés pour les statistiques
+                if project:
+                    try:
+                        content_length = response.headers.get("content-length")
+                        if content_length:
+                            bytes_transferred = int(content_length)
+                            await UsageTrackingService.record_traffic(project.id, bytes_transferred, db)
+                    except Exception as e:
+                        logger.error(f"Error recording traffic bytes for project {project.id}: {e}")
+                
                 return response
                 
             except Exception as e:

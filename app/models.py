@@ -935,6 +935,8 @@ class SubscriptionPlan(Base):
     default_memory_mb: Mapped[int] = mapped_column(nullable=False, default=300)
     max_cpu_cores: Mapped[float] = mapped_column(nullable=False, default=0.5)
     max_memory_mb: Mapped[int] = mapped_column(nullable=False, default=500)
+    max_traffic_gb_per_month: Mapped[int] = mapped_column(nullable=False, default=5)
+    max_storage_mb: Mapped[int] = mapped_column(nullable=False, default=100)
     price_per_month: Mapped[float] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
@@ -972,6 +974,212 @@ class TeamSubscription(Base):
     @override
     def __repr__(self):
         return f"<TeamSubscription {self.team_id}:{self.plan_id}>"
+
+
+class ProjectUsage(Base):
+    __tablename__ = "project_usage"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project.id"), nullable=False, index=True
+    )
+    month: Mapped[int] = mapped_column(nullable=False, index=True)
+    year: Mapped[int] = mapped_column(nullable=False, index=True)
+    traffic_bytes: Mapped[int] = mapped_column(nullable=False, default=0)
+    storage_bytes: Mapped[int] = mapped_column(nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    project: Mapped["Project"] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "year", "month", name="uq_project_usage_period"),
+    )
+
+    @override
+    def __repr__(self):
+        return f"<ProjectUsage {self.project_id} {self.year}-{self.month:02d}>"
+
+
+class Payment(Base):
+    __tablename__ = "payment"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    team_id: Mapped[str] = mapped_column(
+        ForeignKey("team.id"), nullable=False, index=True
+    )
+    external_payment_id: Mapped[str] = mapped_column(String(255), nullable=True, unique=True, index=True)
+    amount: Mapped[float] = mapped_column(nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    payment_method: Mapped[str] = mapped_column(
+        SQLAEnum("mobile_money", "credit_card", name="payment_method"),
+        nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("pending", "processing", "completed", "failed", "cancelled", name="payment_status"),
+        nullable=False,
+        default="pending",
+    )
+    metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # Relationships
+    team: Mapped["Team"] = relationship()
+
+    @override
+    def __repr__(self):
+        return f"<Payment {self.id} {self.status}>"
+
+
+class AdditionalResource(Base):
+    __tablename__ = "additional_resource"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    team_id: Mapped[str] = mapped_column(
+        ForeignKey("team.id"), nullable=False, index=True
+    )
+    resource_type: Mapped[str] = mapped_column(
+        SQLAEnum("ram", "cpu", "traffic", "storage", name="resource_type"),
+        nullable=False
+    )
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    unit_price: Mapped[float] = mapped_column(nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    payment_id: Mapped[str | None] = mapped_column(
+        ForeignKey("payment.id"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("active", "expired", "cancelled", name="resource_status"),
+        nullable=False,
+        default="active",
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+
+    team: Mapped["Team"] = relationship()
+    payment: Mapped["Payment"] = relationship()
+
+    @override
+    def __repr__(self):
+        return f"<AdditionalResource {self.resource_type} {self.quantity} for {self.team_id}>"
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_ticket"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    team_id: Mapped[str] = mapped_column(
+        ForeignKey("team.id"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"), nullable=False, index=True
+    )
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    priority: Mapped[str] = mapped_column(
+        SQLAEnum("low", "normal", "high", "urgent", name="ticket_priority"),
+        nullable=False,
+        default="normal",
+    )
+    status: Mapped[str] = mapped_column(
+        SQLAEnum("open", "in_progress", "waiting", "resolved", "closed", name="ticket_status"),
+        nullable=False,
+        default="open",
+    )
+    category: Mapped[str] = mapped_column(
+        SQLAEnum("technical", "billing", "feature_request", "bug_report", "other", name="ticket_category"),
+        nullable=False,
+        default="technical",
+    )
+    assigned_to: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+    resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    team: Mapped["Team"] = relationship()
+    user: Mapped["User"] = relationship()
+    messages: Mapped[list["SupportMessage"]] = relationship(back_populates="ticket")
+
+    @override
+    def __repr__(self):
+        return f"<SupportTicket {self.id} {self.status}>"
+
+
+class SupportMessage(Base):
+    __tablename__ = "support_message"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    ticket_id: Mapped[str] = mapped_column(
+        ForeignKey("support_ticket.id"), nullable=False, index=True
+    )
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id"), nullable=True
+    )
+    author_type: Mapped[str] = mapped_column(
+        SQLAEnum("user", "support", "system", name="message_author_type"),
+        nullable=False,
+        default="user",
+    )
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    is_internal: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+    ticket: Mapped["SupportTicket"] = relationship(back_populates="messages")
+    user: Mapped[User | None] = relationship()
+
+    @override
+    def __repr__(self):
+        return f"<SupportMessage {self.id} by {self.author_type}>"
+
+
+class KnowledgeBaseArticle(Base):
+    __tablename__ = "knowledge_base_article"
+
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=lambda: token_hex(16)
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    excerpt: Mapped[str] = mapped_column(String(500), nullable=True)
+    category: Mapped[str] = mapped_column(
+        SQLAEnum("getting_started", "deployment", "billing", "troubleshooting", "api", "other", name="kb_category"),
+        nullable=False,
+        default="other",
+    )
+    tags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    view_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    helpful_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    not_helpful_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    author_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
+    published_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    author: Mapped[User | None] = relationship()
+
+    @override
+    def __repr__(self):
+        return f"<KnowledgeBaseArticle {self.title}>"
 
 
 def get_default_free_plan() -> SubscriptionPlan:
