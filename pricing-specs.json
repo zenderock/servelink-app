@@ -1,0 +1,91 @@
+{
+    "plans": {
+        "free": {
+            "id": "free",
+            "name": "Free",
+            "price": {
+                "amount": 0,
+                "currency": "EUR",
+                "billing_cycle": "monthly"
+            },
+            "limits": {
+                "teams": 1,
+                "members": 1,
+                "projects": 2,
+                "ram_mb": 100,
+                "cpu": 0.3,
+                "traffic_gb": 5,
+                "storage_mb": 100
+            },
+            "features": {
+                "custom_domains": false,
+                "priority_support": false,
+                "advanced_analytics": false,
+                "inactive_project_policy": {
+                    "pause_after_days": 5,
+                    "delete_after_days": 7
+                }
+            },
+            "additional_resources": null
+        },
+        "pro": {
+            "id": "pro",
+            "name": "Pro",
+            "price": {
+                "amount": 3,
+                "currency": "EUR",
+                "billing_cycle": "monthly"
+            },
+            "limits": {
+                "teams": -1,
+                "members": -1,
+                "projects": -1,
+                "ram_mb": 500,
+                "cpu": 1,
+                "traffic_gb": 10,
+                "storage_gb": 10
+            },
+            "max_limits": {
+                "ram_gb": 8,
+                "cpu": 4
+            },
+            "features": {
+                "custom_domains": true,
+                "priority_support": true,
+                "advanced_analytics": true,
+                "inactive_project_policy": null
+            },
+            "additional_resources": {
+                "ram": {
+                    "unit": "500_mb",
+                    "price_per_unit": 1,
+                    "currency": "EUR"
+                },
+                "cpu": {
+                    "unit": "1_cpu",
+                    "price_per_unit": 2,
+                    "currency": "EUR"
+                },
+                "traffic": {
+                    "unit": "10_gb",
+                    "price_per_unit": 1,
+                    "currency": "EUR"
+                },
+                "storage": {
+                    "unit": "10_gb",
+                    "price_per_unit": 1,
+                    "currency": "EUR"
+                }
+            }
+        }
+    },
+    "metadata": {
+        "version": "1.0.0",
+        "last_updated": "2025-10-25",
+        "notes": {
+            "unlimited_value": -1,
+            "inactive_projects": "Free plan projects with no traffic for 5 days are paused, and deleted after 7 days. Pro plan has no such limitation.",
+            "max_limits": "Pro plan can scale up to the specified max limits with additional resources charged per unit."
+        }
+    }
+}
