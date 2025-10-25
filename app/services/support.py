@@ -36,14 +36,21 @@ class SupportService:
         Returns:
             Le ticket créé
         """
-        # Vérifier si l'équipe a accès au support prioritaire
+        # Vérifier que l'équipe existe
         team = await db.get(Team, team_id)
-        if not team or not team.current_plan:
-            raise ValueError("Team not found or has no active plan")
+        if not team:
+            raise ValueError("Team not found")
         
-        # Les plans Pro ont automatiquement la priorité "high"
-        if team.current_plan.name == "pay_as_you_go" and priority in ["low", "normal"]:
-            priority = "high"
+        # Ajuster la priorité selon le plan
+        # Plans Pro (pay_as_you_go) ont automatiquement la priorité "high"
+        # Plans Free restent en "normal" ou "low"
+        if team.current_plan and team.current_plan.name == "pay_as_you_go":
+            if priority in ["low", "normal"]:
+                priority = "high"
+        else:
+            # Plan Free : limiter à normal ou low
+            if priority in ["high", "urgent"]:
+                priority = "normal"
         
         ticket = SupportTicket(
             team_id=team_id,
@@ -68,7 +75,7 @@ class SupportService:
             author_type="user"
         )
         
-        logger.info(f"Created support ticket {ticket.id} for team {team_id}")
+        logger.info(f"Created support ticket {ticket.id} for team {team_id} (priority: {priority})")
         return ticket
     
     @staticmethod
