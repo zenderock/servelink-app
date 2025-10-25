@@ -23,7 +23,7 @@
           <div class="flex items-center justify-between">
             <h2 class="font-semibold">{{ _("My Tickets") }}</h2>
             <div class="flex gap-2">
-              <select class="input-sm" onchange="window.location.href='?status='+this.value">
+              <select class="input-sm space-y-2" onchange="window.location.href='?status='+this.value">
                 <option value="all" {% if status == 'all' %}selected{% endif %}>{{ _("All") }}</option>
                 <option value="open" {% if status == 'open' %}selected{% endif %}>{{ _("Open") }}</option>
                 <option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>{{ _("In Progress") }}</option>
@@ -117,13 +117,6 @@
               <polyline points="14 2 14 8 20 8"/>
             </svg>
             {{ _("Knowledge Base") }}
-          </a>
-          <a href="https://docs.servel.ink" target="_blank" class="flex items-center gap-3 text-sm hover:text-primary transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
-            </svg>
-            {{ _("Documentation") }}
           </a>
           <a href="https://status.servel.ink" target="_blank" class="flex items-center gap-3 text-sm hover:text-primary transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

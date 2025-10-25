@@ -28,13 +28,13 @@
     </li>
     <li
       role="presentation"
-      class="pb-1.5 border-b-2 {{ 'border-primary' if request.path.startswith(url_for('analytics_index', team_slug=team.slug).path) else 'border-transparent' }}"
+      class="pb-1.5 border-b-2 {{ 'border-primary' if request.path.startswith(url_for('team_analytics', team_slug=team.slug).path) else 'border-transparent' }}"
     >
       <a
-        href="{{ url_for('analytics_index', team_slug=team.slug) }}"
+        href="{{ url_for('team_analytics', team_slug=team.slug) }}"
         role="tab"
         data-turbo="false"
-        aria-selected="{{ 'true' if request.path.startswith(url_for('analytics_index', team_slug=team.slug).path) else 'false' }}"
+        aria-selected="{{ 'true' if request.path.startswith(url_for('team_analytics', team_slug=team.slug).path) else 'false' }}"
         class="btn-sm-ghost text-muted-foreground hover:text-foreground [&[aria-selected=true]]:text-foreground"
         hx-boost="true"
       >{{ _('Analytics') }}</a>

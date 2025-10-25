@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["analytics_pages"])
 
 
-@router.get("/{team_slug}/analytics", name="analytics_index", response_class=HTMLResponse)
+@router.get("/{team_slug}/analytics", name="team_analytics", response_class=HTMLResponse)
 async def analytics_index(
     request: Request,
     team_slug: str,
@@ -105,7 +105,7 @@ async def analytics_index(
     )
 
 
-@router.get("/{team_slug}/analytics/export", name="analytics_export_csv")
+@router.get("/{team_slug}/analytics/export", name="team_analytics_export")
 async def export_analytics_csv(
     request: Request,
     team_slug: str,

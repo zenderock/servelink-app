@@ -10,7 +10,7 @@
 <form method="post" action="{{ url_for('support_create_ticket') }}" class="space-y-4">
     <div class="space-y-2">
         <label for="team_id" class="label">{{ _("Team") }}</label>
-        <select id="team_id" name="team_id" class="input" required>
+        <select id="team_id" name="team_id" class="input w-full space-y-2" required>
             <option value="">{{ _("Select a team") }}</option>
             {% if teams %}
                 {% for team in teams %}
@@ -38,7 +38,7 @@
 
     <div class="space-y-2">
         <label for="category" class="label">{{ _("Category") }}</label>
-        <select id="category" name="category" class="input">
+        <select id="category" name="category" class="input w-full space-y-2">
             <option value="technical">{{ _("Technical") }}</option>
             <option value="billing">{{ _("Billing") }}</option>
             <option value="feature_request">{{ _("Feature Request") }}</option>
@@ -49,7 +49,7 @@
 
     <div class="space-y-2">
         <label for="priority" class="label">{{ _("Priority") }}</label>
-        <select id="priority" name="priority" class="input">
+        <select id="priority" name="priority" class="input w-full space-y-2">
             <option value="low">{{ _("Low") }}</option>
             <option value="normal" selected>{{ _("Normal") }}</option>
             <option value="high">{{ _("High") }}</option>
@@ -65,7 +65,7 @@
         <textarea 
             id="description" 
             name="description" 
-            class="input min-h-[150px]" 
+            class="input min-h-[150px] w-full p-6" 
             required
             placeholder="{{ _('Please provide as much detail as possible about your issue') }}"
         ></textarea>
