@@ -21,7 +21,7 @@
       {% include "icons/loader.svg" %}
     </span>
   </button>
-  <div x-show="countdown > 0" class="text-center space-y-2">
+  <div x-show="countdown > 0" class="text-left space-y-2">
     <p class="text-sm text-muted-foreground">
       {{ _("Email sent! Please check your inbox.") }}
     </p>
@@ -35,16 +35,58 @@
   function emailCountdown() {
     return {
       countdown: 0,
+      interval: null,
+      
+      init() {
+        // Restaurer le countdown depuis localStorage au chargement
+        this.restoreCountdown();
+        this.startCountdownIfNeeded();
+      },
+      
+      restoreCountdown() {
+        const storedExpiry = localStorage.getItem('email_login_expiry');
+        if (storedExpiry) {
+          const expiryTime = parseInt(storedExpiry);
+          const now = Math.floor(Date.now() / 1000);
+          const remaining = expiryTime - now;
+          
+          if (remaining > 0) {
+            this.countdown = remaining;
+          } else {
+            // Expiré, nettoyer
+            localStorage.removeItem('email_login_expiry');
+            this.countdown = 0;
+          }
+        }
+      },
+      
+      startCountdownIfNeeded() {
+        if (this.countdown > 0) {
+          this.interval = setInterval(() => {
+            this.countdown--;
+            if (this.countdown <= 0) {
+              clearInterval(this.interval);
+              localStorage.removeItem('email_login_expiry');
+            }
+          }, 1000);
+        }
+      },
+      
       handleEmailSent() {
         this.loading = null;
         this.countdown = 120;
-        const interval = setInterval(() => {
-          this.countdown--;
-          if (this.countdown <= 0) {
-            clearInterval(interval);
-          }
-        }, 1000);
+        
+        // Sauvegarder le timestamp d'expiration dans localStorage
+        const expiryTime = Math.floor(Date.now() / 1000) + 120;
+        localStorage.setItem('email_login_expiry', expiryTime.toString());
+        
+        // Démarrer le countdown
+        if (this.interval) {
+          clearInterval(this.interval);
+        }
+        this.startCountdownIfNeeded();
       },
+      
       formatCountdown(seconds) {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
