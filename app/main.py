@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import logging
 
-from routers import auth, project, github, google, team, user, event, bug_report, payment, resources, support, support_pages, analytics, analytics_pages, knowledge_base
+from routers import auth, project, github, google, team, user, event, bug_report, payment, resources, support, support_pages, analytics, analytics_pages, knowledge_base, knowledge_base_pages, pricing
 from config import get_settings, Settings
 from db import get_db, AsyncSessionLocal
 from models import User, Team, Deployment, Project
@@ -149,21 +149,30 @@ async def root(
         return RedirectResponse(f"/{team_slug}", status_code=302)
 
 
+# Routes spécifiques (doivent être AVANT team.router pour éviter le catch-all /{team_slug})
 app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(project.router)
-app.include_router(github.router)
-app.include_router(google.router)
+app.include_router(pricing.router)  # /pricing
+app.include_router(support_pages.router)  # /support
+app.include_router(knowledge_base_pages.router)  # /help
+app.include_router(bug_report.router)  # /bug-report
+
+# Routes avec préfixes API
+app.include_router(support.router)  # /api/support
+app.include_router(analytics.router)  # /api/analytics
+app.include_router(knowledge_base.router)  # /api/knowledge-base
+app.include_router(payment.router)  # /api/payment
+app.include_router(resources.router)  # /api/resources
+app.include_router(google.router)  # /api/google
+
+# Routes utilisateur
+app.include_router(user.router)  # /user
+
+# Routes avec /{team_slug} (DOIVENT être après les routes spécifiques)
 app.include_router(team.router)
-app.include_router(event.router)
-app.include_router(bug_report.router)
-app.include_router(payment.router)
-app.include_router(resources.router)
-app.include_router(support.router)
-app.include_router(support_pages.router)
-app.include_router(analytics.router)
+app.include_router(project.router)
 app.include_router(analytics_pages.router)
-app.include_router(knowledge_base.router)
+app.include_router(github.router)
+app.include_router(event.router)
 
 
 @app.exception_handler(404)

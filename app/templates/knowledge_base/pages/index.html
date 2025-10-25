@@ -1,0 +1,119 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ _("Knowledge Base") }}{% endblock %}
+
+{% block app_content %}
+<div class="container max-w-screen-xl mx-auto p-8 space-y-8">
+  <!-- Header with Search -->
+  <div class="text-center space-y-4">
+    <h1 class="text-4xl font-bold">{{ _("How can we help you?") }}</h1>
+    <p class="text-lg text-muted-foreground">{{ _("Search our knowledge base for answers") }}</p>
+    
+    <form method="get" action="{{ url_for('kb_search') }}" class="max-w-2xl mx-auto">
+      <div class="relative">
+        <input 
+          type="search" 
+          name="q" 
+          placeholder="{{ _('Search for articles...') }}" 
+          class="input pl-12 pr-4 py-4 text-lg"
+          value="{{ query or '' }}"
+        />
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+    </form>
+  </div>
+
+  <!-- Categories -->
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {% for category in categories %}
+    <a href="{{ url_for('kb_category', category=category.slug) }}" class="card hover:shadow-lg transition-shadow">
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+            {% if category.slug == 'getting_started' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            {% elif category.slug == 'deployment' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+              <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+            </svg>
+            {% elif category.slug == 'billing' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            {% elif category.slug == 'troubleshooting' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            {% else %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            {% endif %}
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-lg mb-2">{{ category.name }}</h3>
+            <p class="text-sm text-muted-foreground mb-3">{{ category.description }}</p>
+            <span class="text-sm text-primary font-medium">
+              {{ category.article_count }} {{ _("articles") }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Popular Articles -->
+  {% if popular_articles %}
+  <div class="card">
+    <header class="border-b px-6 py-4">
+      <h2 class="text-xl font-semibold">{{ _("Popular Articles") }}</h2>
+    </header>
+    <div class="divide-y">
+      {% for article in popular_articles %}
+      <a href="{{ url_for('kb_article', slug=article.slug) }}" class="block px-6 py-4 hover:bg-muted/50 transition-colors">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <h3 class="font-medium mb-1">{{ article.title }}</h3>
+            {% if article.excerpt %}
+            <p class="text-sm text-muted-foreground line-clamp-2">{{ article.excerpt }}</p>
+            {% endif %}
+            <div class="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <span class="px-2 py-0.5 bg-muted rounded text-foreground">{{ article.category_name }}</span>
+              <span>👁 {{ article.view_count }} {{ _("views") }}</span>
+              {% if article.helpful_count > 0 %}
+              <span>👍 {{ article.helpful_count }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <svg class="flex-shrink-0 text-muted-foreground" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Need More Help -->
+  <div class="card bg-primary/5 border-primary/20">
+    <div class="p-8 text-center">
+      <h3 class="text-xl font-semibold mb-2">{{ _("Can't find what you're looking for?") }}</h3>
+      <p class="text-muted-foreground mb-6">{{ _("Our support team is here to help") }}</p>
+      <a href="{{ url_for('support_index') }}" class="btn-primary">
+        {{ _("Contact Support") }}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
