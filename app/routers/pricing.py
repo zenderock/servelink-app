@@ -8,4 +8,8 @@ router = APIRouter()
 @router.get("/pricing", name="pricing", response_class=HTMLResponse)
 async def pricing(request: Request):
     """Display the pricing page."""
-    return HTMLResponse("<h1>Pricing Page Test</h1><p>This is a test page.</p>")
+    return templates.TemplateResponse(
+        request,
+        "pricing/pages/index.html",
+        {}
+    )
