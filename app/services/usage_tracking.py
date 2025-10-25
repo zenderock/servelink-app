@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import Project, ProjectUsage, Team
 import logging
