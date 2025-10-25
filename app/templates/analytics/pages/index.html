@@ -1,0 +1,219 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ _("Analytics") }} - {{ team.name }}{% endblock %}
+
+{% block app_content %}
+<div class="container max-w-screen-xl mx-auto p-8 space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="h1">{{ _("Analytics") }}</h1>
+      <p class="text-muted-foreground mt-1">{{ _("Monitor your team's usage and performance") }}</p>
+    </div>
+    <div class="flex gap-3">
+      <select id="period-selector" class="input-sm" onchange="window.location.href='?period='+this.value">
+        <option value="7" {% if period == 7 %}selected{% endif %}>{{ _("Last 7 days") }}</option>
+        <option value="30" {% if period == 30 %}selected{% endif %}>{{ _("Last 30 days") }}</option>
+        <option value="90" {% if period == 90 %}selected{% endif %}>{{ _("Last 90 days") }}</option>
+      </select>
+      <a href="{{ url_for('analytics_export_csv', team_slug=team.slug, period=period) }}" class="btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        {{ _("Export CSV") }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Overview Cards -->
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div class="card">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-muted-foreground">{{ _("Total Traffic") }}</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div class="text-2xl font-bold">{{ stats.total_traffic_gb|round(2) }} GB</div>
+        {% if stats.traffic_change %}
+        <p class="text-xs mt-2
+          {% if stats.traffic_change > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+          {% if stats.traffic_change > 0 %}+{% endif %}{{ stats.traffic_change|round(1) }}% {{ _("vs last period") }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-muted-foreground">{{ _("Storage Used") }}</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <div class="text-2xl font-bold">{{ stats.total_storage_mb|round(0)|int }} MB</div>
+        {% if stats.storage_change %}
+        <p class="text-xs mt-2
+          {% if stats.storage_change > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+          {% if stats.storage_change > 0 %}+{% endif %}{{ stats.storage_change|round(1) }}% {{ _("vs last period") }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-muted-foreground">{{ _("Active Projects") }}</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="text-2xl font-bold">{{ stats.active_projects }}</div>
+        <p class="text-xs mt-2 text-muted-foreground">{{ _("Total projects") }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-muted-foreground">{{ _("Avg Daily Traffic") }}</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="text-2xl font-bold">{{ stats.avg_daily_traffic_mb|round(0)|int }} MB</div>
+        <p class="text-xs mt-2 text-muted-foreground">{{ _("Per day") }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- Traffic Chart -->
+    <div class="card">
+      <header class="border-b px-6 py-4">
+        <h2 class="font-semibold">{{ _("Traffic Over Time") }}</h2>
+      </header>
+      <div class="p-6">
+        <canvas id="trafficChart" height="250"></canvas>
+      </div>
+    </div>
+
+    <!-- Storage by Project -->
+    <div class="card">
+      <header class="border-b px-6 py-4">
+        <h2 class="font-semibold">{{ _("Storage by Project") }}</h2>
+      </header>
+      <div class="p-6">
+        {% if project_stats %}
+        <div class="space-y-4">
+          {% for project in project_stats[:5] %}
+          <div>
+            <div class="flex items-center justify-between text-sm mb-2">
+              <span class="font-medium truncate">{{ project.name }}</span>
+              <span class="text-muted-foreground">{{ project.storage_mb|round(0)|int }} MB</span>
+            </div>
+            <div class="w-full bg-muted rounded-full h-2">
+              <div class="h-2 rounded-full bg-primary transition-all" 
+                   style="width: {{ (project.storage_mb / stats.total_storage_mb * 100)|round(1) if stats.total_storage_mb > 0 else 0 }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-muted-foreground">
+          <p>{{ _("No data available") }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly History Table -->
+  <div class="card">
+    <header class="border-b px-6 py-4">
+      <h2 class="font-semibold">{{ _("Monthly Usage History") }}</h2>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="border-b">
+          <tr class="text-left text-sm text-muted-foreground">
+            <th class="px-6 py-3 font-medium">{{ _("Month") }}</th>
+            <th class="px-6 py-3 font-medium">{{ _("Traffic") }}</th>
+            <th class="px-6 py-3 font-medium">{{ _("Storage") }}</th>
+            <th class="px-6 py-3 font-medium">{{ _("Projects") }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          {% if monthly_data %}
+            {% for month in monthly_data %}
+            <tr class="hover:bg-muted/50 transition-colors">
+              <td class="px-6 py-4 text-sm font-medium">{{ month.month_name }}</td>
+              <td class="px-6 py-4 text-sm">{{ month.traffic_gb|round(2) }} GB</td>
+              <td class="px-6 py-4 text-sm">{{ month.storage_mb|round(0)|int }} MB</td>
+              <td class="px-6 py-4 text-sm">{{ month.project_count }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-6 py-8 text-center text-sm text-muted-foreground">
+                {{ _("No usage data available yet") }}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // Traffic Chart
+  const trafficCtx = document.getElementById('trafficChart');
+  if (trafficCtx) {
+    new Chart(trafficCtx, {
+      type: 'line',
+      data: {
+        labels: {{ daily_labels|tojson }},
+        datasets: [{
+          label: '{{ _("Traffic (MB)") }}',
+          data: {{ daily_traffic|tojson }},
+          borderColor: 'rgb(14, 165, 233)',
+          backgroundColor: 'rgba(14, 165, 233, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

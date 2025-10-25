@@ -166,6 +166,14 @@ body_attrs={"class": "space-y-4"}
 			</header>
 			<hr role="separator" />
 			<a href="{{ url_for('user_settings') }}" role="menuitem" hx-boost="true">{{ _('Account settings') }}</a>
+			<a href="{{ url_for('support_index') }}" role="menuitem" hx-boost="true">
+				{{ _('Support & Help') }}
+				<span class="ml-auto text-muted-foreground [&>svg]:size-4">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+					</svg>
+				</span>
+			</a>
 			<a href="/" role="menuitem" hx-boost="true">{{ _('Default team') }}</a>
 			<hr role="separator" />
 			<button type="button" role="menuitem" onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))">
