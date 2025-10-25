@@ -39,7 +39,9 @@ cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 # Load environment variables
 if [ -f "$envf" ]; then
   # shellcheck disable=SC1090
+  set -a
   source "$envf"
+  set +a
 else
   err "Environment file not found: $envf"
   exit 1
