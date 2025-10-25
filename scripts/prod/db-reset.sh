@@ -10,24 +10,26 @@ warn(){ echo -e "${YEL}WARN:${NC} $*"; }
 
 usage(){
   cat <<USG
-Usage: db-reset.sh [--app-dir <path>] [--env-file <path>] [--force]
+Usage: db-reset.sh [--app-dir <path>] [--force]
 
 ⚠️  DANGER: Drops and recreates the 'public' schema of the Postgres database.
 This will DELETE ALL DATA in the database!
 
   --app-dir PATH    App directory (default: \$PWD)
-  --env-file PATH   Path to .env (default: ./\.env)
-  --force           Skip confirmation prompt
+  --force           Skip all prompts (USE WITH CAUTION)
   -h, --help        Show this help
+
+The script will ask for database configuration interactively.
 USG
   exit 0
 }
 
-app_dir="${APP_DIR:-$(pwd)}"; envf=".env"; force=0
+app_dir="${APP_DIR:-$(pwd)}"; force=0
+container="pgsql"; db_user="servelink-app"; db_name="servelink"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --app-dir) app_dir="$2"; shift 2 ;;
-    --env-file) envf="$2"; shift 2 ;;
     --force) force=1; shift ;;
     -h|--help) usage ;;
     *) usage ;;
@@ -36,20 +38,28 @@ done
 
 cd "$app_dir" || { err "app dir not found: $app_dir"; exit 1; }
 
-# Load environment variables
-if [ -f "$envf" ]; then
-  # shellcheck disable=SC1090
-  set -a
-  source "$envf"
-  set +a
-else
-  err "Environment file not found: $envf"
-  exit 1
+# Ask for database configuration (unless --force is used)
+if ((force==0)); then
+  info "Database Configuration"
+  echo ""
+
+  read -p "Docker container name [pgsql]: " input_container
+  container=${input_container:-$container}
+
+  read -p "Postgres user [servelink-app]: " input_user
+  db_user=${input_user:-$db_user}
+
+  read -p "Postgres database [servelink]: " input_db
+  db_name=${input_db:-$db_name}
+
+  echo ""
 fi
 
-container=${DB_CONTAINER:-pgsql}
-db_user=${POSTGRES_USER:-servelink-app}
-db_name=${POSTGRES_DB:-servelink}
+info "Using configuration:"
+info "  Container: $container"
+info "  User: $db_user"
+info "  Database: $db_name"
+echo ""
 
 # Confirmation prompt
 if ((force==0)); then
