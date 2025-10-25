@@ -1,6 +1,6 @@
 <form method="post" action="{{ url_for('auth_login') }}" class="form grid gap-4" hx-post="{{ url_for('auth_login') }}"
   hx-swap="outerHTML" hx-indicator="find .htmx-indicator" hx-swap="outerHTML" @htmx:before-send="loading = 'email'"
-  @htmx:after-request="loading = null">
+  @htmx:after-request="handleEmailSent()" x-data="emailCountdown()">
   {{ form.csrf_token }}
   <div class="grid gap-2">
     {{ form.email.label(class="sr-only") }}
@@ -8,17 +8,48 @@
     class="input",
     placeholder=_("Enter your email"),
     **{
-    ':disabled': 'loading',
+    ':disabled': 'loading || countdown > 0',
     }
     ) }}
     {% for error in form.email.errors %}
     <p class="text-destructive text-xs font-medium">{{ error }}</p>
     {% endfor %}
   </div>
-  <button type="submit" class="btn" :disabled="loading">
+  <button type="submit" class="btn" :disabled="loading || countdown > 0">
     {{ _("Continue with email") }}
     <span x-show="loading === 'email'" class="[&>svg]:size-4 [&>svg]:animate-spin">
       {% include "icons/loader.svg" %}
     </span>
   </button>
+  <div x-show="countdown > 0" class="text-center space-y-2">
+    <p class="text-sm text-muted-foreground">
+      {{ _("Email sent! Please check your inbox.") }}
+    </p>
+    <p class="text-xs text-muted-foreground">
+      {{ _("You can request a new link in") }} <span x-text="formatCountdown(countdown)"></span>
+    </p>
+  </div>
 </form>
+
+<script>
+  function emailCountdown() {
+    return {
+      countdown: 0,
+      handleEmailSent() {
+        this.loading = null;
+        this.countdown = 120;
+        const interval = setInterval(() => {
+          this.countdown--;
+          if (this.countdown <= 0) {
+            clearInterval(interval);
+          }
+        }, 1000);
+      },
+      formatCountdown(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      }
+    };
+  }
+</script>
