@@ -20,8 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Create kb_category enum
-    op.execute("CREATE TYPE kb_category AS ENUM ('getting_started', 'deployment', 'billing', 'troubleshooting', 'api', 'other')")
+    # Create kb_category enum (if it doesn't exist)
+    try:
+        op.execute("CREATE TYPE kb_category AS ENUM ('getting_started', 'deployment', 'billing', 'troubleshooting', 'api', 'other')")
+    except Exception:
+        pass  # Type already exists
     
     # Create knowledge_base_article table
     op.create_table('knowledge_base_article',
@@ -30,7 +33,7 @@ def upgrade() -> None:
         sa.Column('slug', sa.String(length=255), nullable=False),
         sa.Column('content', sa.Text(), nullable=False),
         sa.Column('excerpt', sa.String(length=500), nullable=True),
-        sa.Column('category', postgresql.ENUM('getting_started', 'deployment', 'billing', 'troubleshooting', 'api', 'other', name='kb_category'), nullable=False, server_default='other'),
+        sa.Column('category', postgresql.ENUM('getting_started', 'deployment', 'billing', 'troubleshooting', 'api', 'other', name='kb_category', create_type=False), nullable=False, server_default='other'),
         sa.Column('tags', sa.JSON(), nullable=False, server_default='[]'),
         sa.Column('view_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('helpful_count', sa.Integer(), nullable=False, server_default='0'),
